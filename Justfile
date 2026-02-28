@@ -1,0 +1,52 @@
+# Resume Builder — development commands
+
+default:
+    just --list
+
+# Start the app in development mode with HMR
+dev:
+    npm run dev
+
+# Build for production
+build:
+    npm run build
+
+# Preview the production build
+preview:
+    npm run preview
+
+# Run unit tests
+test:
+    npx vitest
+
+# Run tests in watch mode
+test-watch:
+    npx vitest --watch
+
+# Lint the source
+lint:
+    npx eslint src
+
+# Generate Drizzle migrations from schema changes
+db-generate:
+    npx drizzle-kit generate
+
+# Apply pending migrations
+db-migrate:
+    npx drizzle-kit migrate
+
+# Open Drizzle Studio (DB browser)
+db-studio:
+    npx drizzle-kit studio
+
+# Package for Windows
+build-win:
+    npm run build:win
+
+# Package for macOS
+build-mac:
+    npm run build:mac
+
+# Package for Linux
+build-linux:
+    npm run build:linux
