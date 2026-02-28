@@ -10,7 +10,7 @@ Resume Builder is a desktop app for creating job-optimized resumes and cover let
 
 - **Speed up job applications** by reducing the time needed to tailor a resume to each role.
 - **Improve ATS pass rates** by analyzing job descriptions and aligning resume content to relevant keywords and structure.
-- **Maintain accuracy** by grounding all generated content in the user's own uploaded resume data rather than inventing experience.
+- **Maintain accuracy** by grounding all generated content in the user's Master CV — a structured, user-owned record of their actual experience — rather than inventing anything.
 
 ---
 
@@ -25,23 +25,51 @@ First-run experience shown before the main app is accessible. Guides the user th
    - Email address *(required)*
    - LinkedIn URL *(optional)*
    - GitHub URL *(optional)*
-3. **Resume / CV** — upload at least one existing resume to serve as the source of truth for generated content.
+3. **Resume / CV** — upload at least one existing resume to populate the Master CV, which serves as the ground truth for all generated content.
 4. **Cover letter** — optionally upload an existing cover letter to inform cover letter generation style and content.
 
 Onboarding is skipped on subsequent launches once setup is complete.
 
+### Master CV
+
+The Master CV is the user's permanent, comprehensive record of all their professional experience — uncurated and not tailored to any specific role. It is the canonical ground truth from which all resume content is drawn.
+
+**This is an internal artifact, not a recruiter-facing document.** Completeness and verbosity are always preferred over conciseness. Every detail, every technology, every responsibility belongs here — even minor ones. The richer the Master CV, the better context the AI has when tailoring resumes to specific roles. When in doubt, include more.
+
+- **Comprehensive by design:** Unlike a resume, the Master CV has no length limit. Every experience entry, every bullet, every skill belongs here. Nothing gets left out because it isn't relevant to a particular job.
+- **Manually editable:** Users can add, edit, and delete experience entries, bullets, education, and skills at any time. This is the primary place to record new experience as it happens.
+- **Populated by ingestion:** When an existing resume or CV is uploaded, its extracted, structured content is merged into the Master CV rather than stored as a separate artifact.
+- **Enriched by finalized resumes:** When a resume is finalized, any bullets it contains that are not already present in the Master CV are automatically added to it. This ensures that well-phrased, AI-refined accomplishments are captured and available for future use — without requiring any manual copy-paste.
+- **Usage tracking:** Each bullet in the Master CV shows which sessions it has been included in, making it easy to see what experience has been highlighted and where.
+- **Source attribution:** Each bullet records where it originated — entered manually, extracted from an uploaded document, or carried over from a specific finalized resume.
+
+#### Regeneration
+
+The Master CV can be regenerated at any time from all resume data available in the database — uploaded source documents and all finalized session resumes. The AI is explicitly instructed to be verbose: expand thin bullets, preserve every technology and responsibility mentioned anywhere, surface details that might be useful context for future generation even if they never appeared on a polished resume.
+
+**First generation (no existing Master CV):** All uploaded documents and finalized resumes are combined into a single, maximally comprehensive Master CV. Duplicate entries across sources are merged; conflicting phrasings of the same experience are preserved as separate bullets rather than collapsed. The synthesized result is presented in a reviewable list before being committed.
+
+**Re-generation (existing Master CV):** The AI compares all resume data against the current Master CV and surfaces suggested additions and expansions — not a full replacement. Suggestions include:
+- Bullets present in source resumes but missing from the Master CV entirely
+- Existing bullets that could be expanded with specific numbers, technologies, or outcomes mentioned in other resume versions
+- Skills or technologies named across multiple resumes that are absent from the skills section
+- Roles, projects, or responsibilities referenced in passing that aren't represented as full entries
+
+Each suggestion is presented individually for review. The user can accept, edit, or dismiss each one. No changes are committed to the Master CV until approved. Accepted suggestions are tagged with `"source": "regenerated"` and the timestamp of the regeneration run.
+
 ### Document Ingestion
-- Upload one or more existing resumes as a baseline.
-- Upload one or more existing cover letters as a baseline.
+- Upload one or more existing resumes or CVs to populate the Master CV.
+- Upload one or more existing cover letters to inform cover letter generation style.
 - **Supported formats:** DOCX, PDF, and plain text files.
 - Raw text is extracted from the uploaded file and sent to the LLM, which reads, interprets, and contextualizes the content — normalizing structure, resolving ambiguities, and extracting structured data (e.g. work history, skills, dates, accomplishments).
-- The LLM-processed output is stored in the internal database and serves as the source of truth for all generated content. The original uploaded files are also preserved as-is.
+- The LLM-processed output is merged into the Master CV. Entries that already exist are updated; new entries are added. The original uploaded files are preserved as-is alongside the structured output.
 
 ### Document Generation
 - Paste a job description directly into the app to generate a tailored resume.
+- All generated content is drawn exclusively from the Master CV — the LLM selects, prioritizes, and refines existing entries but cannot introduce experience that isn't already there.
 - The generated resume is optimized for ATS systems while remaining readable and visually appealing.
-- A match report is generated alongside each resume, where the LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern.
-- Optionally generate a cover letter tailored to the same job description, informed by uploaded cover letters and resume content.
+- A match report is generated alongside each resume, where the LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps.
+- Optionally generate a cover letter tailored to the same job description, informed by uploaded cover letters and Master CV content.
 
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.
@@ -49,6 +77,15 @@ Onboarding is skipped on subsequent launches once setup is complete.
 - All changes — both manual and AI-generated — are tracked in a change history.
   - Changes can be undone and redone via dedicated buttons or `Ctrl+Z` / `Ctrl+Y`.
   - Change history is in-memory only and is not persisted across app restarts.
+
+### Feedback
+- After a resume or cover letter has been generated, the user can request holistic feedback from the LLM.
+- Feedback is returned as a list of suggestions, each with:
+  - A **type** (e.g. Strengthen, Add, Remove, Reframe)
+  - The **section or bullet** it applies to
+  - A clear **suggestion** (what to change)
+  - A **justification** (why the change would improve the document given the job description)
+- Each suggestion can be individually **accepted**, **edited**, or **dismissed**.
 
 ### Export
 - Resumes and cover letters can be exported as PDF or DOCX.
@@ -61,6 +98,7 @@ Onboarding is skipped on subsequent launches once setup is complete.
 - A **New Session** button creates a session, prompting the user to paste a job description. Submitting it triggers document generation and opens the new session in a tab.
 - Sessions are displayed as tabs within the main window. Tabs can be torn off into separate windows.
 - Each session contains a resume and an optional cover letter.
+- The full job description for a session can be viewed and edited at any time from within the session. Editing the job description does not automatically regenerate documents — the user can manually trigger regeneration after updating it.
 - Sessions can be closed at any time and reopened later without losing progress.
 - The app auto-saves all open sessions when closed and restores them when reopened.
 - Persisted state includes:
@@ -93,7 +131,7 @@ Onboarding is skipped on subsequent launches once setup is complete.
   - All resume and cover letter documents (uploaded and generated)
   - The Application Master List
 - Only changes since the last backup are written, keeping backup size small.
-- Incremental backups run automatically every 5 minutes and on app close.
+- Incremental backups run automatically on app closed.
 - Users can manually trigger a full backup export at any time.
 - Previously exported backups can be imported to restore data.
 
@@ -298,6 +336,65 @@ Header info and sign-off name are injected by the app at render/export time and 
 
 ---
 
+## Master CV
+
+The Master CV is stored as `master-cv.json` in the app's data directory. It extends the resume schema with per-bullet metadata for source tracking and usage attribution. Header info (name, phone, email, LinkedIn, GitHub) is owned by settings and is not duplicated here.
+
+### master-cv.json Schema
+
+```json
+{
+  "experience": [
+    {
+      "id": "exp_abc123",
+      "title": "Senior Software Engineer",
+      "company": "Acme Corp",
+      "startDate": "Jan 2023",
+      "endDate": "Present",
+      "bullets": [
+        {
+          "id": "bul_def456",
+          "text": "Redesigned the platform's caching architecture, reducing P99 API latency by 42% and cutting database load by 60% during peak traffic.",
+          "source": "ingested",
+          "sourceLabel": "Resume uploaded Feb 2026",
+          "usedIn": ["session_abc", "session_xyz"]
+        },
+        {
+          "id": "bul_ghi789",
+          "text": "Led a cross-functional team of 5 engineers to deliver a new customer analytics dashboard, shipped on schedule across 3 sprint cycles.",
+          "source": "finalized",
+          "sourceLabel": "Acme Corp — Senior Software Engineer (Feb 27)",
+          "usedIn": ["session_abc"]
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu_jkl012",
+      "degree": "Bachelor of Science in Computer Science",
+      "institution": "State University",
+      "graduationDate": "May 2020"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skill_mno345",
+      "category": "Languages",
+      "items": ["TypeScript (6 yrs)", "Python (5 yrs)", "SQL (6 yrs)", "Go (2 yrs)", "Rust (1 yr)", "Bash"]
+    }
+  ]
+}
+```
+
+`source` is one of:
+- `"manual"` — entered directly by the user in the Master CV editor
+- `"ingested"` — extracted from an uploaded resume or CV file
+- `"finalized"` — carried over automatically when a resume session was finalized
+- `"regenerated"` — accepted from an AI regeneration suggestion
+
+---
+
 ## Architecture
 
 ### Runtime
@@ -331,6 +428,7 @@ Directory structure:
 ```
 /data/
   app.db
+  master-cv.json
   /applications/
     /<company>/
       <role>_<YYYY-MM>_<id>/

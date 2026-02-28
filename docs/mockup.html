@@ -1,0 +1,3070 @@
+<!DOCTYPE html>
+<!--
+  Resume Builder — UI Mockup
+  Static HTML approximation of the main app views.
+  Not functional — for layout and visual design reference only.
+
+  Views (click sidebar buttons to switch):
+    1. Session view          (default) — resume editor for a specific job application
+       Tabs: Resume · Cover Letter · Match Report · Description
+       Resume: feedback prompt bar above paper; AI suggestions inline on bullets
+       Cover Letter: document paper only; editing toolbar on hover per paragraph;
+                     AI feedback suggestions appear inline below each paragraph
+       Match Report: full-width expanded report (two-column strengths/gaps)
+       Description: full-width job description with inline edit
+    2. Application List      (sidebar: ≡) — sortable/filterable table of all applications
+    3. Master CV             (sidebar: 📄) — comprehensive, permanent experience record
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Builder — UI Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-bg: #1a2332;
+      --sidebar-hover: rgba(255,255,255,0.06);
+      --sidebar-active: rgba(255,255,255,0.13);
+      --sidebar-text: #8fa3b5;
+      --sidebar-text-active: #ffffff;
+      --sidebar-width: 224px;
+      --topbar-height: 52px;
+      --statusbar-height: 28px;
+      --primary: #1565c0;
+      --primary-hover: #0d47a1;
+      --bg: #eef0f3;
+      --paper: #ffffff;
+      --border: #e0e0e0;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5f6b7c;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    /* ── App Shell ──────────────────────────────────────────────────────────── */
+
+    .app {
+      display: grid;
+      grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
+      grid-template-columns: var(--sidebar-width) 1fr;
+      grid-template-areas:
+        "topbar  topbar"
+        "sidebar main"
+        "status  status";
+      height: 100vh;
+    }
+
+    /* ── Top Bar ──────────────────────────────────────────────────────────── */
+
+    .topbar {
+      grid-area: topbar;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+    }
+
+    .topbar-hamburger {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.75);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      line-height: 1;
+    }
+    .topbar-hamburger:hover { background: rgba(255,255,255,0.12); color: white; }
+
+    .topbar-brand {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      flex: 1;
+    }
+
+    .topbar-btn {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.24);
+      color: white;
+      padding: 5px 14px;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .topbar-btn:hover { background: rgba(255,255,255,0.24); }
+
+    .topbar-icon-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.75);
+      padding: 6px;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .topbar-icon-btn:hover { background: rgba(255,255,255,0.12); color: white; }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────────── */
+
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid rgba(0,0,0,0.25);
+    }
+
+    /* Top-of-sidebar nav items (Application List, Master CV) */
+    .sidebar-nav-item {
+      margin: 4px 8px 0;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      width: calc(100% - 16px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sidebar-text);
+      transition: background 0.12s, color 0.12s;
+      text-align: left;
+    }
+    .sidebar-nav-item:first-of-type { margin-top: 12px; }
+    .sidebar-nav-item:hover  { background: var(--sidebar-hover); color: white; }
+    .sidebar-nav-item.active { background: var(--sidebar-active); color: white; }
+
+    .sidebar-nav-icon {
+      font-size: 15px;
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+
+    .sidebar-nav-label { flex: 1; }
+
+    .sidebar-nav-count {
+      font-size: 10px;
+      font-weight: 500;
+      background: rgba(255,255,255,0.12);
+      padding: 1px 7px;
+      border-radius: 8px;
+      color: var(--sidebar-text);
+    }
+    .sidebar-nav-item.active .sidebar-nav-count {
+      background: rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.8);
+    }
+
+    .sidebar-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin: 10px 0 0;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sidebar-text);
+      padding: 12px 16px 8px;
+      opacity: 0.65;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px;
+    }
+
+    .session-item {
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 2px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .session-item:hover { background: var(--sidebar-hover); }
+    .session-item.active { background: var(--sidebar-active); }
+
+    .session-company {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sidebar-text-active);
+      margin-bottom: 1px;
+    }
+
+    .session-role {
+      font-size: 11.5px;
+      color: var(--sidebar-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .session-date { font-size: 11px; color: #4d6678; }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+      letter-spacing: 0.03em;
+    }
+    .badge-draft  { background: rgba(251,192,45,0.18); color: #f9a825; }
+    .badge-final  { background: rgba(76,175,80,0.18);  color: #5cb85c; }
+
+    .sidebar-footer {
+      padding: 10px 8px 12px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .btn-new-sidebar {
+      width: 100%;
+      background: rgba(255,255,255,0.07);
+      border: 1px dashed rgba(255,255,255,0.2);
+      color: var(--sidebar-text);
+      padding: 8px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.12s;
+    }
+    .btn-new-sidebar:hover { background: rgba(255,255,255,0.13); color: white; }
+
+    .sidebar-list::-webkit-scrollbar { width: 4px; }
+    .sidebar-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    /* ── Main Area ──────────────────────────────────────────────────────────── */
+
+    .main {
+      grid-area: main;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── View switching ─────────────────────────────────────────────────────── */
+
+    .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .view.active { display: flex; }
+
+    /* ── Session View ──────────────────────────────────────────────────────── */
+
+    .session-bar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 52px;
+      flex-shrink: 0;
+    }
+
+    .session-bar-title { flex: 1; min-width: 0; }
+
+    .session-bar-title h2 {
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-status-chip {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(21,101,192,0.1);
+      color: var(--primary);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-outline:hover { background: rgba(21,101,192,0.06); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .tabs {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .tab {
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-family: var(--font);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.12s;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+    .tab:hover  { color: var(--primary); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tabs-spacer { flex: 1; }
+
+    .token-usage {
+      font-size: 11.5px;
+      color: #9eaab5;
+      align-self: center;
+      padding-right: 4px;
+      white-space: nowrap;
+    }
+
+    .doc-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 32px 40px;
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .doc-area::-webkit-scrollbar { width: 6px; }
+    .doc-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
+
+    /* ── Resume / Cover Letter Paper ──────────────────────────────────────── */
+
+    .resume-paper {
+      background: white;
+      width: 720px;
+      min-width: 720px;
+      padding: 56px 64px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.04);
+      border-radius: 2px;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .r-name {
+      font-size: 22pt;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: #111827;
+      margin-bottom: 5px;
+    }
+    .r-name .r-first-name { font-weight: 400; }
+    .r-name .r-last-name  { font-weight: 800; color: #1e3a5f; }
+
+    .r-contact {
+      font-size: 9.5pt;
+      color: #374151;
+      letter-spacing: 0.01em;
+    }
+    .r-contact a { color: #374151; text-decoration: none; }
+    .r-contact .r-sep { margin: 0 6px; color: #9ca3af; }
+
+    .r-section { margin-top: 16px; }
+
+    .r-heading {
+      font-size: 10.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #1e3a5f;
+      background: #e8edf5;
+      padding: 3px 6px 4px;
+      margin-bottom: 10px;
+    }
+
+    .r-entry { margin-bottom: 13px; }
+    .r-entry:last-child { margin-bottom: 0; }
+
+    .r-entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .r-entry-title { font-size: 10.5pt; font-weight: 600; color: #111827; }
+    .r-entry-date  { font-size: 9.5pt; color: #6b7280; white-space: nowrap; margin-left: 12px; flex-shrink: 0; }
+
+    .r-bullets { list-style: none; margin-top: 4px; padding-left: 14px; }
+
+    .r-bullet {
+      font-size: 9.5pt;
+      color: #374151;
+      line-height: 1.5;
+      margin-bottom: 2px;
+      position: relative;
+      border-radius: 3px;
+      transition: background 0.1s;
+    }
+    .r-bullet::before { content: '•'; position: absolute; left: -12px; color: #374151; }
+    .r-bullet:hover { background: #f5f7fa; }
+
+    .r-bullet.is-editing {
+      background: #e8f0fe;
+      outline: 2px solid #1565c0;
+      padding: 2px 6px 2px 2px;
+    }
+    .r-bullet.is-editing::before { left: -8px; }
+
+    .edit-toolbar {
+      display: inline-flex;
+      background: #1a2332;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-left: 8px;
+      vertical-align: middle;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+    }
+    .edit-toolbar button {
+      background: transparent;
+      border: none;
+      color: #b8cad6;
+      padding: 3px 10px;
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .edit-toolbar button:hover { background: rgba(255,255,255,0.1); color: white; }
+    .edit-toolbar button + button { border-left: 1px solid rgba(255,255,255,0.1); }
+
+    .r-bullet-block { margin-bottom: 10px; }
+    .r-bullet-block > .r-bullet { margin-bottom: 0; }
+
+    .r-skill-block { margin-bottom: 3px; }
+
+    .r-edu-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 10.5pt;
+    }
+    .r-edu-row strong { font-weight: 600; color: #111827; }
+    .r-edu-date { font-size: 9.5pt; color: #6b7280; white-space: nowrap; margin-left: 12px; flex-shrink: 0; }
+
+    .r-skills { display: flex; flex-direction: column; gap: 3px; }
+    .r-skills-row { font-size: 9.5pt; color: #374151; line-height: 1.5; }
+    .r-skills-cat { font-weight: 600; color: #111827; }
+
+    /* ── Cover Letter Paper ─────────────────────────────────────────────────── */
+
+    .cl-header-rule {
+      border: none;
+      border-top: 1px solid #1e3a5f;
+      margin-top: 14px;
+    }
+
+    .cl-date {
+      font-size: 10pt;
+      color: #374151;
+      margin-top: 28px;
+      margin-bottom: 24px;
+    }
+
+    .cl-salutation {
+      font-size: 10pt;
+      color: #374151;
+      margin-bottom: 18px;
+    }
+
+    /* ── Cover Letter paragraph editing ─────────────────────────────────── */
+
+    .cl-para-block {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .cl-paragraph {
+      font-size: 10pt;
+      color: #374151;
+      line-height: 1.65;
+      border-radius: 3px;
+      padding: 4px 6px;
+      margin: -4px -6px;
+      transition: background 0.1s;
+    }
+    .cl-para-block:hover .cl-paragraph { background: #f5f7fa; }
+
+    .cl-para-text-wrap {
+      position: relative;
+    }
+
+    .cl-para-toolbar {
+      display: none;
+      position: absolute;
+      top: 100%;
+      margin-top: 4px;
+      right: 0;
+      background: #1a2332;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+      z-index: 5;
+    }
+    .cl-para-block:hover .cl-para-toolbar { display: flex; }
+
+    .cl-para-toolbar button {
+      background: transparent;
+      border: none;
+      color: #b8cad6;
+      padding: 4px 11px;
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .cl-para-toolbar button:hover { background: rgba(255,255,255,0.1); color: white; }
+    .cl-para-toolbar button + button { border-left: 1px solid rgba(255,255,255,0.1); }
+
+    .cl-para-textarea {
+      width: 100%;
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 10pt;
+      line-height: 1.65;
+      color: #374151;
+      resize: none;
+      outline: none;
+      background: #f0f5ff;
+      min-height: 130px;
+      field-sizing: content;
+      overflow: hidden;
+    }
+
+    .cl-para-save-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      justify-content: flex-end;
+    }
+
+    /* ── Inline feedback cards (Cover Letter) ───────────────────────────── */
+
+    .cl-feedback-inline {
+      margin-top: 10px;
+      background: #f7f8fa;
+      border-left: 3px solid #1565c0;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px 10px 12px;
+    }
+    .cl-feedback-inline.type-strengthen { border-left-color: #1565c0; }
+    .cl-feedback-inline.type-add        { border-left-color: #2e7d32; }
+    .cl-feedback-inline.type-reframe    { border-left-color: #6a1b9a; }
+    .cl-feedback-inline.type-remove     { border-left-color: #b71c1c; }
+
+    .cl-fb-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .cl-fb-suggestion {
+      font-size: 12px;
+      color: var(--text-primary);
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .cl-fb-justification {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .cl-fb-actions { display: flex; gap: 6px; }
+
+    .cl-signoff {
+      font-size: 10pt;
+      color: #374151;
+      margin-top: 28px;
+      margin-bottom: 52px;
+    }
+
+    .cl-signature-name {
+      font-size: 10pt;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    /* ── Side panels (session view) ─────────────────────────────────────────── */
+
+    .side-panels {
+      width: 272px;
+      min-width: 272px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .panel-body { padding: 14px 16px; }
+
+    /* ── Match Rating (replaces numeric score) ──────────────────────────── */
+
+    .match-rating-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .match-rating {
+      font-size: 14px;
+      font-weight: 700;
+      padding: 5px 16px;
+      border-radius: 20px;
+      letter-spacing: 0.01em;
+      flex-shrink: 0;
+    }
+    .match-rating-strong { background: rgba(46,125,50,0.13);  color: #2e7d32; }
+    .match-rating-good   { background: rgba(25,118,210,0.12); color: #1565c0; }
+    .match-rating-fair   { background: rgba(245,124,0,0.13);  color: #e65100; }
+    .match-rating-weak   { background: rgba(183,28,28,0.12);  color: #b71c1c; }
+
+    .match-sublabel { font-size: 11.5px; color: var(--text-secondary); }
+
+    .match-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .ico-good { color: #2e7d32; flex-shrink: 0; margin-top: 1px; }
+    .ico-warn { color: #e65100; flex-shrink: 0; margin-top: 1px; }
+    .match-note { font-size: 11px; color: #a0adb8; margin-top: 6px; }
+
+    /* ── Job Description panel ───────────────────────────────────────────── */
+
+    .panel-header-row {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+    }
+
+    .panel-header-row .panel-header-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+
+    .jd-edit-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .jd-edit-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .jd-text {
+      font-size: 12px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .jd-text::-webkit-scrollbar { width: 4px; }
+    .jd-text::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+
+    .jd-textarea {
+      width: 100%;
+      min-height: 200px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: var(--font);
+      font-size: 12px;
+      line-height: 1.65;
+      color: var(--text-primary);
+      resize: vertical;
+      outline: none;
+    }
+    .jd-textarea:focus { border-color: var(--primary); }
+
+    .jd-edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .jd-save-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 5px 14px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .jd-save-btn:hover { background: var(--primary-hover); }
+
+    .jd-cancel-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 5px 14px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .jd-cancel-btn:hover { border-color: #bbc5d0; color: var(--text-primary); }
+
+    .jd-edit-note {
+      font-size: 11px;
+      color: #9eaab5;
+      margin-top: 6px;
+    }
+
+    .jd-saved-notice {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #2e7d32;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .jd-regen-link {
+      background: transparent;
+      border: none;
+      color: #2e7d32;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    /* ── Master CV View ─────────────────────────────────────────────────────── */
+
+    .mcv-topbar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 56px;
+      flex-shrink: 0;
+    }
+
+    .mcv-topbar-title {
+      flex: 1;
+    }
+
+    .mcv-topbar-title h2 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .mcv-topbar-title p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .mcv-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px 48px;
+    }
+    .mcv-area::-webkit-scrollbar { width: 6px; }
+    .mcv-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
+
+    /* Pending update banner */
+    .mcv-banner {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #5d4037;
+      margin-bottom: 24px;
+    }
+
+    .mcv-banner-icon { font-size: 15px; flex-shrink: 0; }
+    .mcv-banner-text { flex: 1; }
+    .mcv-banner-action {
+      background: transparent;
+      border: 1px solid #f9a825;
+      color: #f57f17;
+      padding: 4px 12px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mcv-banner-action:hover { background: #fff3e0; }
+
+    /* Section headers */
+    .mcv-section { margin-bottom: 32px; }
+
+    .mcv-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mcv-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .mcv-section-rule {
+      flex: 1;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .mcv-add-entry-btn {
+      background: transparent;
+      border: 1px dashed #bbc5d0;
+      color: var(--text-secondary);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mcv-add-entry-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* Experience entry card */
+    .mcv-entry {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .mcv-entry-header {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f1f3;
+      gap: 10px;
+    }
+
+    .mcv-entry-title-block { flex: 1; min-width: 0; }
+
+    .mcv-entry-title {
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .mcv-entry-subtitle {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .mcv-usage-chip {
+      font-size: 10.5px;
+      font-weight: 500;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: rgba(21,101,192,0.08);
+      color: var(--primary);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .mcv-entry-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .mcv-icon-btn {
+      background: transparent;
+      border: none;
+      color: #9eaab5;
+      padding: 5px 7px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .mcv-icon-btn:hover { background: #f0f1f3; color: var(--text-primary); }
+
+    /* Bullet list inside a Master CV entry */
+    .mcv-bullets { padding: 4px 0 6px; }
+
+    .mcv-bullet-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 6px 16px;
+      transition: background 0.1s;
+    }
+    .mcv-bullet-row:hover { background: #f7f8fa; }
+
+    .mcv-bullet-dot {
+      color: #888;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      line-height: 1.5;
+    }
+
+    .mcv-bullet-content { flex: 1; min-width: 0; }
+
+    .mcv-bullet-text {
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: var(--text-primary);
+    }
+
+    .mcv-bullet-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+    }
+
+    .mcv-source-tag {
+      font-size: 10px;
+      font-weight: 500;
+      color: #9eaab5;
+    }
+
+    .mcv-source-tag.manual   { color: #7b8e9c; }
+    .mcv-source-tag.ingested { color: #5c8a5c; }
+    .mcv-source-tag.finalized { color: #1565c0; opacity: 0.75; }
+
+    .mcv-used-in {
+      font-size: 10px;
+      color: #b0bbc5;
+    }
+
+    .mcv-bullet-actions {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .mcv-bullet-row:hover .mcv-bullet-actions { opacity: 1; }
+
+    .mcv-bullet-action-btn {
+      background: transparent;
+      border: none;
+      color: #9eaab5;
+      padding: 3px 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .mcv-bullet-action-btn:hover { background: #e8edf1; color: var(--text-primary); }
+
+    .mcv-add-bullet-btn {
+      background: transparent;
+      border: none;
+      color: #9eaab5;
+      padding: 6px 16px 10px;
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.1s;
+    }
+    .mcv-add-bullet-btn:hover { color: var(--primary); }
+
+    /* Education + Skills in Master CV */
+    .mcv-edu-row {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .mcv-edu-text { flex: 1; font-size: 13px; font-weight: 500; }
+    .mcv-edu-date { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+
+    .mcv-skills-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .mcv-skill-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f1f3;
+      font-size: 12.5px;
+    }
+    .mcv-skill-row:last-child { border-bottom: none; }
+
+    .mcv-skill-cat {
+      font-weight: 600;
+      white-space: nowrap;
+      width: 160px;
+      flex-shrink: 0;
+      color: var(--text-primary);
+    }
+
+    .mcv-skill-items { color: var(--text-secondary); line-height: 1.5; }
+
+    /* ── Regeneration suggestions ───────────────────────────────────────── */
+
+    .regen-section {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .regen-header {
+      background: #f0f4ff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #d8e2f8;
+    }
+
+    .regen-header-icon { font-size: 16px; }
+
+    .regen-header-text { flex: 1; }
+
+    .regen-header-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a237e;
+    }
+
+    .regen-header-sub {
+      font-size: 11.5px;
+      color: #5c6bc0;
+      margin-top: 1px;
+    }
+
+    .regen-progress {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #5c6bc0;
+      white-space: nowrap;
+    }
+
+    .regen-dismiss-all {
+      background: transparent;
+      border: 1px solid #c5cae9;
+      color: #5c6bc0;
+      padding: 4px 11px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .regen-dismiss-all:hover { background: #e8eaf6; }
+
+    .regen-item {
+      border-bottom: 1px solid #f0f1f3;
+      padding: 14px 16px;
+    }
+    .regen-item:last-child { border-bottom: none; }
+
+    .regen-item-type {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .regen-type-add    { color: #2e7d32; }
+    .regen-type-expand { color: #1565c0; }
+    .regen-type-skill  { color: #6a1b9a; }
+
+    .regen-item-context {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .regen-diff {
+      background: #f7f8fa;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .regen-diff-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #9eaab5;
+      margin-bottom: 4px;
+    }
+
+    .regen-diff-old {
+      color: #c62828;
+      text-decoration: line-through;
+      margin-bottom: 4px;
+    }
+
+    .regen-diff-new { color: #2e7d32; }
+
+    .regen-diff-only { color: var(--text-primary); }
+
+    .regen-item-actions { display: flex; gap: 6px; }
+
+    .regen-btn-accept {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      color: #2e7d32;
+      padding: 4px 14px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .regen-btn-accept:hover { background: #c8e6c9; }
+
+    .regen-btn-edit {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 4px 14px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .regen-btn-edit:hover { border-color: #bbc5d0; color: var(--text-primary); }
+
+    .regen-btn-dismiss {
+      background: transparent;
+      border: none;
+      color: #b0bbc5;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .regen-btn-dismiss:hover { background: #f0f1f3; color: var(--text-secondary); }
+
+    /* ── Application Master List View ──────────────────────────────────── */
+
+    .applist-bar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 52px;
+      flex-shrink: 0;
+    }
+
+    .applist-bar h2 { font-size: 15px; font-weight: 700; }
+
+    .applist-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-left: 2px;
+    }
+
+    .applist-search {
+      background: #f5f6f8;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 12px 6px 30px;
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text-primary);
+      width: 220px;
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239eaab5' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 9px center;
+    }
+    .applist-search:focus { border-color: var(--primary); background-color: white; }
+    .applist-search::placeholder { color: #aab0ba; }
+
+    .filter-chips {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex: 1;
+    }
+
+    .filter-chip {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+    }
+    .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    .applist-area {
+      flex: 1;
+      overflow: auto;
+    }
+    .applist-area::-webkit-scrollbar { width: 6px; height: 6px; }
+    .applist-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.16); border-radius: 4px; }
+
+    .applist-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 960px;
+    }
+
+    .applist-table thead th {
+      background: #f7f8fa;
+      border-bottom: 2px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .applist-table thead th:hover { color: var(--primary); }
+
+    .sort-arrow {
+      display: inline-block;
+      opacity: 0.35;
+      margin-left: 4px;
+      font-size: 10px;
+    }
+    .sort-arrow.on { opacity: 1; color: var(--primary); }
+
+    .applist-table tbody tr {
+      border-bottom: 1px solid #f0f1f3;
+      transition: background 0.1s;
+    }
+    .applist-table tbody tr:hover { background: #f7f8fa; }
+
+    .applist-table td {
+      padding: 11px 14px;
+      vertical-align: middle;
+    }
+
+    .al-company  { font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+    .al-role     { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .al-summary  { font-size: 12px; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .al-date     { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .al-notes    { font-size: 12px; color: var(--text-secondary); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic; cursor: text; }
+    .al-notes.empty { color: #c5ccd4; font-style: normal; }
+
+    /* Status chips */
+    .schip {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 10px;
+      white-space: nowrap;
+      line-height: 1.6;
+    }
+    .schip-draft        { background: rgba(251,192,45,0.15); color: #b8860b; }
+    .schip-final        { background: rgba(76,175,80,0.15);  color: #388e3c; }
+    .schip-none         { background: #f0f1f3; color: #9eaab5; }
+    .schip-not-applied  { background: #f0f1f3; color: #7a8898; }
+    .schip-submitted    { background: rgba(21,101,192,0.1);  color: #1565c0; }
+    .schip-interviewing { background: rgba(230,81,0,0.1);    color: #bf360c; }
+    .schip-offer        { background: rgba(46,125,50,0.15);  color: #2e7d32; }
+    .schip-rejected     { background: rgba(183,28,28,0.1);   color: #b71c1c; }
+    .schip-withdrawn    { background: #f0f1f3; color: #9eaab5; }
+
+    /* Application status is editable (click to cycle) */
+    .schip-editable { cursor: pointer; }
+    .schip-editable:hover { opacity: 0.78; }
+
+    .al-open-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 4px 12px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .al-open-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Status Bar ──────────────────────────────────────────────────────── */
+
+    .statusbar {
+      grid-area: status;
+      background: #f0f1f3;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 14px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4caf50;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .status-sep { color: #cdd0d4; }
+    .statusbar-spacer { flex: 1; }
+
+    /* ── Feedback prompt strip (Resume side panel) ──────────────────────────── */
+
+    .fb-prompt-strip {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+      flex-shrink: 0;
+    }
+
+    .fb-prompt-input {
+      width: 100%;
+      min-height: 72px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-family: var(--font);
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      outline: none;
+      background: white;
+      resize: none;
+      field-sizing: content;
+      overflow: hidden;
+    }
+    .fb-prompt-input:focus { border-color: var(--primary); }
+    .fb-prompt-input::placeholder { color: #aab0ba; }
+
+    /* ── Cover Letter feedback bar (above the paper) ─────────────────────────── */
+
+    .cl-feedback-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: white;
+      border-radius: 8px;
+      padding: 10px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      width: 720px;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+
+    .cl-feedback-bar-label {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .cl-feedback-bar-input {
+      width: 100%;
+      min-height: 80px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      outline: none;
+      resize: none;
+      field-sizing: content;
+      overflow: hidden;
+    }
+    .cl-feedback-bar-input:focus { border-color: var(--primary); }
+    .cl-feedback-bar-input::placeholder { color: #aab0ba; }
+
+    /* ── Feedback tab ────────────────────────────────────────────────────────── */
+
+    .feedback-area {
+      flex: 1;
+      max-width: 760px;
+      min-width: 0;
+      display: none;
+    }
+
+    .feedback-toolbar {
+      background: white;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .feedback-for-label {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .feedback-doc-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .feedback-doc-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .feedback-doc-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    .feedback-section {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .feedback-section-header {
+      background: #f0f4ff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #d8e2f8;
+    }
+
+    .feedback-section-icon { font-size: 16px; }
+    .feedback-section-text { flex: 1; }
+
+    .feedback-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a237e;
+    }
+
+    .feedback-section-sub {
+      font-size: 11.5px;
+      color: #5c6bc0;
+      margin-top: 1px;
+    }
+
+    .feedback-progress {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #5c6bc0;
+      white-space: nowrap;
+    }
+
+    .feedback-dismiss-all {
+      background: transparent;
+      border: 1px solid #c5cae9;
+      color: #5c6bc0;
+      padding: 4px 11px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .feedback-dismiss-all:hover { background: #e8eaf6; }
+
+    .feedback-item {
+      border-bottom: 1px solid #f0f1f3;
+      padding: 16px;
+    }
+    .feedback-item:last-child { border-bottom: none; }
+
+    .feedback-item-top {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .feedback-type {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .feedback-type-strengthen { color: #1565c0; }
+    .feedback-type-add        { color: #2e7d32; }
+    .feedback-type-remove     { color: #b71c1c; }
+    .feedback-type-reframe    { color: #6a1b9a; }
+
+    .feedback-item-target {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .feedback-suggestion {
+      font-size: 12.5px;
+      color: var(--text-primary);
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+
+    .feedback-justification {
+      background: #f7f8fa;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
+
+    .feedback-justification-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #9eaab5;
+      margin-bottom: 3px;
+    }
+
+    .feedback-justification-text {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ── Suggested edit diff (Resume panel + Cover Letter inline) ────────── */
+
+    .feedback-diff {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .feedback-diff-row {
+      display: flex;
+    }
+
+    .feedback-diff-row + .feedback-diff-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .feedback-diff-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      width: 48px;
+      flex-shrink: 0;
+      padding: 8px 4px 7px 10px;
+      align-self: stretch;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .feedback-diff-text {
+      padding: 7px 10px 7px 4px;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .feedback-diff-before { background: #fff5f5; }
+    .feedback-diff-before .feedback-diff-label { color: #c62828; }
+
+    .feedback-diff-after  { background: #f1f8f1; }
+    .feedback-diff-after  .feedback-diff-label { color: #2e7d32; }
+
+    .feedback-diff-add    { background: #f1f8f1; }
+    .feedback-diff-add    .feedback-diff-label { color: #2e7d32; }
+
+    .feedback-diff-text s {
+      color: #c62828;
+      text-decoration-color: #c62828;
+    }
+
+    .feedback-item-actions { display: flex; gap: 6px; }
+
+    .feedback-btn-accept {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      color: #2e7d32;
+      padding: 4px 14px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .feedback-btn-accept:hover { background: #c8e6c9; }
+
+    .feedback-btn-edit {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 4px 14px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .feedback-btn-edit:hover { border-color: #bbc5d0; color: var(--text-primary); }
+
+    .feedback-btn-dismiss {
+      background: transparent;
+      border: none;
+      color: #b0bbc5;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .feedback-btn-dismiss:hover { background: #f0f1f3; color: var(--text-secondary); }
+
+    .feedback-empty-state {
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .feedback-empty-icon { font-size: 28px; margin-bottom: 12px; opacity: 0.4; }
+    .feedback-empty-text { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+    /* ── Match Report full view ──────────────────────────────────────────────── */
+
+    .mr-full {
+      flex: 1;
+      max-width: 860px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .mr-full-header {
+      background: white;
+      border-radius: 10px;
+      padding: 24px 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .mr-full-rating-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 12px;
+    }
+
+    .mr-full-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .mr-full-meta-stat {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .mr-full-meta-stat strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .mr-full-note {
+      font-size: 11.5px;
+      color: #a0adb8;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    .mr-full-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .mr-full-col {
+      background: white;
+      border-radius: 10px;
+      padding: 20px 22px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .mr-col-heading {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .mr-col-heading-good { color: #2e7d32; }
+    .mr-col-heading-warn { color: #e65100; }
+
+    .mr-full-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #333;
+      margin-bottom: 14px;
+    }
+    .mr-full-item:last-child { margin-bottom: 0; }
+
+    /* ── Description tab view ────────────────────────────────────────────────── */
+
+    .desc-view {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .desc-paper {
+      background: white;
+      width: 680px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 36px 44px 44px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.04);
+      border-radius: 2px;
+      align-self: flex-start;
+    }
+
+    .desc-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .desc-header-text { flex: 1; }
+
+    .desc-role {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .desc-company {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .desc-body {
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--text-secondary);
+    }
+
+    .desc-body strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <button class="topbar-hamburger">&#9776;</button>
+    <span class="topbar-brand">Resume Builder</span>
+    <button class="topbar-btn" onclick="switchView('session')">
+      <span style="font-size:15px; line-height:1">+</span> New Session
+    </button>
+    <button class="topbar-icon-btn" title="Settings">&#9881;</button>
+  </header>
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- Top nav items -->
+    <button class="sidebar-nav-item" id="nav-applist" onclick="switchView('applist')">
+      <span class="sidebar-nav-icon">&#9776;</span>
+      <span class="sidebar-nav-label">Application List</span>
+      <span class="sidebar-nav-count">8</span>
+    </button>
+    <button class="sidebar-nav-item" id="nav-mastercv" onclick="switchView('mastercv')">
+      <span class="sidebar-nav-icon">&#128196;</span>
+      <span class="sidebar-nav-label">Master CV</span>
+      <span class="sidebar-nav-count">12 entries</span>
+    </button>
+
+    <hr class="sidebar-divider">
+    <div class="sidebar-label">Sessions</div>
+
+    <div class="sidebar-list">
+
+      <div class="session-item active" id="nav-session" onclick="switchView('session')">
+        <div class="session-company">Acme Corp</div>
+        <div class="session-role">Senior Software Engineer</div>
+        <div class="session-meta">
+          <span class="session-date">Feb 27</span>
+          <span class="badge badge-draft">Draft</span>
+        </div>
+      </div>
+
+      <div class="session-item">
+        <div class="session-company">Google</div>
+        <div class="session-role">Software Engineer III</div>
+        <div class="session-meta">
+          <span class="session-date">Feb 25</span>
+          <span class="badge badge-draft">Draft</span>
+        </div>
+      </div>
+
+      <div class="session-item">
+        <div class="session-company">Stripe</div>
+        <div class="session-role">Backend Engineer</div>
+        <div class="session-meta">
+          <span class="session-date">Feb 20</span>
+          <span class="badge badge-final">Final</span>
+        </div>
+      </div>
+
+      <div class="session-item">
+        <div class="session-company">Linear</div>
+        <div class="session-role">Staff Engineer</div>
+        <div class="session-meta">
+          <span class="session-date">Feb 17</span>
+          <span class="badge badge-final">Final</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn-new-sidebar">
+        <span>+</span> New Session
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main Area ──────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- ── Session View ──────────────────────────────────────────────────── -->
+    <div class="view active" id="view-session">
+
+      <div class="session-bar">
+        <div class="session-bar-title">
+          <h2>Acme Corp</h2>
+          <div class="session-subtitle">
+            Senior Software Engineer
+            <span class="app-status-chip">Not Applied</span>
+          </div>
+        </div>
+        <button class="btn-outline">Finalize</button>
+        <button class="btn-primary">Export &#9660;</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('resume')">Resume</button>
+        <button class="tab" onclick="switchTab('coverLetter')">Cover Letter</button>
+        <button class="tab" onclick="switchTab('matchReport')">Match Report</button>
+        <button class="tab" onclick="switchTab('description')">Description</button>
+        <div class="tabs-spacer"></div>
+        <span class="token-usage">claude-opus-4-6 &nbsp;&middot;&nbsp; 3,241 tokens &nbsp;&middot;&nbsp; ~$0.03</span>
+      </div>
+
+      <div class="doc-area">
+
+        <!-- Resume area (prompt bar + paper) -->
+        <div id="resume-area" style="display:flex; flex-direction:column; align-items:center; gap:12px; flex:1; min-width:0">
+
+          <!-- Feedback prompt bar -->
+          <div class="cl-feedback-bar">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="cl-feedback-bar-label">AI Feedback</span>
+              <div style="flex:1"></div>
+              <button class="btn-primary" style="font-size:12px; padding:5px 14px; white-space:nowrap;">&#10024; Get Feedback</button>
+            </div>
+            <textarea class="cl-feedback-bar-input" placeholder="Optional: e.g. ATS keywords, tone, conciseness…"></textarea>
+          </div>
+
+          <!-- Resume paper -->
+          <div class="resume-paper" id="resume-paper">
+
+          <div class="r-name"><span class="r-first-name">Alex</span> <span class="r-last-name">Johnson</span></div>
+          <div class="r-contact">
+            (555) 248-0931
+            <span class="r-sep">&middot;</span>
+            alex@email.com
+            <span class="r-sep">&middot;</span>
+            <a href="#">linkedin.com/in/alex-johnson</a>
+            <span class="r-sep">&middot;</span>
+            <a href="#">github.com/alexjohnson</a>
+          </div>
+
+          <div class="r-section">
+            <div class="r-heading">Experience</div>
+
+            <div class="r-entry">
+              <div class="r-entry-header">
+                <span class="r-entry-title">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp</span>
+                <span class="r-entry-date">Jan 2023 – Present</span>
+              </div>
+              <div class="r-bullets">
+                <div class="r-bullet">Redesigned the platform's caching layer, cutting P99 API latency by 42% and reducing database load by 60% during peak traffic periods.</div>
+                <div class="r-bullet-block">
+                  <div class="r-bullet">Led a cross-functional team of 5 engineers to deliver a new customer analytics dashboard, shipped on schedule across 3 sprint cycles.</div>
+                  <div class="cl-feedback-inline type-strengthen">
+                    <div class="cl-fb-header">
+                      <span class="feedback-type feedback-type-strengthen">Strengthen</span>
+                    </div>
+                    <div class="feedback-diff">
+                      <div class="feedback-diff-row feedback-diff-before">
+                        <span class="feedback-diff-label">Before</span>
+                        <span class="feedback-diff-text">Led a cross-functional team of 5 engineers to deliver a new customer analytics dashboard, shipped on schedule across 3 sprint cycles.</span>
+                      </div>
+                      <div class="feedback-diff-row feedback-diff-after">
+                        <span class="feedback-diff-label">After</span>
+                        <span class="feedback-diff-text">Led a cross-functional team of 5 engineers as technical lead, architecting and delivering a new customer analytics dashboard on schedule across 3 sprint cycles &mdash; adopted across 8 business units within 60 days of launch.</span>
+                      </div>
+                    </div>
+                    <div class="cl-fb-justification">The JD emphasizes leading cross-functional initiatives. Quantifying your scope clarifies that you were the technical lead, not just a contributor.</div>
+                    <div class="cl-fb-actions">
+                      <button class="feedback-btn-accept">&#10003; Accept</button>
+                      <button class="feedback-btn-edit">Edit</button>
+                      <button class="feedback-btn-dismiss">Dismiss</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="r-bullet">Established on-call runbooks and automated alerting that reduced mean time to resolution by 35% over six months.</div>
+                <!-- Add suggestion: new Kubernetes bullet -->
+                <div class="cl-feedback-inline type-add" style="margin-top:8px">
+                  <div class="cl-fb-header">
+                    <span class="feedback-type feedback-type-add">Add</span>
+                    <span style="font-size:11px; color:var(--text-secondary)">New bullet</span>
+                  </div>
+                  <div class="feedback-diff">
+                    <div class="feedback-diff-row feedback-diff-add">
+                      <span class="feedback-diff-label">New</span>
+                      <span class="feedback-diff-text">Orchestrated Kubernetes (EKS) cluster migrations for 3 production services, improving deployment reliability and reducing rollout time by 40%.</span>
+                    </div>
+                  </div>
+                  <div class="cl-fb-justification">The JD mentions Kubernetes three times. Skills-only mentions carry less ATS weight than role-specific bullets with concrete examples.</div>
+                  <div class="cl-fb-actions">
+                    <button class="feedback-btn-accept">&#10003; Accept</button>
+                    <button class="feedback-btn-edit">Edit</button>
+                    <button class="feedback-btn-dismiss">Dismiss</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="r-entry">
+              <div class="r-entry-header">
+                <span class="r-entry-title">Software Engineer II &nbsp;&middot;&nbsp; Wavelength Labs</span>
+                <span class="r-entry-date">Jun 2020 – Jan 2023</span>
+              </div>
+              <div class="r-bullets">
+                <div class="r-bullet">Built and maintained REST APIs serving 1.8M+ daily active users with 99.97% uptime over 2.5 years.</div>
+                <div class="r-bullet-block">
+                  <div class="r-bullet">Migrated a monolithic Rails application to microservices, enabling independent deployments and reducing CI times by 55%.</div>
+                  <div class="cl-feedback-inline type-reframe">
+                    <div class="cl-fb-header">
+                      <span class="feedback-type feedback-type-reframe">Reframe</span>
+                    </div>
+                    <div class="feedback-diff">
+                      <div class="feedback-diff-row feedback-diff-before">
+                        <span class="feedback-diff-label">Before</span>
+                        <span class="feedback-diff-text">Migrated a monolithic Rails application to microservices, enabling independent deployments and reducing CI times by 55%.</span>
+                      </div>
+                      <div class="feedback-diff-row feedback-diff-after">
+                        <span class="feedback-diff-label">After</span>
+                        <span class="feedback-diff-text">Unblocked 4 product teams by migrating a monolithic Rails application to microservices, enabling independent deployments and cutting CI times by 55%.</span>
+                      </div>
+                    </div>
+                    <div class="cl-fb-justification">This role values impact over execution. Foregrounding the business result makes the bullet more compelling to reviewers assessing leadership scope.</div>
+                    <div class="cl-fb-actions">
+                      <button class="feedback-btn-accept">&#10003; Accept</button>
+                      <button class="feedback-btn-edit">Edit</button>
+                      <button class="feedback-btn-dismiss">Dismiss</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="r-bullet">Shipped a real-time notification system using WebSockets and Redis Pub/Sub, supporting 50k concurrent connections.</div>
+              </div>
+            </div>
+
+            <div class="r-entry">
+              <div class="r-entry-header">
+                <span class="r-entry-title">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark</span>
+                <span class="r-entry-date">May 2019 – Aug 2019</span>
+              </div>
+              <div class="r-bullets">
+                <div class="r-bullet">Built a pipeline to ingest and normalize streaming event data from 12 external sources, reducing manual QA effort by 80%.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="r-section">
+            <div class="r-heading">Education</div>
+            <div class="r-edu-row">
+              <strong>Bachelor of Science in Computer Science &nbsp;&middot;&nbsp; State University</strong>
+              <span class="r-edu-date">May 2020</span>
+            </div>
+          </div>
+
+          <div class="r-section">
+            <div class="r-heading">Skills</div>
+            <div class="r-skills">
+              <div class="r-skills-row"><span class="r-skills-cat">Languages:</span> TypeScript (6 yrs), Python (5 yrs), SQL (6 yrs), Go (2 yrs), Rust (1 yr), Bash</div>
+              <div class="r-skills-row"><span class="r-skills-cat">Cloud / Infrastructure:</span> AWS (EC2, RDS, Lambda, S3), Docker, Kubernetes, Terraform, GitHub Actions, Datadog</div>
+              <div class="r-skill-block">
+                <div class="r-skills-row"><span class="r-skills-cat">Web / App:</span> React, Redux, Node.js, REST APIs, GraphQL, WebSockets, PostgreSQL, Redis</div>
+                <div class="cl-feedback-inline type-remove">
+                  <div class="cl-fb-header">
+                    <span class="feedback-type feedback-type-remove">Remove</span>
+                  </div>
+                  <div class="feedback-diff">
+                    <div class="feedback-diff-row feedback-diff-before">
+                      <span class="feedback-diff-label">Before</span>
+                      <span class="feedback-diff-text">Web / App: React, Redux, Node.js, REST APIs, GraphQL, WebSockets, PostgreSQL, Redis, <s>MongoDB</s></span>
+                    </div>
+                    <div class="feedback-diff-row feedback-diff-after">
+                      <span class="feedback-diff-label">After</span>
+                      <span class="feedback-diff-text">Web / App: React, Redux, Node.js, REST APIs, GraphQL, WebSockets, PostgreSQL, Redis</span>
+                    </div>
+                  </div>
+                  <div class="cl-fb-justification">The JD calls out PostgreSQL and Redis. Listing unrelated technologies can suggest a stack mismatch and wastes signal space.</div>
+                  <div class="cl-fb-actions">
+                    <button class="feedback-btn-accept">&#10003; Accept</button>
+                    <button class="feedback-btn-edit">Edit</button>
+                    <button class="feedback-btn-dismiss">Dismiss</button>
+                  </div>
+                </div>
+              </div>
+              <div class="r-skills-row"><span class="r-skills-cat">Methodologies:</span> Agile, CI/CD, DevOps, Microservices, On-call, TDD, System Design</div>
+            </div>
+          </div>
+
+        </div><!-- /resume-paper -->
+
+        </div><!-- /resume-area -->
+
+        <!-- Cover Letter area (bar + paper) -->
+        <div id="cl-area" style="display:none; flex-direction:column; align-items:center; gap:12px; flex:1; min-width:0">
+
+          <!-- Feedback prompt bar -->
+          <div class="cl-feedback-bar">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="cl-feedback-bar-label">AI Feedback</span>
+              <div style="flex:1"></div>
+              <button class="btn-primary" style="font-size:12px; padding:5px 14px; white-space:nowrap;">&#10024; Get Feedback</button>
+            </div>
+            <textarea class="cl-feedback-bar-input" placeholder="Optional: e.g. focus on opening hook, check tone, ATS alignment…"></textarea>
+          </div>
+
+        <div class="resume-paper" id="cl-paper">
+
+          <div class="r-name"><span class="r-first-name">Alex</span> <span class="r-last-name">Johnson</span></div>
+          <div class="r-contact">
+            (555) 248-0931
+            <span class="r-sep">&middot;</span>
+            alex@email.com
+            <span class="r-sep">&middot;</span>
+            <a href="#">linkedin.com/in/alex-johnson</a>
+            <span class="r-sep">&middot;</span>
+            <a href="#">github.com/alexjohnson</a>
+          </div>
+          <hr class="cl-header-rule">
+
+          <div class="cl-date">February 28, 2026</div>
+
+          <div class="cl-salutation">Dear Hiring Manager,</div>
+
+          <!-- Paragraph 1 — shown in editing state to demonstrate the edit UX -->
+          <div class="cl-para-block">
+            <p class="cl-paragraph" style="display:none">I'm excited to apply for the Senior Software Engineer position on Acme Corp's core platform team. With over six years of experience building and scaling distributed systems — most recently cutting P99 API latency by 42% through a caching layer redesign at my current role — I believe I can make a meaningful contribution to the infrastructure powering your real-time data pipeline.</p>
+            <!-- Edit state (shown by default on para 1 to demonstrate feature) -->
+            <div class="cl-para-edit">
+              <textarea class="cl-para-textarea">I'm excited to apply for the Senior Software Engineer position on Acme Corp's core platform team. With over six years of experience building and scaling distributed systems — most recently cutting P99 API latency by 42% through a caching layer redesign at my current role — I believe I can make a meaningful contribution to the infrastructure powering your real-time data pipeline.</textarea>
+              <div class="cl-para-save-row">
+                <button class="jd-cancel-btn">Cancel</button>
+                <button class="jd-save-btn">Save</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paragraph 2 — normal state with inline feedback -->
+          <div class="cl-para-block">
+            <div class="cl-para-text-wrap">
+              <p class="cl-paragraph">In my time at Wavelength Labs, I led the migration of a monolithic Rails application to a microservices architecture spanning six services, enabling independent deployments for four product teams and reducing CI build times by 55%. I also shipped a real-time notification system using WebSockets and Redis Pub/Sub that handled 50k concurrent connections at peak. These projects deepened my appreciation for the tradeoffs involved in building reliable, high-throughput systems — exactly the kind of work your platform team focuses on.</p>
+              <div class="cl-para-toolbar"><button>&#9998; Edit</button><button>&#10024; Revise with AI</button></div>
+            </div>
+            <!-- Inline feedback card -->
+            <div class="cl-feedback-inline type-add">
+              <div class="cl-fb-header">
+                <span class="feedback-type feedback-type-add">Add</span>
+                <span style="font-size:11px; color:var(--text-secondary)">Paragraph 2 &mdash; Body</span>
+              </div>
+              <div class="feedback-diff">
+                <div class="feedback-diff-row feedback-diff-before">
+                  <span class="feedback-diff-label">Before</span>
+                  <span class="feedback-diff-text">These projects deepened my appreciation for the tradeoffs involved in building reliable, high-throughput systems &mdash; exactly the kind of work your platform team focuses on.</span>
+                </div>
+                <div class="feedback-diff-row feedback-diff-after">
+                  <span class="feedback-diff-label">After</span>
+                  <span class="feedback-diff-text">These projects deepened my appreciation for the tradeoffs involved in building reliable, high-throughput systems &mdash; including orchestrating containerized workloads with Kubernetes (EKS) in production &mdash; exactly the kind of work your platform team focuses on.</span>
+                </div>
+              </div>
+              <div class="cl-fb-justification">The body paragraph is the best place to connect your technical depth to the role's requirements. A specific Kubernetes example (e.g., running workloads on EKS) would address the JD's most prominent technical requirement head-on.</div>
+              <div class="cl-fb-actions">
+                <button class="feedback-btn-accept">&#10003; Accept</button>
+                <button class="feedback-btn-edit">Edit</button>
+                <button class="feedback-btn-dismiss">Dismiss</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paragraph 3 — normal state with inline feedback -->
+          <div class="cl-para-block" style="margin-bottom:0">
+            <div class="cl-para-text-wrap">
+              <p class="cl-paragraph">What draws me to Acme Corp specifically is the emphasis on on-call ownership and technical leadership. I thrive in environments where engineers are accountable end-to-end, and I've built that culture on the teams I've been part of — establishing runbooks and automated alerting that reduced MTTR by 35%, and mentoring three junior engineers who were promoted within 18 months. I'd welcome the chance to bring that same focus to your team.</p>
+              <div class="cl-para-toolbar"><button>&#9998; Edit</button><button>&#10024; Revise with AI</button></div>
+            </div>
+            <!-- Inline feedback card -->
+            <div class="cl-feedback-inline type-strengthen">
+              <div class="cl-fb-header">
+                <span class="feedback-type feedback-type-strengthen">Strengthen</span>
+                <span style="font-size:11px; color:var(--text-secondary)">Paragraph 3 &mdash; Closing</span>
+              </div>
+              <div class="feedback-diff">
+                <div class="feedback-diff-row feedback-diff-before">
+                  <span class="feedback-diff-label">Before</span>
+                  <span class="feedback-diff-text">What draws me to Acme Corp specifically is the emphasis on on-call ownership and technical leadership. I thrive in environments where engineers are accountable end-to-end&hellip;</span>
+                </div>
+                <div class="feedback-diff-row feedback-diff-after">
+                  <span class="feedback-diff-label">After</span>
+                  <span class="feedback-diff-text">Acme Corp&rsquo;s emphasis on on-call ownership and end-to-end accountability is what draws me here &mdash; it&rsquo;s the kind of engineering culture I&rsquo;ve actively worked to build. I&rsquo;ve established runbooks and automated alerting that reduced MTTR by 35%&hellip;</span>
+                </div>
+              </div>
+              <div class="cl-fb-justification">Closing paragraphs land better when genuine interest in the company is foregrounded. Readers respond more warmly to applicants who articulate why this role, not just why they're qualified. Move the Acme-specific hook to the first sentence.</div>
+              <div class="cl-fb-actions">
+                <button class="feedback-btn-accept">&#10003; Accept</button>
+                <button class="feedback-btn-edit">Edit</button>
+                <button class="feedback-btn-dismiss">Dismiss</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cl-signoff">Sincerely,</div>
+          <div class="cl-signature-name">Alex Johnson</div>
+
+        </div><!-- /cl-paper -->
+        </div><!-- /cl-area -->
+
+        <!-- ── Match Report full view (Match Report tab) ──────────────────── -->
+        <div class="mr-full" id="match-report-area" style="display:none">
+
+          <div class="mr-full-header">
+            <div class="mr-full-rating-row">
+              <span class="match-rating match-rating-strong" style="font-size:17px; padding:7px 22px;">Strong</span>
+              <div class="mr-full-meta">
+                <div class="mr-full-meta-stat"><strong>14 / 18</strong> keywords aligned</div>
+                <div class="mr-full-meta-stat"><strong>3</strong> strengths &nbsp;·&nbsp; <strong>2</strong> gaps</div>
+              </div>
+            </div>
+            <div class="mr-full-note">No experience was misrepresented or hallucinated.</div>
+          </div>
+
+          <div class="mr-full-columns">
+
+            <div class="mr-full-col">
+              <div class="mr-col-heading mr-col-heading-good">Strengths</div>
+              <div class="mr-full-item"><span class="ico-good">&#10003;</span> Distributed systems experience well-represented — caching, API scale, microservices migration all directly address the platform engineering scope.</div>
+              <div class="mr-full-item"><span class="ico-good">&#10003;</span> On-call and SRE alignment strong — runbook authorship and MTTR improvement are compelling signals for a role that owns incident response.</div>
+              <div class="mr-full-item"><span class="ico-good">&#10003;</span> TypeScript and React correctly prioritized — both appear in the JD requirements and are reflected prominently in experience bullets.</div>
+            </div>
+
+            <div class="mr-full-col">
+              <div class="mr-col-heading mr-col-heading-warn">Gaps</div>
+              <div class="mr-full-item"><span class="ico-warn">&#9888;</span> Kubernetes depth understated — the job description emphasizes Kubernetes heavily in both the requirements and responsibilities sections, but it only appears in your skills list without any supporting experience bullets.</div>
+              <div class="mr-full-item"><span class="ico-warn">&#9888;</span> Staff-level scope signals missing — the role expects initiative ownership and cross-team technical leadership; current bullets describe execution but don't clearly signal that level of scope.</div>
+            </div>
+
+          </div><!-- /mr-full-columns -->
+
+        </div><!-- /match-report-area -->
+
+        <!-- ── Description full view (Description tab) ─────────────────────── -->
+        <div class="desc-view" id="description-area" style="display:none">
+
+          <div class="desc-paper">
+
+            <div class="desc-header">
+              <div class="desc-header-text">
+                <div class="desc-role">Senior Software Engineer</div>
+                <div class="desc-company">Acme Corp</div>
+              </div>
+              <button class="jd-edit-btn" id="desc-edit-btn" onclick="toggleJdEdit()">Edit</button>
+            </div>
+
+            <!-- Read state -->
+            <div id="jd-view" class="desc-body">
+              We're looking for a <strong>Senior Software Engineer</strong> to join our core platform team. You'll own and evolve the infrastructure powering our real-time data pipeline, working across the full stack from system design to production operations.<br><br>
+              <strong>What you'll do:</strong><br>
+              &mdash; Design and build distributed systems at scale<br>
+              &mdash; Lead initiatives across multiple engineering teams<br>
+              &mdash; Own reliability, on-call, and incident response for core services<br>
+              &mdash; Mentor junior engineers and drive technical direction<br><br>
+              <strong>What we're looking for:</strong><br>
+              &mdash; 5+ years of backend or full-stack engineering<br>
+              &mdash; Deep knowledge of Kubernetes, Docker, and AWS<br>
+              &mdash; Experience with TypeScript, Go, or Rust<br>
+              &mdash; Strong communication and technical leadership<br><br>
+              <strong>About the team:</strong><br>
+              &mdash; Small team (6 engineers) with high ownership<br>
+              &mdash; On-call rotation, 1 week per quarter<br>
+              &mdash; Fully remote, async-first culture
+            </div>
+
+            <!-- Edit state (hidden initially) -->
+            <div id="jd-edit" style="display:none">
+              <textarea class="jd-textarea" style="min-height:320px">We're looking for a Senior Software Engineer to join our core platform team. You'll own and evolve the infrastructure powering our real-time data pipeline, working across the full stack from system design to production operations.
+
+What you'll do:
+— Design and build distributed systems at scale
+— Lead initiatives across multiple engineering teams
+— Own reliability, on-call, and incident response for core services
+— Mentor junior engineers and drive technical direction
+
+What we're looking for:
+— 5+ years of backend or full-stack engineering
+— Deep knowledge of Kubernetes, Docker, and AWS
+— Experience with TypeScript, Go, or Rust
+— Strong communication and technical leadership
+
+About the team:
+— Small team (6 engineers) with high ownership
+— On-call rotation, 1 week per quarter
+— Fully remote, async-first culture</textarea>
+              <div class="jd-edit-actions">
+                <button class="jd-save-btn" onclick="saveJd()">Save</button>
+                <button class="jd-cancel-btn" onclick="cancelJd()">Cancel</button>
+              </div>
+              <div class="jd-edit-note">Saving won't regenerate documents automatically.</div>
+            </div>
+
+            <!-- Post-save notice (hidden initially) -->
+            <div id="jd-saved-notice" class="jd-saved-notice" style="display:none">
+              &#10003; Job description updated.
+              <button class="jd-regen-link">Regenerate now</button>
+            </div>
+
+          </div><!-- /desc-paper -->
+
+        </div><!-- /description-area -->
+
+
+      </div><!-- /doc-area -->
+    </div><!-- /view-session -->
+
+    <!-- ── Master CV View ──────────────────────────────────────────────────── -->
+    <div class="view" id="view-mastercv">
+
+      <div class="mcv-topbar">
+        <div class="mcv-topbar-title">
+          <h2>Master CV</h2>
+          <p>Internal only &mdash; comprehensive source of truth for all resume generation</p>
+        </div>
+        <button class="btn-outline">Import from file</button>
+        <button class="btn-outline" style="border-color:#7c4dff; color:#7c4dff;" title="Rebuild or update Master CV from all resume data in the database">&#10024; Regenerate</button>
+        <button class="btn-primary">+ Add Experience</button>
+      </div>
+
+      <div class="mcv-area">
+
+        <!-- Pending update banner (finalized resume) -->
+        <div class="mcv-banner">
+          <span class="mcv-banner-icon">&#9889;</span>
+          <span class="mcv-banner-text">
+            <strong>2 new bullets</strong> were added from your finalized <em>Acme Corp &mdash; Senior Software Engineer</em> resume.
+          </span>
+          <button class="mcv-banner-action">Review</button>
+        </div>
+
+        <!-- Regeneration suggestions (shown after clicking Regenerate) -->
+        <div class="regen-section">
+          <div class="regen-header">
+            <span class="regen-header-icon">&#10024;</span>
+            <div class="regen-header-text">
+              <div class="regen-header-title">Regeneration suggestions</div>
+              <div class="regen-header-sub">AI found 12 additions and expansions across 4 uploaded resumes and 3 finalized sessions</div>
+            </div>
+            <span class="regen-progress">5 of 12 remaining</span>
+            <button class="regen-dismiss-all">Dismiss all</button>
+          </div>
+
+          <!-- Suggestion 1: missing bullet -->
+          <div class="regen-item">
+            <div class="regen-item-type regen-type-add">+ Missing bullet</div>
+            <div class="regen-item-context">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp &nbsp;&mdash;&nbsp; found in uploaded resume (Feb 2024) but not in Master CV</div>
+            <div class="regen-diff">
+              <div class="regen-diff-label">Add</div>
+              <div class="regen-diff-only">Reduced infrastructure spend by $42k/year by rightsizing EC2 instances and migrating cold-storage workloads to S3 Glacier, with no impact to latency SLAs.</div>
+            </div>
+            <div class="regen-item-actions">
+              <button class="regen-btn-accept">&#10003; Accept</button>
+              <button class="regen-btn-edit">Edit</button>
+              <button class="regen-btn-dismiss">Dismiss</button>
+            </div>
+          </div>
+
+          <!-- Suggestion 2: expand existing bullet -->
+          <div class="regen-item">
+            <div class="regen-item-type regen-type-expand">&#8599; Expand existing bullet</div>
+            <div class="regen-item-context">Software Engineer II &nbsp;&middot;&nbsp; Wavelength Labs &nbsp;&mdash;&nbsp; your 2023 resume has more detail on this</div>
+            <div class="regen-diff">
+              <div class="regen-diff-label">Current</div>
+              <div class="regen-diff-old">Migrated a monolithic Rails application to a microservices architecture, enabling independent deployments and reducing CI times by 55%.</div>
+              <div class="regen-diff-label" style="margin-top:8px">Suggested expansion</div>
+              <div class="regen-diff-new">Migrated a monolithic Rails application to a microservices architecture across 6 services, enabling independent deployments for 4 product teams and reducing CI times by 55%; coordinated zero-downtime cutover using feature flags and dual-write strategy over 3 months.</div>
+            </div>
+            <div class="regen-item-actions">
+              <button class="regen-btn-accept">&#10003; Accept</button>
+              <button class="regen-btn-edit">Edit</button>
+              <button class="regen-btn-dismiss">Dismiss</button>
+            </div>
+          </div>
+
+          <!-- Suggestion 3: missing skill -->
+          <div class="regen-item">
+            <div class="regen-item-type regen-type-skill">&#9670; Missing skill</div>
+            <div class="regen-item-context">&#8220;Kafka&#8221; appears in 3 different resumes and 2 finalized sessions but is not listed in your skills section</div>
+            <div class="regen-diff">
+              <div class="regen-diff-label">Add to Data / Infrastructure</div>
+              <div class="regen-diff-only">Kafka</div>
+            </div>
+            <div class="regen-item-actions">
+              <button class="regen-btn-accept">&#10003; Accept</button>
+              <button class="regen-btn-dismiss">Dismiss</button>
+            </div>
+          </div>
+
+          <!-- Suggestion 4: missing bullet (manual note) -->
+          <div class="regen-item">
+            <div class="regen-item-type regen-type-add">+ Missing bullet</div>
+            <div class="regen-item-context">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark &nbsp;&mdash;&nbsp; found in LinkedIn export but not in any resume or Master CV</div>
+            <div class="regen-diff">
+              <div class="regen-diff-label">Add</div>
+              <div class="regen-diff-only">Presented findings from the data normalization pipeline to 3 senior engineers and 1 director in a mid-internship review; demo led to the project being continued post-internship by a full-time engineer.</div>
+            </div>
+            <div class="regen-item-actions">
+              <button class="regen-btn-accept">&#10003; Accept</button>
+              <button class="regen-btn-edit">Edit</button>
+              <button class="regen-btn-dismiss">Dismiss</button>
+            </div>
+          </div>
+
+          <!-- Suggestion 5: expand skill -->
+          <div class="regen-item">
+            <div class="regen-item-type regen-type-expand">&#8599; Expand skill entry</div>
+            <div class="regen-item-context">AWS is listed without specifics; multiple resumes enumerate specific services</div>
+            <div class="regen-diff">
+              <div class="regen-diff-label">Current</div>
+              <div class="regen-diff-old">AWS</div>
+              <div class="regen-diff-label" style="margin-top:8px">Suggested expansion</div>
+              <div class="regen-diff-new">AWS (EC2, RDS, Aurora, S3, Lambda, EKS, CloudFront, IAM, CloudWatch)</div>
+            </div>
+            <div class="regen-item-actions">
+              <button class="regen-btn-accept">&#10003; Accept</button>
+              <button class="regen-btn-edit">Edit</button>
+              <button class="regen-btn-dismiss">Dismiss</button>
+            </div>
+          </div>
+
+        </div><!-- /regen-section -->
+
+        <!-- Experience section -->
+        <div class="mcv-section">
+          <div class="mcv-section-header">
+            <span class="mcv-section-title">Experience</span>
+            <hr class="mcv-section-rule">
+            <button class="mcv-add-entry-btn">+ Add role</button>
+          </div>
+
+          <!-- Entry 1: Acme Corp -->
+          <div class="mcv-entry">
+            <div class="mcv-entry-header">
+              <div class="mcv-entry-title-block">
+                <div class="mcv-entry-title">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp</div>
+                <div class="mcv-entry-subtitle">Jan 2023 – Present</div>
+              </div>
+              <span class="mcv-usage-chip">Used in 2 resumes</span>
+              <div class="mcv-entry-actions">
+                <button class="mcv-icon-btn" title="Edit entry">&#9998;</button>
+                <button class="mcv-icon-btn" title="Delete entry">&#215;</button>
+              </div>
+            </div>
+
+            <div class="mcv-bullets">
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Redesigned the platform's caching architecture, reducing P99 API latency by 42% and cutting database load by 60% during peak traffic.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag ingested">&#8593; Imported from uploaded resume</span>
+                    <span class="mcv-used-in">Used in: Acme Corp, Google</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn" title="Edit">&#9998;</button>
+                  <button class="mcv-bullet-action-btn" title="Delete">&#215;</button>
+                </div>
+              </div>
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Led a cross-functional team of 5 engineers to deliver a new customer analytics dashboard, shipped on schedule across 3 sprint cycles.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag finalized">&#8593; Added from finalized resume &mdash; Acme Corp (Feb 27)</span>
+                    <span class="mcv-used-in">Used in: Acme Corp</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn" title="Edit">&#9998;</button>
+                  <button class="mcv-bullet-action-btn" title="Delete">&#215;</button>
+                </div>
+              </div>
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Established on-call runbooks and automated alerting that reduced mean time to resolution by 35% over six months.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag ingested">&#8593; Imported from uploaded resume</span>
+                    <span class="mcv-used-in">Used in: Acme Corp</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn" title="Edit">&#9998;</button>
+                  <button class="mcv-bullet-action-btn" title="Delete">&#215;</button>
+                </div>
+              </div>
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Mentored 3 junior engineers through weekly 1:1s and code reviews; 2 were promoted to mid-level within 18 months.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag manual">&#9998; Added manually</span>
+                    <span class="mcv-used-in">Not yet used in any resume</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn" title="Edit">&#9998;</button>
+                  <button class="mcv-bullet-action-btn" title="Delete">&#215;</button>
+                </div>
+              </div>
+
+            </div>
+            <button class="mcv-add-bullet-btn"><span>+</span> Add bullet</button>
+          </div>
+
+          <!-- Entry 2: Wavelength Labs -->
+          <div class="mcv-entry">
+            <div class="mcv-entry-header">
+              <div class="mcv-entry-title-block">
+                <div class="mcv-entry-title">Software Engineer II &nbsp;&middot;&nbsp; Wavelength Labs</div>
+                <div class="mcv-entry-subtitle">Jun 2020 – Jan 2023</div>
+              </div>
+              <span class="mcv-usage-chip">Used in 3 resumes</span>
+              <div class="mcv-entry-actions">
+                <button class="mcv-icon-btn" title="Edit entry">&#9998;</button>
+                <button class="mcv-icon-btn" title="Delete entry">&#215;</button>
+              </div>
+            </div>
+
+            <div class="mcv-bullets">
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Built and maintained REST APIs serving 1.8M+ daily active users with 99.97% uptime over 2.5 years.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag ingested">&#8593; Imported from uploaded resume</span>
+                    <span class="mcv-used-in">Used in: Acme Corp, Google, Stripe</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn">&#9998;</button>
+                  <button class="mcv-bullet-action-btn">&#215;</button>
+                </div>
+              </div>
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Migrated a monolithic Rails application to a microservices architecture, enabling independent deployments and reducing CI times by 55%.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag ingested">&#8593; Imported from uploaded resume</span>
+                    <span class="mcv-used-in">Used in: Acme Corp, Stripe</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn">&#9998;</button>
+                  <button class="mcv-bullet-action-btn">&#215;</button>
+                </div>
+              </div>
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Shipped a real-time notification system using WebSockets and Redis Pub/Sub, supporting 50k concurrent connections.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag ingested">&#8593; Imported from uploaded resume</span>
+                    <span class="mcv-used-in">Used in: Acme Corp</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn">&#9998;</button>
+                  <button class="mcv-bullet-action-btn">&#215;</button>
+                </div>
+              </div>
+
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Drove adoption of trunk-based development and feature flags across the team, reducing merge conflicts and enabling continuous delivery.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag manual">&#9998; Added manually</span>
+                    <span class="mcv-used-in">Not yet used in any resume</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn">&#9998;</button>
+                  <button class="mcv-bullet-action-btn">&#215;</button>
+                </div>
+              </div>
+
+            </div>
+            <button class="mcv-add-bullet-btn"><span>+</span> Add bullet</button>
+          </div>
+
+          <!-- Entry 3: DataSpark (collapsed-ish) -->
+          <div class="mcv-entry">
+            <div class="mcv-entry-header">
+              <div class="mcv-entry-title-block">
+                <div class="mcv-entry-title">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark</div>
+                <div class="mcv-entry-subtitle">May 2019 – Aug 2019</div>
+              </div>
+              <span class="mcv-usage-chip">Used in 1 resume</span>
+              <div class="mcv-entry-actions">
+                <button class="mcv-icon-btn">&#9998;</button>
+                <button class="mcv-icon-btn">&#215;</button>
+              </div>
+            </div>
+            <div class="mcv-bullets">
+              <div class="mcv-bullet-row">
+                <span class="mcv-bullet-dot">&#8226;</span>
+                <div class="mcv-bullet-content">
+                  <div class="mcv-bullet-text">Built a pipeline to ingest and normalize streaming event data from 12 external sources, reducing manual QA effort by 80%.</div>
+                  <div class="mcv-bullet-meta">
+                    <span class="mcv-source-tag ingested">&#8593; Imported from uploaded resume</span>
+                    <span class="mcv-used-in">Used in: Acme Corp</span>
+                  </div>
+                </div>
+                <div class="mcv-bullet-actions">
+                  <button class="mcv-bullet-action-btn">&#9998;</button>
+                  <button class="mcv-bullet-action-btn">&#215;</button>
+                </div>
+              </div>
+            </div>
+            <button class="mcv-add-bullet-btn"><span>+</span> Add bullet</button>
+          </div>
+
+        </div><!-- /experience section -->
+
+        <!-- Education section -->
+        <div class="mcv-section">
+          <div class="mcv-section-header">
+            <span class="mcv-section-title">Education</span>
+            <hr class="mcv-section-rule">
+            <button class="mcv-add-entry-btn">+ Add</button>
+          </div>
+
+          <div class="mcv-edu-row">
+            <div class="mcv-edu-text">
+              <strong>Bachelor of Science in Computer Science</strong> &nbsp;&middot;&nbsp; State University
+            </div>
+            <span class="mcv-edu-date">May 2020</span>
+            <div class="mcv-entry-actions" style="margin-left:8px">
+              <button class="mcv-icon-btn">&#9998;</button>
+              <button class="mcv-icon-btn">&#215;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills section -->
+        <div class="mcv-section">
+          <div class="mcv-section-header">
+            <span class="mcv-section-title">Skills</span>
+            <hr class="mcv-section-rule">
+            <button class="mcv-add-entry-btn">+ Add category</button>
+          </div>
+
+          <div class="mcv-skills-card">
+            <div class="mcv-skill-row">
+              <span class="mcv-skill-cat">Languages</span>
+              <span class="mcv-skill-items">TypeScript (6 yrs), Python (5 yrs), SQL (6 yrs), Go (2 yrs), Rust (1 yr), Bash, Java</span>
+            </div>
+            <div class="mcv-skill-row">
+              <span class="mcv-skill-cat">Cloud / Infrastructure</span>
+              <span class="mcv-skill-items">AWS (EC2, RDS, Lambda, S3, EKS), Docker, Kubernetes, Terraform, GitHub Actions, Datadog, PagerDuty</span>
+            </div>
+            <div class="mcv-skill-row">
+              <span class="mcv-skill-cat">Web / App</span>
+              <span class="mcv-skill-items">React, Redux, Node.js, REST APIs, GraphQL, WebSockets, gRPC, PostgreSQL, Redis, MongoDB</span>
+            </div>
+            <div class="mcv-skill-row">
+              <span class="mcv-skill-cat">Data / ML</span>
+              <span class="mcv-skill-items">Spark, Kafka, dbt, Airflow, Elasticsearch, Pandas</span>
+            </div>
+            <div class="mcv-skill-row">
+              <span class="mcv-skill-cat">Methodologies</span>
+              <span class="mcv-skill-items">Agile, CI/CD, DevOps, Microservices, On-call, TDD, System Design, Technical Leadership</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /mcv-area -->
+    </div><!-- /view-mastercv -->
+
+    <!-- ── Application Master List View ────────────────────────────────────── -->
+    <div class="view" id="view-applist">
+
+      <div class="applist-bar">
+        <h2>Application List</h2>
+        <span class="applist-count">8 applications</span>
+        <input class="applist-search" type="text" placeholder="Search company, role, notes…">
+        <div class="filter-chips">
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">Not Applied</button>
+          <button class="filter-chip">Submitted</button>
+          <button class="filter-chip">Interviewing</button>
+          <button class="filter-chip">Offer</button>
+        </div>
+      </div>
+
+      <div class="applist-area">
+        <table class="applist-table">
+          <thead>
+            <tr>
+              <th>Company <span class="sort-arrow on">&#9650;</span></th>
+              <th>Role <span class="sort-arrow">&#8597;</span></th>
+              <th>Summary <span class="sort-arrow">&#8597;</span></th>
+              <th>Date <span class="sort-arrow">&#8597;</span></th>
+              <th>Resume</th>
+              <th>Cover Letter</th>
+              <th>App Status <span class="sort-arrow">&#8597;</span></th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Row 1: Acme Corp — active session, not applied -->
+            <tr>
+              <td>
+                <div class="al-company">Acme Corp</div>
+              </td>
+              <td><span class="al-role">Senior Software Engineer</span></td>
+              <td><span class="al-summary">Backend platform, distributed systems focus</span></td>
+              <td><span class="al-date">Feb 27</span></td>
+              <td><span class="schip schip-draft">Draft</span></td>
+              <td><span class="schip schip-none">None</span></td>
+              <td><span class="schip schip-not-applied schip-editable" title="Click to update">Not Applied</span></td>
+              <td><span class="al-notes empty">Add a note…</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 2: Google — draft, not applied -->
+            <tr>
+              <td>
+                <div class="al-company">Google</div>
+              </td>
+              <td><span class="al-role">Software Engineer III</span></td>
+              <td><span class="al-summary">Core infrastructure, L5-equivalent scope</span></td>
+              <td><span class="al-date">Feb 25</span></td>
+              <td><span class="schip schip-draft">Draft</span></td>
+              <td><span class="schip schip-draft">Draft</span></td>
+              <td><span class="schip schip-not-applied schip-editable">Not Applied</span></td>
+              <td><span class="al-notes">Following up Monday</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 3: Stripe — finalized, submitted -->
+            <tr>
+              <td>
+                <div class="al-company">Stripe</div>
+              </td>
+              <td><span class="al-role">Backend Engineer</span></td>
+              <td><span class="al-summary">Payments API, reliability and scale</span></td>
+              <td><span class="al-date">Feb 20</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-submitted schip-editable">Submitted</span></td>
+              <td><span class="al-notes">Applied via referral from John</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 4: Linear — finalized, interviewing -->
+            <tr>
+              <td>
+                <div class="al-company">Linear</div>
+              </td>
+              <td><span class="al-role">Staff Engineer</span></td>
+              <td><span class="al-summary">Product engineering, growth-stage scope</span></td>
+              <td><span class="al-date">Feb 17</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-none">None</span></td>
+              <td><span class="schip schip-interviewing schip-editable">Interviewing</span></td>
+              <td><span class="al-notes">Round 2 scheduled March 5</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 5: Vercel — offer received -->
+            <tr>
+              <td>
+                <div class="al-company">Vercel</div>
+              </td>
+              <td><span class="al-role">Senior Engineer</span></td>
+              <td><span class="al-summary">Edge runtime and performance team</span></td>
+              <td><span class="al-date">Feb 14</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-offer schip-editable">Offer Received</span></td>
+              <td><span class="al-notes">$220k base — decide by March 1</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 6: Notion — rejected -->
+            <tr>
+              <td>
+                <div class="al-company">Notion</div>
+              </td>
+              <td><span class="al-role">Software Engineer</span></td>
+              <td><span class="al-summary">Mobile apps and offline sync</span></td>
+              <td><span class="al-date">Feb 10</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-draft">Draft</span></td>
+              <td><span class="schip schip-rejected schip-editable">Rejected</span></td>
+              <td><span class="al-notes">No feedback given</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 7: Figma — withdrawn -->
+            <tr>
+              <td>
+                <div class="al-company">Figma</div>
+              </td>
+              <td><span class="al-role">Staff Engineer</span></td>
+              <td><span class="al-summary">Design tools infrastructure</span></td>
+              <td><span class="al-date">Jan 28</span></td>
+              <td><span class="schip schip-final">Finalized</span></td>
+              <td><span class="schip schip-none">None</span></td>
+              <td><span class="schip schip-withdrawn schip-editable">Withdrawn</span></td>
+              <td><span class="al-notes">Accepted Vercel offer</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+            <!-- Row 8: Airbnb — paused draft -->
+            <tr>
+              <td>
+                <div class="al-company">Airbnb</div>
+              </td>
+              <td><span class="al-role">Senior Software Engineer</span></td>
+              <td><span class="al-summary">Platform reliability and observability</span></td>
+              <td><span class="al-date">Jan 15</span></td>
+              <td><span class="schip schip-draft">Draft</span></td>
+              <td><span class="schip schip-none">None</span></td>
+              <td><span class="schip schip-not-applied schip-editable">Not Applied</span></td>
+              <td><span class="al-notes">Paused — resume needs more work</span></td>
+              <td><button class="al-open-btn">Open</button></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /view-applist -->
+
+  </main>
+
+  <!-- ── Status Bar ──────────────────────────────────────────────────────────── -->
+  <div class="statusbar">
+    <span><span class="status-dot"></span>All changes saved</span>
+    <span class="status-sep">|</span>
+    <span id="status-context">Acme Corp &mdash; Senior Software Engineer</span>
+    <div class="statusbar-spacer"></div>
+    <span>Last saved: just now</span>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+  const NAV_IDS  = ['nav-applist', 'nav-mastercv', 'nav-session'];
+  const VIEW_MAP = {
+    applist:  { viewId: 'view-applist',  navId: 'nav-applist',  status: 'Application List' },
+    mastercv: { viewId: 'view-mastercv', navId: 'nav-mastercv', status: 'Master CV' },
+    session:  { viewId: 'view-session',  navId: 'nav-session',  status: 'Acme Corp \u2014 Senior Software Engineer' },
+  };
+
+  function switchTab(tab) {
+    const tabs = document.querySelectorAll('#view-session .tab');
+    const tabNames = ['resume', 'coverLetter', 'matchReport', 'description'];
+    tabs.forEach((t, i) => t.classList.toggle('active', tabNames[i] === tab));
+
+    const resumeArea   = document.getElementById('resume-area');
+    const clArea       = document.getElementById('cl-area');
+    const mrArea       = document.getElementById('match-report-area');
+    const descArea     = document.getElementById('description-area');
+
+    if (resumeArea)  resumeArea.style.display   = tab === 'resume' ? 'flex' : 'none';
+    if (clArea)      clArea.style.display       = tab === 'coverLetter' ? 'flex' : 'none';
+    if (mrArea)      mrArea.style.display       = tab === 'matchReport' ? 'flex' : 'none';
+    if (descArea)    descArea.style.display     = tab === 'description' ? 'flex' : 'none';
+  }
+
+  /* ── Job Description edit (Description tab) ─────────────────────────────── */
+
+  function toggleJdEdit() {
+    const view   = document.getElementById('jd-view');
+    const edit   = document.getElementById('jd-edit');
+    const notice = document.getElementById('jd-saved-notice');
+    const btn    = document.getElementById('desc-edit-btn');
+    view.style.display   = 'none';
+    edit.style.display   = 'block';
+    notice.style.display = 'none';
+    btn.textContent = 'Editing…';
+    btn.disabled = true;
+  }
+
+  function saveJd() {
+    const view     = document.getElementById('jd-view');
+    const edit     = document.getElementById('jd-edit');
+    const notice   = document.getElementById('jd-saved-notice');
+    const btn      = document.getElementById('desc-edit-btn');
+    const textarea = edit.querySelector('.jd-textarea');
+    view.innerHTML       = textarea.value.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+    view.style.display   = 'block';
+    edit.style.display   = 'none';
+    notice.style.display = 'flex';
+    btn.textContent = 'Edit';
+    btn.disabled = false;
+  }
+
+  function cancelJd() {
+    const view = document.getElementById('jd-view');
+    const edit = document.getElementById('jd-edit');
+    const btn  = document.getElementById('desc-edit-btn');
+    view.style.display = 'block';
+    edit.style.display = 'none';
+    btn.textContent = 'Edit';
+    btn.disabled = false;
+  }
+
+  function switchView(view) {
+    const cfg = VIEW_MAP[view];
+    if (!cfg) return;
+
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(cfg.viewId).classList.add('active');
+
+    NAV_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('active', id === cfg.navId);
+    });
+
+    document.getElementById('status-context').textContent = cfg.status;
+  }
+</script>
+</body>
+</html>
