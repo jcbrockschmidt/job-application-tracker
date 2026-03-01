@@ -6,8 +6,10 @@
 // TODO:
 //   - Application Status chip: click to cycle through statuses,
 //     call window.api.applications.update(applicationId, { applicationStatus })
-//   - Finalize button: call window.api.applications.update(applicationId, { resumeStatus: 'finalized' })
-//     and set resumeLastFinalizedAt. Update sessionsSlice.
+//   - Finalize button (Phase 3): call window.api.applications.update(applicationId, {
+//       resumeStatus: 'finalized',
+//       resumeLastFinalizedAt: new Date().toISOString()  ← marks doc as unincorporated in Master CV
+//     }); dispatch update to sessionsSlice; update the Draft/Final badge in the sidebar.
 //   - Export button: open an export options popover (PDF / DOCX), then call window.api.export.pdf/docx
 //   - Show error inline if export fails (disk full, permissions, path not found)
 
