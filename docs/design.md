@@ -39,22 +39,23 @@ The Master CV is the user's permanent, comprehensive record of all their profess
 - **Comprehensive by design:** Unlike a resume, the Master CV has no length limit. Every experience entry, every bullet, every skill belongs here. Nothing gets left out because it isn't relevant to a particular job.
 - **Manually editable:** Users can add, edit, and delete experience entries, bullets, education, and skills at any time. This is the primary place to record new experience as it happens.
 - **Populated by ingestion:** When an existing resume or CV is uploaded, its extracted, structured content is merged into the Master CV rather than stored as a separate artifact.
-- **Enriched by finalized resumes:** When a resume is finalized, any bullets it contains that are not already present in the Master CV are automatically added to it. This ensures that well-phrased, AI-refined accomplishments are captured and available for future use — without requiring any manual copy-paste. A **pending update banner** is shown at the top of the Master CV view after finalization, summarizing how many bullets were added and from which session. The user can click "Review" to inspect the additions before they are committed.
+- **Incorporation tracking:** The Master CV page tracks which finalized resumes and cover letters have not yet been incorporated into it. A document is unincorporated when it is newly finalized, or when it has been edited since it was last incorporated. An **unincorporated documents banner** on the Master CV page lists each pending document by name and offers a **Regenerate** button scoped to those documents. Cover letters are treated as source material the same way resumes are — the AI is instructed to surface accomplishments, experiences, and framings present in cover letters that are absent from or could enrich the Master CV. No changes are ever made to the Master CV automatically; all updates go through the standard review-and-approve flow. Once the user commits the results of a regeneration run, all documents included in that run are marked as incorporated.
 - **Usage tracking:** Each bullet in the Master CV shows which sessions it has been included in, making it easy to see what experience has been highlighted and where.
 - **Source attribution:** Each bullet records where it originated — entered manually, extracted from an uploaded document, or carried over from a specific finalized resume.
 - **AI usage display:** An info bar below the Master CV page header shows the model currently in use, the input and output token counts for the last AI operation (e.g. a Regenerate run), and an estimated cost. The rolling 24-hour estimated spend total is also shown alongside the configured limit; it turns orange when the limit is exceeded.
 
 #### Regeneration
 
-The Master CV can be regenerated at any time from all resume data available in the database — uploaded source documents and all finalized session resumes. The AI is explicitly instructed to be verbose: expand thin bullets, preserve every technology and responsibility mentioned anywhere, surface details that might be useful context for future generation even if they never appeared on a polished resume.
+The Master CV can be regenerated at any time from all source data available in the database — uploaded source documents, finalized session resumes, and finalized cover letters. The AI is explicitly instructed to be verbose: expand thin bullets, preserve every technology and responsibility mentioned anywhere, surface details that might be useful context for future generation even if they never appeared on a polished resume.
 
-**First generation (no existing Master CV):** All uploaded documents and finalized resumes are combined into a single, maximally comprehensive Master CV. Duplicate entries across sources are merged; conflicting phrasings of the same experience are preserved as separate bullets rather than collapsed. The synthesized result is presented in a reviewable list before being committed.
+**First generation (no existing Master CV):** All uploaded documents, finalized resumes, and finalized cover letters are combined into a single, maximally comprehensive Master CV. Duplicate entries across sources are merged; conflicting phrasings of the same experience are preserved as separate bullets rather than collapsed. The synthesized result is presented in a reviewable list before being committed.
 
-**Re-generation (existing Master CV):** The AI compares all resume data against the current Master CV and surfaces suggested additions and expansions — not a full replacement. Suggestions include:
-- Bullets present in source resumes but missing from the Master CV entirely
-- Existing bullets that could be expanded with specific numbers, technologies, or outcomes mentioned in other resume versions
-- Skills or technologies named across multiple resumes that are absent from the skills section
+**Re-generation (existing Master CV):** The AI compares all source data — resumes and cover letters — against the current Master CV and surfaces suggested additions and expansions — not a full replacement. Suggestions include:
+- Bullets present in source documents but missing from the Master CV entirely
+- Existing bullets that could be expanded with specific numbers, technologies, or outcomes mentioned in other versions
+- Skills or technologies named across multiple documents that are absent from the skills section
 - Roles, projects, or responsibilities referenced in passing that aren't represented as full entries
+- Accomplishments or framings from cover letters that reveal detail or perspective not captured in any resume bullet
 
 Each suggestion is presented individually for review. The user can accept, edit, or dismiss each one. No changes are committed to the Master CV until approved. Accepted suggestions are tagged with `"source": "regenerated"` and the timestamp of the regeneration run.
 
@@ -75,11 +76,9 @@ Each suggestion is presented individually for review. The user can accept, edit,
 
 ### Writing Profile
 
-The writing profile is a compact (~400–600 word) internal summary of the user's cover letter style — capturing tone, formality, sentence structure, how they open and close letters, and recurring phrasings. It is maintained automatically by Claude and stored at `writing-profile.json` in the app's data directory.
+The writing profile is a compact (~400–600 word) internal summary of the user's cover letter style — capturing tone, formality, sentence structure, how they open and close letters, and recurring phrasings. It is stored at `writing-profile.json` in the app's data directory and is never updated automatically — all updates require the user to explicitly trigger a regeneration.
 
-Updated automatically in two situations:
-- When a cover letter source document is uploaded, ingestion seeds or refines the profile from that document.
-- When a cover letter is finalized, the profile is updated with patterns from the newly finished letter.
+The writing profile tracks which cover letters (uploaded source documents and finalized session cover letters) have not yet been incorporated into it. A cover letter is unincorporated when it is newly finalized or uploaded, or when it has been edited since it was last incorporated. The writing profile is updated by pressing **Regenerate**, which re-derives the profile from all available cover letters. No AI calls are made without the user explicitly requesting one.
 
 Because Claude distills each letter's stylistic patterns into the profile rather than accumulating the full letter text, the profile stays a fixed, small size regardless of how many sessions the user has completed.
 
@@ -88,8 +87,8 @@ Because Claude distills each letter's stylistic patterns into the profile rather
 The writing profile is accessible as a top-level view from the sidebar. The view shows:
 - The profile text in a readable card, with an inline **Edit** button for manual corrections or overrides.
 - Metadata showing when the profile was last updated and how many cover letters it was derived from.
-- A **Regenerate** button that re-derives the profile from scratch using all available cover letters — finalized sessions and uploaded source documents — useful if the auto-maintained profile has drifted or the user wants a reset.
-- An **update banner** that appears when the profile was recently changed automatically (e.g. after a cover letter is finalized), noting which session triggered the update. The banner can be dismissed.
+- An **unincorporated cover letters banner** listing any cover letters not yet reflected in the profile, with a **Regenerate** button. Once the user triggers regeneration and the result is accepted, all included cover letters are marked as incorporated.
+- A **Regenerate** button (also available in the topbar) that re-derives the profile from scratch using all available cover letters — finalized sessions and uploaded source documents.
 
 **AI usage display:** An info bar below the view header shows the model, last-operation token counts, and estimated cost, consistent with the Master CV view.
 
@@ -430,7 +429,7 @@ The Master CV is stored as `master-cv.json` in the app's data directory. It exte
 `source` is one of:
 - `"manual"` — entered directly by the user in the Master CV editor
 - `"ingested"` — extracted from an uploaded resume or CV file
-- `"finalized"` — carried over automatically when a resume session was finalized
+- `"finalized"` — accepted from a finalized session resume or cover letter during an incorporation run
 - `"regenerated"` — accepted from an AI regeneration suggestion
 
 ---

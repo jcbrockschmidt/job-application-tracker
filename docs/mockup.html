@@ -33,7 +33,13 @@
     3. Master CV             (sidebar: 📄) — comprehensive, permanent experience record
                    Info bar below topbar: model name, last-op token counts, estimated cost,
                    rolling 24h spend vs. limit (turns orange when over limit)
+                   Unincorporated documents banner: lists finalized resumes and cover letters
+                   not yet incorporated, with a Regenerate button scoped to those documents.
+                   Status resets when a document is edited after its last incorporation.
                    Amber spending-limit banner in content area when 24h limit is exceeded
+    3b. Writing Profile      (sidebar: ✏) — cover letter style profile; never auto-updated.
+                   Unincorporated cover letters banner: lists cover letters not yet reflected
+                   in the profile, with a Regenerate button. Yellow sidebar badge shows count.
     4. Settings              (sidebar footer ⚙ or topbar ⚙) — API key, model, contact info,
                              daily spending limit, theme, backups
 -->
@@ -207,6 +213,18 @@
     .sidebar-nav-item.active .sidebar-nav-count {
       background: rgba(255,255,255,0.2);
       color: rgba(255,255,255,0.8);
+    }
+
+    /* Yellow pending-incorporation badge (Master CV, Writing Profile) */
+    .sidebar-nav-pending {
+      font-size: 10px;
+      font-weight: 700;
+      background: #f9a825;
+      color: #1a1a1a;
+      padding: 1px 6px;
+      border-radius: 8px;
+      min-width: 18px;
+      text-align: center;
     }
 
     .sidebar-divider {
@@ -1308,6 +1326,14 @@
     .regen-type-add    { color: #2e7d32; }
     .regen-type-expand { color: #1565c0; }
     .regen-type-skill  { color: #6a1b9a; }
+    .regen-type-coverletter { color: #ad1457; }
+
+    /* Unincorporated docs banner body */
+    .mcv-banner-body { flex: 1; }
+    .mcv-banner-title { font-weight: 600; margin-bottom: 6px; }
+    .mcv-banner-doc-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+    .mcv-banner-doc-list li { font-size: 12px; color: #6d4c41; display: flex; align-items: center; gap: 6px; }
+    .mcv-banner-doc-tag { font-size: 10px; font-weight: 700; background: #fff3e0; border: 1px solid #ffcc80; color: #bf360c; border-radius: 3px; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.03em; }
 
     .regen-item-context {
       font-size: 11.5px;
@@ -3418,11 +3444,12 @@
     <button class="sidebar-nav-item" id="nav-mastercv" onclick="switchView('mastercv')">
       <span class="sidebar-nav-icon">&#128196;</span>
       <span class="sidebar-nav-label">Master CV</span>
-      <span class="sidebar-nav-count">12 entries</span>
+      <span class="sidebar-nav-pending" title="2 documents not yet incorporated">2</span>
     </button>
     <button class="sidebar-nav-item" id="nav-writingprofile" onclick="switchView('writingprofile')">
       <span class="sidebar-nav-icon">&#9998;</span>
       <span class="sidebar-nav-label">Writing Profile</span>
+      <span class="sidebar-nav-pending" title="1 cover letter not yet incorporated">1</span>
     </button>
 
     <hr class="sidebar-divider">
@@ -4208,13 +4235,17 @@ About the team:
           <button class="mcv-banner-action" style="border-color:#ffb74d; color:#e65100;" onclick="switchView('settings')">Update limit</button>
         </div>
 
-        <!-- Pending update banner (finalized resume) -->
-        <div class="mcv-banner">
-          <span class="mcv-banner-icon">&#9889;</span>
-          <span class="mcv-banner-text">
-            <strong>2 new bullets</strong> were added from your finalized <em>Acme Corp &mdash; Senior Software Engineer</em> resume.
-          </span>
-          <button class="mcv-banner-action">Review</button>
+        <!-- Unincorporated documents banner -->
+        <div class="mcv-banner" style="align-items:flex-start;">
+          <span class="mcv-banner-icon" style="margin-top:2px;">&#128196;</span>
+          <div class="mcv-banner-body">
+            <div class="mcv-banner-title">2 documents not yet incorporated into the Master CV</div>
+            <ul class="mcv-banner-doc-list">
+              <li><span class="mcv-banner-doc-tag">Resume</span> Acme Corp &mdash; Senior Software Engineer</li>
+              <li><span class="mcv-banner-doc-tag">Cover letter</span> Acme Corp &mdash; Senior Software Engineer</li>
+            </ul>
+          </div>
+          <button class="mcv-banner-action" style="margin-top:2px;">&#10024; Regenerate</button>
         </div>
 
         <!-- Regeneration suggestions (shown after clicking Regenerate) -->
@@ -4223,9 +4254,9 @@ About the team:
             <span class="regen-header-icon">&#10024;</span>
             <div class="regen-header-text">
               <div class="regen-header-title">Regeneration suggestions</div>
-              <div class="regen-header-sub">AI found 12 additions and expansions across 4 uploaded resumes and 3 finalized sessions</div>
+              <div class="regen-header-sub">AI found 13 additions and expansions across 4 uploaded resumes, 3 finalized session resumes, and 2 finalized cover letters</div>
             </div>
-            <span class="regen-progress">5 of 12 remaining</span>
+            <span class="regen-progress">6 of 13 remaining</span>
             <button class="regen-dismiss-all">Dismiss all</button>
           </div>
 
@@ -4275,7 +4306,24 @@ About the team:
             </div>
           </div>
 
-          <!-- Suggestion 4: missing bullet (manual note) -->
+          <!-- Suggestion 4: framing from cover letter -->
+          <div class="regen-item">
+            <div class="regen-item-type regen-type-coverletter">&#9998; Framing from cover letter</div>
+            <div class="regen-item-context">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp &nbsp;&mdash;&nbsp; your cover letter describes this role in more depth than the current Master CV bullet</div>
+            <div class="regen-diff">
+              <div class="regen-diff-label">Current</div>
+              <div class="regen-diff-old">Led infrastructure cost-reduction initiatives.</div>
+              <div class="regen-diff-label" style="margin-top:8px">Suggested expansion (drawn from cover letter)</div>
+              <div class="regen-diff-new">Led infrastructure cost-reduction initiative that eliminated $42k/year in cloud spend by rightsizing EC2 instances and migrating cold-storage workloads to S3 Glacier, coordinating rollout across 3 product teams with no impact to latency SLAs.</div>
+            </div>
+            <div class="regen-item-actions">
+              <button class="regen-btn-accept">&#10003; Accept</button>
+              <button class="regen-btn-edit">Edit</button>
+              <button class="regen-btn-dismiss">Dismiss</button>
+            </div>
+          </div>
+
+          <!-- Suggestion 5: missing bullet (manual note) -->
           <div class="regen-item">
             <div class="regen-item-type regen-type-add">+ Missing bullet</div>
             <div class="regen-item-context">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark &nbsp;&mdash;&nbsp; found in LinkedIn export but not in any resume or Master CV</div>
@@ -4290,7 +4338,7 @@ About the team:
             </div>
           </div>
 
-          <!-- Suggestion 5: expand skill -->
+          <!-- Suggestion 6: expand skill -->
           <div class="regen-item">
             <div class="regen-item-type regen-type-expand">&#8599; Expand skill entry</div>
             <div class="regen-item-context">AWS is listed without specifics; multiple resumes enumerate specific services</div>
@@ -4572,7 +4620,7 @@ About the team:
       <div class="mcv-topbar">
         <div class="mcv-topbar-title">
           <h2>Writing Profile</h2>
-          <p>Your cover letter voice &mdash; maintained automatically as you write and finalize letters</p>
+          <p>Your cover letter voice &mdash; update by pressing Regenerate when new cover letters are available</p>
         </div>
         <button class="btn-outline" style="border-color:#7c4dff; color:#7c4dff;">&#10024; Regenerate</button>
       </div>
@@ -4584,13 +4632,16 @@ About the team:
 
       <div class="mcv-area">
 
-        <!-- Update banner: shown after an automatic profile update -->
-        <div class="mcv-banner">
-          <span class="mcv-banner-icon">&#9889;</span>
-          <span class="mcv-banner-text">
-            Writing profile updated after finalizing your <em>Acme Corp &mdash; Senior Software Engineer</em> cover letter.
-          </span>
-          <button class="mcv-banner-action">Dismiss</button>
+        <!-- Unincorporated cover letters banner -->
+        <div class="mcv-banner" style="align-items:flex-start;">
+          <span class="mcv-banner-icon" style="margin-top:2px;">&#128196;</span>
+          <div class="mcv-banner-body">
+            <div class="mcv-banner-title">1 cover letter not yet reflected in this profile</div>
+            <ul class="mcv-banner-doc-list">
+              <li><span class="mcv-banner-doc-tag">Cover letter</span> Acme Corp &mdash; Senior Software Engineer</li>
+            </ul>
+          </div>
+          <button class="mcv-banner-action" style="margin-top:2px;">&#10024; Regenerate</button>
         </div>
 
         <!-- Profile card -->
