@@ -1,4 +1,4 @@
-# Resume Builder — development commands
+# Job Application Kit — development commands
 
 set windows-shell := ["powershell.exe", "-Command"]
 

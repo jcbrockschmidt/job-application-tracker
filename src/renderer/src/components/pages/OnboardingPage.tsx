@@ -51,7 +51,7 @@ export default function OnboardingPage(): JSX.Element {
         {/* Header */}
         <Box sx={{ px: 4, pt: 4, pb: 2 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Welcome to Resume Builder
+            Welcome to Job Application Kit
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Complete setup to start generating tailored resumes.

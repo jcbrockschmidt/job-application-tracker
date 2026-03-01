@@ -1,4 +1,4 @@
-# Resume Builder — Implementation Plan
+# Job Application Kit — Implementation Plan
 
 Phases are ordered by priority. Complete each phase before moving to the next.
 Sub-bullets are implementation notes, not separate tasks.

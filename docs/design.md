@@ -1,8 +1,8 @@
-# Resume Builder — Design Document
+# Job Application Kit — Design Document
 
 ## Overview
 
-Resume Builder is a desktop app for creating job-optimized resumes and cover letters quickly and accurately. The goal is to help users apply to jobs faster by generating resumes that pass ATS (Applicant Tracking System) screening while remaining visually polished for human readers — all without hallucinating or misrepresenting the user's actual experience.
+Job Application Kit is a desktop app for creating job-optimized resumes and cover letters quickly and accurately. The goal is to help users apply to jobs faster by generating resumes that pass ATS (Applicant Tracking System) screening while remaining visually polished for human readers — all without hallucinating or misrepresenting the user's actual experience.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "name": "resume-builder",
+  "name": "job-application-kit",
   "version": "0.1.0",
   "description": "Desktop app for creating job-optimized resumes and cover letters",
   "main": "./out/main/index.js",
@@ -54,8 +54,8 @@
     "vitest": "^2.1.8"
   },
   "build": {
-    "appId": "com.resumebuilder.app",
-    "productName": "Resume Builder",
+    "appId": "com.jobapplicationkit.app",
+    "productName": "Job Application Kit",
     "directories": {
       "output": "dist"
     },

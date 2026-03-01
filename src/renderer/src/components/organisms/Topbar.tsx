@@ -25,7 +25,7 @@ export default function Topbar(): JSX.Element {
         </IconButton>
 
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1, letterSpacing: '0.01em' }}>
-          Resume Builder
+          Job Application Kit
         </Typography>
 
         {/* TODO: onClick opens NewSessionDialog */}
