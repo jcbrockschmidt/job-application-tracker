@@ -4,6 +4,16 @@
   Static HTML approximation of the main app views.
   Not functional — for layout and visual design reference only.
 
+  Flows / overlays (appear on top of the app):
+    Onboarding   — shown on page load (first-run setup):
+                   Step 1: Anthropic API key (validate)
+                   Step 2: Contact info (name, phone, email, LinkedIn, GitHub)
+                   Step 3: Upload resume/CV (required; populates Master CV)
+                   Step 4: Upload cover letter (optional)
+                   Close via × button or "Get Started" on step 4.
+    New Session  — click "+ New Session" in topbar or sidebar:
+                   Paste job description → Generate → animated progress → opens session view
+
   Views (click sidebar buttons or topbar icons to switch):
     1. Session view          (default) — resume editor for a specific job application
        Tabs: Resume · Cover Letter · Match Report · Description
@@ -554,6 +564,40 @@
     .r-skills { display: flex; flex-direction: column; gap: 3px; }
     .r-skills-row { font-size: 9.5pt; color: #374151; line-height: 1.5; }
     .r-skills-cat { font-weight: 600; color: #111827; }
+
+    .r-skill-wrap { position: relative; }
+    .r-skill-wrap:hover .r-skill-toolbar { display: flex; }
+
+    .r-skills-heading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .r-skills-heading-row .r-heading { margin-bottom: 0; flex: 1; }
+
+    .r-section-header { margin-bottom: 10px; }
+    .r-section-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .r-section-header-row .r-heading { flex: 1; margin-bottom: 0; }
+
+    .r-section-ai-btn, .r-entry-ai-btn {
+      font-size: 9.5px;
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 2px 6px;
+      white-space: nowrap;
+      display: none;
+    }
+    .r-section-ai-btn:hover, .r-entry-ai-btn:hover { color: #2563eb; }
+    .r-skills-section:hover .r-section-ai-btn,
+    .r-section-header:hover .r-section-ai-btn { display: inline; }
+    .r-entry:hover .r-entry-ai-btn { display: inline; }
 
     /* ── Cover Letter Paper ─────────────────────────────────────────────────── */
 
@@ -1977,7 +2021,7 @@
     .r-bullet-wrap > .r-bullet { margin-bottom: 0; }
     .r-bullet-block > .r-bullet-wrap { margin-bottom: 0; }
 
-    .r-bullet-toolbar {
+    .r-bullet-toolbar, .r-skill-toolbar {
       display: none;
       position: absolute;
       top: 100%;
@@ -1991,7 +2035,7 @@
     }
     .r-bullet-wrap:hover .r-bullet-toolbar { display: flex; }
 
-    .r-bullet-toolbar button {
+    .r-bullet-toolbar button, .r-skill-toolbar button {
       background: transparent;
       border: none;
       color: #b8cad6;
@@ -2002,8 +2046,8 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .r-bullet-toolbar button:hover { background: rgba(255,255,255,0.1); color: white; }
-    .r-bullet-toolbar button + button { border-left: 1px solid rgba(255,255,255,0.1); }
+    .r-bullet-toolbar button:hover, .r-skill-toolbar button:hover { background: rgba(255,255,255,0.1); color: white; }
+    .r-bullet-toolbar button + button, .r-skill-toolbar button + button { border-left: 1px solid rgba(255,255,255,0.1); }
 
     /* ── Resume entry title click-to-edit ────────────────────────────────── */
 
@@ -2305,6 +2349,553 @@
       border-top: 1px solid #f0f1f3;
     }
 
+    /* ── Onboarding overlay ──────────────────────────────────────────────── */
+
+    .onboarding-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 20, 36, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(2px);
+    }
+
+    .onboarding-card {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.32);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 48px);
+      overflow: hidden;
+    }
+
+    .onboarding-header {
+      background: var(--primary);
+      padding: 24px 32px 22px;
+      color: white;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .onboarding-close-btn {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: rgba(255,255,255,0.7);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .onboarding-close-btn:hover { background: rgba(255,255,255,0.22); color: white; }
+
+    .onboarding-app-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.65;
+      margin-bottom: 6px;
+    }
+
+    .onboarding-header-title {
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 22px;
+    }
+
+    /* Step dots */
+    .onboarding-steps {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .onboarding-step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+
+    .onboarding-step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: calc(50% + 14px);
+      right: calc(-50% + 14px);
+      height: 2px;
+      background: rgba(255,255,255,0.22);
+    }
+
+    .onboarding-step-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: 2px solid rgba(255,255,255,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      position: relative;
+      z-index: 1;
+      transition: all 0.18s;
+    }
+    .onboarding-step-item.active .onboarding-step-dot {
+      background: white;
+      border-color: white;
+      color: var(--primary);
+    }
+    .onboarding-step-item.done .onboarding-step-dot {
+      background: rgba(255,255,255,0.82);
+      border-color: rgba(255,255,255,0.82);
+      color: var(--primary);
+    }
+    .onboarding-step-item.done:not(:last-child)::after {
+      background: rgba(255,255,255,0.55);
+    }
+
+    .onboarding-step-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.48);
+      margin-top: 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .onboarding-step-item.active .onboarding-step-label { color: rgba(255,255,255,0.95); font-weight: 600; }
+    .onboarding-step-item.done  .onboarding-step-label { color: rgba(255,255,255,0.68); }
+
+    /* Step body */
+    .onboarding-body {
+      padding: 26px 32px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .onboarding-body::-webkit-scrollbar { width: 5px; }
+    .onboarding-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+
+    .onboarding-step-content { display: none; }
+    .onboarding-step-content.active { display: block; }
+
+    .onboarding-step-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .onboarding-step-sub {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+
+    .onboarding-form-row { margin-bottom: 13px; }
+
+    .onboarding-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+    }
+
+    .onboarding-req { color: #c62828; }
+
+    .onboarding-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+      background: #f9fafb;
+    }
+    .onboarding-input:focus { border-color: var(--primary); background: white; }
+
+    .onboarding-key-row {
+      display: flex;
+      gap: 7px;
+    }
+
+    .onboarding-key-input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-family: monospace;
+      font-size: 12.5px;
+      color: var(--text-primary);
+      outline: none;
+      background: #f9fafb;
+      min-width: 0;
+    }
+    .onboarding-key-input:focus { border-color: var(--primary); background: white; }
+
+    .onboarding-key-action {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .onboarding-key-action:hover { border-color: #bbc5d0; color: var(--text-primary); }
+
+    .onboarding-validate-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 7px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .onboarding-validate-btn:hover { background: var(--primary-hover); }
+
+    .onboarding-key-valid {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #2e7d32;
+      font-weight: 500;
+      margin-top: 7px;
+    }
+    .onboarding-key-valid.show { display: flex; }
+
+    .onboarding-hint {
+      font-size: 11.5px;
+      color: #9eaab5;
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .onboarding-optional-badge {
+      display: inline-block;
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: #f0f1f3;
+      color: #7a8898;
+      margin-left: 5px;
+      vertical-align: middle;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed #c8d4e0;
+      border-radius: 10px;
+      padding: 26px 20px 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.14s;
+      background: #f9fafb;
+      margin-bottom: 12px;
+    }
+    .upload-zone:hover { border-color: var(--primary); background: #f0f5ff; }
+    .upload-zone-icon { font-size: 26px; opacity: 0.32; margin-bottom: 8px; line-height: 1; }
+    .upload-zone-text { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+    .upload-zone-text strong { color: var(--primary); font-weight: 600; }
+    .upload-zone-formats { font-size: 11px; color: #aab0ba; }
+
+    .upload-file-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .upload-file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f5ff;
+      border: 1px solid #c5d5f8;
+      border-radius: 7px;
+      padding: 7px 8px 7px 12px;
+    }
+
+    .upload-file-icon { font-size: 15px; flex-shrink: 0; line-height: 1; }
+
+    .upload-file-name {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-primary);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .upload-file-remove {
+      background: transparent;
+      border: none;
+      color: #9eaab5;
+      padding: 3px 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .upload-file-remove:hover { background: #dce6ff; color: #b71c1c; }
+
+    .upload-require-note {
+      font-size: 11.5px;
+      color: #9eaab5;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Onboarding footer */
+    .onboarding-footer {
+      padding: 16px 32px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .onboarding-back-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .onboarding-back-btn:hover { border-color: #bbc5d0; color: var(--text-primary); }
+
+    .onboarding-footer-spacer { flex: 1; }
+
+    .onboarding-skip-link {
+      background: transparent;
+      border: none;
+      color: #9eaab5;
+      font-family: var(--font);
+      font-size: 12.5px;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .onboarding-skip-link:hover { color: var(--text-secondary); }
+
+    .onboarding-next-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 9px 24px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .onboarding-next-btn:hover { background: var(--primary-hover); }
+
+    /* ── New Session modal ───────────────────────────────────────────────── */
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 20, 36, 0.52);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      backdrop-filter: blur(1px);
+    }
+
+    .modal-card {
+      background: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 20px 28px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: #9eaab5;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 7px;
+      border-radius: 6px;
+      line-height: 1;
+    }
+    .modal-close-btn:hover { background: #f0f1f3; color: var(--text-primary); }
+
+    .modal-body { padding: 22px 28px 16px; }
+
+    .modal-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .modal-jd-textarea {
+      width: 100%;
+      min-height: 210px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-primary);
+      resize: vertical;
+      outline: none;
+      background: #f9fafb;
+    }
+    .modal-jd-textarea:focus { border-color: var(--primary); background: white; }
+    .modal-jd-textarea::placeholder { color: #aab0ba; }
+
+    .modal-hint {
+      font-size: 11.5px;
+      color: #9eaab5;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .modal-footer {
+      padding: 14px 28px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* Generating state */
+    .modal-generating {
+      padding: 40px 28px 44px;
+      text-align: center;
+    }
+
+    .generating-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid #e0e7f0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .generating-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .generating-sub {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .generating-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 320px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .generating-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+
+    .generating-step-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .generating-step.done   .generating-step-icon { background: #e8f5e9; color: #2e7d32; }
+    .generating-step.active .generating-step-icon { background: rgba(21,101,192,0.1); }
+    .generating-step.pending .generating-step-icon { background: #f0f1f3; color: #c5ccd4; font-size: 14px; }
+
+    .generating-step.done   { color: #4a5568; }
+    .generating-step.active { color: var(--primary); font-weight: 500; }
+
+    .step-mini-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(21,101,192,0.22);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      display: inline-block;
+    }
+
     /* Sidebar settings button */
     .sidebar-settings-btn {
       width: 100%;
@@ -2329,13 +2920,193 @@
   </style>
 </head>
 <body>
+
+<!-- ── Onboarding overlay (first-run setup) ─────────────────────────────── -->
+<div id="onboarding-overlay" class="onboarding-overlay">
+  <div class="onboarding-card">
+
+    <!-- Header: app name + title + step indicator -->
+    <div class="onboarding-header">
+      <button class="onboarding-close-btn" title="Skip setup (demo only)" onclick="closeOnboarding()">&#215;</button>
+      <div class="onboarding-app-label">Resume Builder</div>
+      <div class="onboarding-header-title" id="ob-header-title">Welcome — let&rsquo;s get you set up</div>
+      <div class="onboarding-steps">
+        <div class="onboarding-step-item active" id="ob-dot-1">
+          <div class="onboarding-step-dot">1</div>
+          <div class="onboarding-step-label">API Key</div>
+        </div>
+        <div class="onboarding-step-item" id="ob-dot-2">
+          <div class="onboarding-step-dot">2</div>
+          <div class="onboarding-step-label">Contact Info</div>
+        </div>
+        <div class="onboarding-step-item" id="ob-dot-3">
+          <div class="onboarding-step-dot">3</div>
+          <div class="onboarding-step-label">Your Resume</div>
+        </div>
+        <div class="onboarding-step-item" id="ob-dot-4">
+          <div class="onboarding-step-dot">4</div>
+          <div class="onboarding-step-label">Cover Letter</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body: step content -->
+    <div class="onboarding-body">
+
+      <!-- Step 1: API Key -->
+      <div class="onboarding-step-content active" id="ob-step-1">
+        <div class="onboarding-step-heading">Your Anthropic API key</div>
+        <div class="onboarding-step-sub">Resume Builder uses Claude to tailor your resume and cover letter. Your key is stored securely in the OS keychain &mdash; never in plain local storage.</div>
+
+        <div class="onboarding-form-row">
+          <label class="onboarding-label">API Key <span class="onboarding-req">*</span></label>
+          <div class="onboarding-key-row">
+            <input class="onboarding-key-input" id="ob-api-key-input" type="password" placeholder="sk-ant-api03-&hellip;" value="sk-ant-api03-placeholder-key-value">
+            <button class="onboarding-key-action" onclick="toggleObKeyVisibility(this)">Show</button>
+            <button class="onboarding-validate-btn" onclick="validateObKey()">Validate</button>
+          </div>
+          <div class="onboarding-key-valid" id="ob-key-valid">
+            <span>&#10003;</span> Connected &mdash; claude-opus-4-6 available
+          </div>
+          <div class="onboarding-hint">Available models are fetched from the Anthropic API after your key is validated. The selected model is used for all AI operations.</div>
+        </div>
+      </div>
+
+      <!-- Step 2: Contact Info -->
+      <div class="onboarding-step-content" id="ob-step-2">
+        <div class="onboarding-step-heading">Your contact info</div>
+        <div class="onboarding-step-sub">This appears in the header of every resume and cover letter you generate. Required fields are used to build the document header.</div>
+
+        <div class="onboarding-form-row">
+          <label class="onboarding-label">Full Name <span class="onboarding-req">*</span></label>
+          <input class="onboarding-input" type="text" placeholder="Alex Johnson" value="Alex Johnson">
+        </div>
+        <div class="onboarding-form-row">
+          <label class="onboarding-label">Phone <span class="onboarding-req">*</span></label>
+          <input class="onboarding-input" type="tel" placeholder="(555) 123-4567" value="(555) 248-0931">
+        </div>
+        <div class="onboarding-form-row">
+          <label class="onboarding-label">Email <span class="onboarding-req">*</span></label>
+          <input class="onboarding-input" type="email" placeholder="you@email.com" value="alex@email.com">
+        </div>
+        <div class="onboarding-form-row">
+          <label class="onboarding-label">LinkedIn <span class="onboarding-optional-badge">Optional</span></label>
+          <input class="onboarding-input" type="url" placeholder="linkedin.com/in/&hellip;" value="linkedin.com/in/alex-johnson">
+        </div>
+        <div class="onboarding-form-row">
+          <label class="onboarding-label">GitHub <span class="onboarding-optional-badge">Optional</span></label>
+          <input class="onboarding-input" type="url" placeholder="github.com/&hellip;" value="github.com/alexjohnson">
+        </div>
+      </div>
+
+      <!-- Step 3: Upload resume -->
+      <div class="onboarding-step-content" id="ob-step-3">
+        <div class="onboarding-step-heading">Upload your resume</div>
+        <div class="onboarding-step-sub">Upload at least one existing resume or CV. The content will be extracted and merged into your Master CV &mdash; the source of truth for all generated documents.</div>
+
+        <div class="upload-zone" onclick="obSimulateResumeUpload()">
+          <div class="upload-zone-icon">&#128196;</div>
+          <div class="upload-zone-text"><strong>Click to browse</strong> or drag and drop</div>
+          <div class="upload-zone-formats">DOCX &nbsp;&middot;&nbsp; PDF &nbsp;&middot;&nbsp; Plain text</div>
+        </div>
+
+        <div class="upload-file-list" id="ob-resume-list">
+          <div class="upload-file-item">
+            <span class="upload-file-icon">&#128196;</span>
+            <span class="upload-file-name">alex_johnson_resume_2025.pdf</span>
+            <button class="upload-file-remove" onclick="obRemoveFile(this)" title="Remove">&#215;</button>
+          </div>
+        </div>
+        <div class="upload-require-note">At least one file is required to continue.</div>
+      </div>
+
+      <!-- Step 4: Cover letter (optional) -->
+      <div class="onboarding-step-content" id="ob-step-4">
+        <div class="onboarding-step-heading">Upload a cover letter <span class="onboarding-optional-badge">Optional</span></div>
+        <div class="onboarding-step-sub">Upload an existing cover letter to help Claude learn your writing style and tone. You can skip this &mdash; cover letters can be generated from scratch.</div>
+
+        <div class="upload-zone" onclick="obSimulateCLUpload()">
+          <div class="upload-zone-icon">&#9993;</div>
+          <div class="upload-zone-text"><strong>Click to browse</strong> or drag and drop</div>
+          <div class="upload-zone-formats">DOCX &nbsp;&middot;&nbsp; PDF &nbsp;&middot;&nbsp; Plain text</div>
+        </div>
+
+        <div class="upload-file-list" id="ob-cl-list">
+          <!-- Files added by JS -->
+        </div>
+      </div>
+
+    </div><!-- /onboarding-body -->
+
+    <!-- Footer: navigation buttons -->
+    <div class="onboarding-footer">
+      <button class="onboarding-back-btn" id="ob-back-btn" onclick="obBack()" style="display:none">&#8592; Back</button>
+      <div class="onboarding-footer-spacer"></div>
+      <button class="onboarding-skip-link" id="ob-skip-link" onclick="closeOnboarding()" style="display:none">Skip for now</button>
+      <button class="onboarding-next-btn" id="ob-next-btn" onclick="obNext()">Continue &#8594;</button>
+    </div>
+
+  </div><!-- /onboarding-card -->
+</div><!-- /onboarding-overlay -->
+
+<!-- ── New Session modal ──────────────────────────────────────────────────── -->
+<div id="new-session-modal" class="modal-overlay" style="display:none">
+  <div class="modal-card">
+
+    <!-- Paste state -->
+    <div id="ns-paste-state">
+      <div class="modal-header">
+        <span class="modal-title">New Session</span>
+        <button class="modal-close-btn" onclick="closeNewSessionModal()" title="Cancel">&#215;</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">Job Description</label>
+        <textarea class="modal-jd-textarea" id="ns-jd-textarea" placeholder="Paste the full job description here&hellip;&#10;&#10;Claude will analyze it and generate a tailored resume drawn from your Master CV."></textarea>
+        <div class="modal-hint">Include the complete posting for best results &mdash; responsibilities, requirements, and skills sections all improve alignment.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeNewSessionModal()">Cancel</button>
+        <button class="btn-primary" onclick="nsGenerate()"><span style="font-size:14px; line-height:1">&#10024;</span>&nbsp; Generate Resume</button>
+      </div>
+    </div>
+
+    <!-- Generating state (shown after clicking Generate) -->
+    <div id="ns-generating-state" style="display:none">
+      <div class="modal-generating">
+        <div class="generating-spinner"></div>
+        <div class="generating-title">Generating your tailored resume&hellip;</div>
+        <div class="generating-sub">Claude is analyzing the job description and selecting the most relevant experience from your Master CV.</div>
+        <div class="generating-steps">
+          <div class="generating-step done" id="ns-gen-1">
+            <div class="generating-step-icon">&#10003;</div>
+            <span>Analyzing job description</span>
+          </div>
+          <div class="generating-step active" id="ns-gen-2">
+            <div class="generating-step-icon"><span class="step-mini-spinner"></span></div>
+            <span>Selecting experience from Master CV</span>
+          </div>
+          <div class="generating-step pending" id="ns-gen-3">
+            <div class="generating-step-icon">&ndash;</div>
+            <span>Tailoring resume bullets</span>
+          </div>
+          <div class="generating-step pending" id="ns-gen-4">
+            <div class="generating-step-icon">&ndash;</div>
+            <span>Formatting skills section</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /modal-card -->
+</div><!-- /new-session-modal -->
+
 <div class="app">
 
   <!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
   <header class="topbar">
     <button class="topbar-hamburger">&#9776;</button>
     <span class="topbar-brand">Resume Builder</span>
-    <button class="topbar-btn" onclick="switchView('session')">
+    <button class="topbar-btn" onclick="openNewSessionModal()">
       <span style="font-size:15px; line-height:1">+</span> New Session
     </button>
     <button class="topbar-icon-btn" title="Settings" onclick="switchView('settings')">&#9881;</button>
@@ -2407,7 +3178,7 @@
       <button class="sidebar-settings-btn" id="nav-settings" onclick="switchView('settings')">
         <span>&#9881;</span> Settings
       </button>
-      <button class="btn-new-sidebar">
+      <button class="btn-new-sidebar" onclick="openNewSessionModal()">
         <span>+</span> New Session
       </button>
     </div>
@@ -2470,7 +3241,20 @@
           </div>
 
           <div class="r-section">
-            <div class="r-heading">Experience</div>
+            <div class="r-section-header">
+              <div class="r-section-header-row">
+                <div class="r-heading">Experience</div>
+                <button class="r-section-ai-btn" onclick="toggleReviseAI(this)">&#10024; Revise section with AI</button>
+              </div>
+              <div class="revise-ai-panel" style="display:none">
+                <div class="revise-ai-panel-label">&#10024; Revise Experience with AI</div>
+                <textarea placeholder="Optional: describe how to tailor the experience section&hellip;"></textarea>
+                <div class="revise-ai-panel-actions">
+                  <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                  <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                </div>
+              </div>
+            </div>
 
             <div class="r-entry">
               <div class="r-entry-header">
@@ -2478,7 +3262,18 @@
                   <span class="r-entry-title">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp</span>
                   <span class="r-entry-edit-icon">&#9998;</span>
                 </span>
-                <span class="r-entry-date">Jan 2023 – Present</span>
+                <span style="display:flex;align-items:baseline;gap:8px">
+                  <span class="r-entry-date">Jan 2023 – Present</span>
+                  <button class="r-entry-ai-btn" onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                </span>
+              </div>
+              <div class="revise-ai-panel" style="display:none">
+                <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                <textarea placeholder="Optional: describe how to tailor this job entry&hellip;"></textarea>
+                <div class="revise-ai-panel-actions">
+                  <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                  <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                </div>
               </div>
               <div class="r-bullets">
                 <div class="r-bullet-wrap">
@@ -2577,7 +3372,18 @@
                   <span class="r-entry-title">Software Engineer II &nbsp;&middot;&nbsp; Wavelength Labs</span>
                   <span class="r-entry-edit-icon">&#9998;</span>
                 </span>
-                <span class="r-entry-date">Jun 2020 – Jan 2023</span>
+                <span style="display:flex;align-items:baseline;gap:8px">
+                  <span class="r-entry-date">Jun 2020 – Jan 2023</span>
+                  <button class="r-entry-ai-btn" onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                </span>
+              </div>
+              <div class="revise-ai-panel" style="display:none">
+                <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                <textarea placeholder="Optional: describe how to tailor this job entry&hellip;"></textarea>
+                <div class="revise-ai-panel-actions">
+                  <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                  <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                </div>
               </div>
               <div class="r-bullets">
                 <div class="r-bullet-wrap">
@@ -2657,7 +3463,18 @@
                   <span class="r-entry-title">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark</span>
                   <span class="r-entry-edit-icon">&#9998;</span>
                 </span>
-                <span class="r-entry-date">May 2019 – Aug 2019</span>
+                <span style="display:flex;align-items:baseline;gap:8px">
+                  <span class="r-entry-date">May 2019 – Aug 2019</span>
+                  <button class="r-entry-ai-btn" onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                </span>
+              </div>
+              <div class="revise-ai-panel" style="display:none">
+                <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                <textarea placeholder="Optional: describe how to tailor this job entry&hellip;"></textarea>
+                <div class="revise-ai-panel-actions">
+                  <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                  <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                </div>
               </div>
               <div class="r-bullets">
                 <div class="r-bullet-wrap">
@@ -2688,12 +3505,67 @@
           </div>
 
           <div class="r-section">
-            <div class="r-heading">Skills</div>
+            <div class="r-skills-section">
+              <div class="r-skills-heading-row">
+                <div class="r-heading">Skills</div>
+                <button class="r-section-ai-btn" onclick="toggleReviseAI(this)">&#10024; Revise section with AI</button>
+              </div>
+              <div class="revise-ai-panel" style="display:none">
+                <div class="revise-ai-panel-label">&#10024; Revise Skills with AI</div>
+                <textarea placeholder="Optional: describe how to tailor the skills section (e.g. prioritize cloud tools, remove unrelated technologies)&hellip;"></textarea>
+                <div class="revise-ai-panel-actions">
+                  <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                  <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                </div>
+              </div>
+            </div>
             <div class="r-skills">
-              <div class="r-skills-row"><span class="r-skills-cat">Languages:</span> TypeScript (6 yrs), Python (5 yrs), SQL (6 yrs), Go (2 yrs), Rust (1 yr), Bash</div>
-              <div class="r-skills-row"><span class="r-skills-cat">Cloud / Infrastructure:</span> AWS (EC2, RDS, Lambda, S3), Docker, Kubernetes, Terraform, GitHub Actions, Datadog</div>
+              <div class="r-skill-wrap">
+                <div class="r-skills-row"><span class="r-skills-cat">Languages:</span> TypeScript (6 yrs), Python (5 yrs), SQL (6 yrs), Go (2 yrs), Rust (1 yr), Bash</div>
+                <div class="r-skill-toolbar">
+                  <button>&#9998; Edit</button>
+                  <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                </div>
+                <div class="revise-ai-panel" style="display:none">
+                  <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                  <textarea placeholder="Optional: add context or instructions for the AI&hellip;"></textarea>
+                  <div class="revise-ai-panel-actions">
+                    <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                    <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                  </div>
+                </div>
+              </div>
+              <div class="r-skill-wrap">
+                <div class="r-skills-row"><span class="r-skills-cat">Cloud / Infrastructure:</span> AWS (EC2, RDS, Lambda, S3), Docker, Kubernetes, Terraform, GitHub Actions, Datadog</div>
+                <div class="r-skill-toolbar">
+                  <button>&#9998; Edit</button>
+                  <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                </div>
+                <div class="revise-ai-panel" style="display:none">
+                  <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                  <textarea placeholder="Optional: add context or instructions for the AI&hellip;"></textarea>
+                  <div class="revise-ai-panel-actions">
+                    <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                    <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                  </div>
+                </div>
+              </div>
               <div class="r-skill-block">
-                <div class="r-skills-row"><span class="r-skills-cat">Web / App:</span> React, Redux, Node.js, REST APIs, GraphQL, WebSockets, PostgreSQL, Redis</div>
+                <div class="r-skill-wrap">
+                  <div class="r-skills-row"><span class="r-skills-cat">Web / App:</span> React, Redux, Node.js, REST APIs, GraphQL, WebSockets, PostgreSQL, Redis</div>
+                  <div class="r-skill-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI&hellip;"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                </div>
                 <div class="cl-feedback-inline type-remove">
                   <div class="cl-fb-header">
                     <span class="feedback-type feedback-type-remove">Remove</span>
@@ -2716,7 +3588,21 @@
                   </div>
                 </div>
               </div>
-              <div class="r-skills-row"><span class="r-skills-cat">Methodologies:</span> Agile, CI/CD, DevOps, Microservices, On-call, TDD, System Design</div>
+              <div class="r-skill-wrap">
+                <div class="r-skills-row"><span class="r-skills-cat">Methodologies:</span> Agile, CI/CD, DevOps, Microservices, On-call, TDD, System Design</div>
+                <div class="r-skill-toolbar">
+                  <button>&#9998; Edit</button>
+                  <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                </div>
+                <div class="revise-ai-panel" style="display:none">
+                  <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                  <textarea placeholder="Optional: add context or instructions for the AI&hellip;"></textarea>
+                  <div class="revise-ai-panel-actions">
+                    <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                    <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3764,7 +4650,7 @@ About the team:
   /* ── Revise with AI panel ────────────────────────────────────────────── */
 
   function toggleReviseAI(btn) {
-    const container = btn.closest('.r-bullet-wrap') || btn.closest('.cl-para-block');
+    const container = btn.closest('.r-bullet-wrap') || btn.closest('.cl-para-block') || btn.closest('.r-skill-wrap') || btn.closest('.r-skills-section') || btn.closest('.r-section-header') || btn.closest('.r-entry');
     if (!container) return;
     const panel = container.querySelector('.revise-ai-panel');
     if (!panel) return;
@@ -3787,6 +4673,129 @@ About the team:
   function generateMR() {
     document.getElementById('mr-empty').style.display = 'none';
     document.getElementById('mr-generated').style.display = 'flex';
+  }
+
+  /* ── Onboarding ─────────────────────────────────────────────────────── */
+
+  const OB_TITLES = [
+    'Welcome \u2014 let\u2019s get you set up',
+    'Your contact info',
+    'Upload your resume',
+    'Upload a cover letter',
+  ];
+  let obStep = 1;
+
+  function obUpdateUI() {
+    for (let i = 1; i <= 4; i++) {
+      const dot     = document.getElementById('ob-dot-' + i);
+      const content = document.getElementById('ob-step-' + i);
+      dot.classList.toggle('active', i === obStep);
+      dot.classList.toggle('done',   i < obStep);
+      content.classList.toggle('active', i === obStep);
+    }
+    document.getElementById('ob-header-title').textContent = OB_TITLES[obStep - 1];
+    document.getElementById('ob-back-btn').style.display   = obStep > 1 ? 'block' : 'none';
+    document.getElementById('ob-skip-link').style.display  = obStep >= 3 ? 'inline' : 'none';
+    document.getElementById('ob-next-btn').textContent     = obStep === 4 ? 'Get Started \u2192' : 'Continue \u2192';
+  }
+
+  function obNext() {
+    if (obStep < 4) { obStep++; obUpdateUI(); }
+    else { closeOnboarding(); }
+  }
+
+  function obBack() {
+    if (obStep > 1) { obStep--; obUpdateUI(); }
+  }
+
+  function closeOnboarding() {
+    document.getElementById('onboarding-overlay').style.display = 'none';
+  }
+
+  function toggleObKeyVisibility(btn) {
+    const input = document.getElementById('ob-api-key-input');
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.textContent = isHidden ? 'Hide' : 'Show';
+  }
+
+  function validateObKey() {
+    document.getElementById('ob-key-valid').classList.add('show');
+  }
+
+  let obResumeCount = 1;
+  function obSimulateResumeUpload() {
+    obResumeCount++;
+    const list = document.getElementById('ob-resume-list');
+    const item = document.createElement('div');
+    item.className = 'upload-file-item';
+    item.innerHTML =
+      '<span class="upload-file-icon">\uD83D\uDCC4</span>' +
+      '<span class="upload-file-name">resume_v' + obResumeCount + '.pdf</span>' +
+      '<button class="upload-file-remove" onclick="obRemoveFile(this)" title="Remove">\u00D7</button>';
+    list.appendChild(item);
+  }
+
+  function obSimulateCLUpload() {
+    const list = document.getElementById('ob-cl-list');
+    if (list.children.length === 0) {
+      const item = document.createElement('div');
+      item.className = 'upload-file-item';
+      item.innerHTML =
+        '<span class="upload-file-icon">\u2709\uFE0F</span>' +
+        '<span class="upload-file-name">cover_letter_template.docx</span>' +
+        '<button class="upload-file-remove" onclick="obRemoveFile(this)" title="Remove">\u00D7</button>';
+      list.appendChild(item);
+    }
+  }
+
+  function obRemoveFile(btn) {
+    btn.closest('.upload-file-item').remove();
+  }
+
+  /* ── New Session modal ──────────────────────────────────────────────── */
+
+  function openNewSessionModal() {
+    document.getElementById('ns-paste-state').style.display     = 'block';
+    document.getElementById('ns-generating-state').style.display = 'none';
+    document.getElementById('ns-jd-textarea').value = '';
+    // Reset generation steps
+    ['ns-gen-2','ns-gen-3','ns-gen-4'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = id === 'ns-gen-2' ? 'generating-step active' : 'generating-step pending';
+    });
+    document.querySelector('#ns-gen-2 .generating-step-icon').innerHTML = '<span class="step-mini-spinner"></span>';
+    document.querySelector('#ns-gen-3 .generating-step-icon').textContent = '\u2013';
+    document.querySelector('#ns-gen-4 .generating-step-icon').textContent = '\u2013';
+    document.getElementById('new-session-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('ns-jd-textarea').focus(), 50);
+  }
+
+  function closeNewSessionModal() {
+    document.getElementById('new-session-modal').style.display = 'none';
+  }
+
+  function nsAdvanceStep(stepId, nextId) {
+    const el = document.getElementById(stepId);
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.generating-step-icon').textContent = '\u2713';
+    if (nextId) {
+      const next = document.getElementById(nextId);
+      next.classList.remove('pending');
+      next.classList.add('active');
+      next.querySelector('.generating-step-icon').innerHTML = '<span class="step-mini-spinner"></span>';
+    }
+  }
+
+  function nsGenerate() {
+    document.getElementById('ns-paste-state').style.display      = 'block';
+    document.getElementById('ns-generating-state').style.display = 'block';
+    document.getElementById('ns-paste-state').style.display      = 'none';
+    setTimeout(() => nsAdvanceStep('ns-gen-2', 'ns-gen-3'),  900);
+    setTimeout(() => nsAdvanceStep('ns-gen-3', 'ns-gen-4'), 1800);
+    setTimeout(() => nsAdvanceStep('ns-gen-4', null),        2700);
+    setTimeout(() => { closeNewSessionModal(); switchView('session'); }, 3200);
   }
 </script>
 </body>

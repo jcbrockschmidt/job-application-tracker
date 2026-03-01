@@ -73,7 +73,11 @@ Each suggestion is presented individually for review. The user can accept, edit,
 
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.
-- Interactively prompt the AI to revise specific sections of either document. Each resume bullet and each cover letter paragraph has a hover toolbar with an **Edit** button (for manual editing) and a **Revise with AI** button. Clicking **Revise with AI** expands an inline panel beneath the item where the user types revision instructions; submitting presents a diff of the proposed changes for the user to approve or reject before anything is applied.
+- Interactively prompt the AI to revise content at multiple levels of granularity. Clicking any **Revise with AI** button expands an inline panel beneath the item where the user can type optional revision instructions; submitting presents a diff of the proposed changes for the user to approve or reject before anything is applied. Three levels are available in the resume:
+  - **Bullet / skill row** — hover any resume bullet or skills row to reveal a dark popup toolbar with an **Edit** button (manual edit) and a **Revise with AI** button (AI-assisted rewrite of that item).
+  - **Job entry** — hover any Experience entry to reveal a **Revise with AI** button in the entry header, for AI-assisted revision of all bullets within that role.
+  - **Section** — the Experience and Skills section headings each show a **Revise section with AI** button on hover, for AI-assisted revision of the entire section at once.
+- Cover letter paragraphs each have the same hover toolbar pattern: **Edit** and **Revise with AI**.
 - All changes — both manual and AI-generated — are tracked in a change history.
   - Changes can be undone and redone via `Ctrl+Z` / `Ctrl+Y`.
   - Change history is in-memory only and is not persisted across app restarts.
