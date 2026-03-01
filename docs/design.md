@@ -73,15 +73,25 @@ Each suggestion is presented individually for review. The user can accept, edit,
 - **Match Report** — generated on demand via a button in the Match Report tab. The LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps. Never generated automatically — the user must explicitly trigger it. Once generated, a Regenerate button in the report header allows the user to request a fresh evaluation at any time (e.g. after editing the resume or updating the job description).
 - **Cover Letter** — generated on demand via a button in the Cover Letter tab. Tailored to the same job description and grounded in Master CV content. When a writing profile is available, generation is also informed by it to maintain a consistent voice across letters. Not generated automatically; the user triggers it when ready.
 
-#### Writing Profile
+### Writing Profile
 
-The writing profile is a compact (~400–600 word) internal summary of the user's cover letter style — capturing tone, formality, sentence structure, how they open and close letters, and recurring phrasings. It is maintained by Claude and stored at `writing-profile.json` in the app's data directory.
+The writing profile is a compact (~400–600 word) internal summary of the user's cover letter style — capturing tone, formality, sentence structure, how they open and close letters, and recurring phrasings. It is maintained automatically by Claude and stored at `writing-profile.json` in the app's data directory.
 
 Updated automatically in two situations:
 - When a cover letter source document is uploaded, ingestion seeds or refines the profile from that document.
 - When a cover letter is finalized, the profile is updated with patterns from the newly finished letter.
 
 Because Claude distills each letter's stylistic patterns into the profile rather than accumulating the full letter text, the profile stays a fixed, small size regardless of how many sessions the user has completed.
+
+#### Viewing and Editing
+
+The writing profile is accessible as a top-level view from the sidebar. The view shows:
+- The profile text in a readable card, with an inline **Edit** button for manual corrections or overrides.
+- Metadata showing when the profile was last updated and how many cover letters it was derived from.
+- A **Regenerate** button that re-derives the profile from scratch using all available cover letters — finalized sessions and uploaded source documents — useful if the auto-maintained profile has drifted or the user wants a reset.
+- An **update banner** that appears when the profile was recently changed automatically (e.g. after a cover letter is finalized), noting which session triggered the update. The banner can be dismissed.
+
+**AI usage display:** An info bar below the view header shows the model, last-operation token counts, and estimated cost, consistent with the Master CV view.
 
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.

@@ -1383,6 +1383,39 @@
     }
     .regen-btn-dismiss:hover { background: #f0f1f3; color: var(--text-secondary); }
 
+    /* ── Writing Profile View ───────────────────────────────────────────── */
+
+    .wp-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .wp-card-header {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .wp-card-meta {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .wp-card-body {
+      padding: 20px 24px;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+
+    .wp-card-body p { margin: 0 0 12px; }
+    .wp-card-body p:last-child { margin-bottom: 0; }
+
     /* ── Application Master List View ──────────────────────────────────── */
 
     .applist-bar {
@@ -3387,6 +3420,10 @@
       <span class="sidebar-nav-label">Master CV</span>
       <span class="sidebar-nav-count">12 entries</span>
     </button>
+    <button class="sidebar-nav-item" id="nav-writingprofile" onclick="switchView('writingprofile')">
+      <span class="sidebar-nav-icon">&#9998;</span>
+      <span class="sidebar-nav-label">Writing Profile</span>
+    </button>
 
     <hr class="sidebar-divider">
     <div class="sidebar-label">Sessions</div>
@@ -4529,6 +4566,52 @@ About the team:
       </div><!-- /mcv-area -->
     </div><!-- /view-mastercv -->
 
+    <!-- ── Writing Profile View ─────────────────────────────────────────────── -->
+    <div class="view" id="view-writingprofile">
+
+      <div class="mcv-topbar">
+        <div class="mcv-topbar-title">
+          <h2>Writing Profile</h2>
+          <p>Your cover letter voice &mdash; maintained automatically as you write and finalize letters</p>
+        </div>
+        <button class="btn-outline" style="border-color:#7c4dff; color:#7c4dff;">&#10024; Regenerate</button>
+      </div>
+
+      <div class="mcv-infobar">
+        <span class="mcv-infobar-usage">claude-opus-4-6 &nbsp;&middot;&nbsp; Last: 1,204&thinsp;in &nbsp;/&nbsp; 487&thinsp;out &nbsp;&middot;&nbsp; ~$0.02</span>
+        <span class="mcv-infobar-today">24h: $2.14 / $5.00 limit</span>
+      </div>
+
+      <div class="mcv-area">
+
+        <!-- Update banner: shown after an automatic profile update -->
+        <div class="mcv-banner">
+          <span class="mcv-banner-icon">&#9889;</span>
+          <span class="mcv-banner-text">
+            Writing profile updated after finalizing your <em>Acme Corp &mdash; Senior Software Engineer</em> cover letter.
+          </span>
+          <button class="mcv-banner-action">Dismiss</button>
+        </div>
+
+        <!-- Profile card -->
+        <div class="wp-card">
+          <div class="wp-card-header">
+            <div class="wp-card-meta">Last updated Feb 27, 2026 &nbsp;&middot;&nbsp; Derived from 4 cover letters</div>
+            <button class="mcv-icon-btn" title="Edit profile">&#9998;</button>
+          </div>
+          <div class="wp-card-body">
+            <p>Writes in a warm, direct professional tone with a slight conversational quality &mdash; formal enough for a hiring context but never stiff. Sentences are typically medium-length (20&ndash;30 words), and the prose avoids jargon unless it is role-specific and clearly relevant.</p>
+            <p><strong>Opening:</strong> Letters consistently open by naming the specific role and connecting a concrete past achievement to the company&rsquo;s stated need. The hook tends to lead with a quantified result rather than a generic expression of enthusiasm.</p>
+            <p><strong>Body:</strong> Develops one or two concrete examples drawn from recent experience, with preference for metrics and outcomes over duties. Technical detail is included when the role warrants it but always translated into business impact.</p>
+            <p><strong>Closing:</strong> Closings are brief and confident &mdash; a single sentence expressing genuine interest followed by availability for next steps. Avoids phrases like &ldquo;I look forward to hearing from you&rdquo; in favor of more specific language.</p>
+            <p><strong>Recurring phrasings:</strong> Often uses &ldquo;contributed to,&rdquo; &ldquo;led the effort to,&rdquo; and &ldquo;worked across&rdquo; when describing collaborative work. Tends to anchor sentences with the outcome before the method (e.g. &ldquo;Reduced latency by 40% by redesigning the cache layer&rdquo;).</p>
+            <p><strong>Avoid:</strong> Passive voice, &ldquo;I am a passionate&hellip;&rdquo; openings, and generic adjectives (innovative, dynamic, results-driven).</p>
+          </div>
+        </div>
+
+      </div><!-- /mcv-area -->
+    </div><!-- /view-writingprofile -->
+
     <!-- ── Application Master List View ────────────────────────────────────── -->
     <div class="view" id="view-applist">
 
@@ -4851,12 +4934,13 @@ About the team:
 </div><!-- /app -->
 
 <script>
-  const NAV_IDS  = ['nav-applist', 'nav-mastercv', 'nav-session', 'nav-settings'];
+  const NAV_IDS  = ['nav-applist', 'nav-mastercv', 'nav-writingprofile', 'nav-session', 'nav-settings'];
   const VIEW_MAP = {
-    applist:  { viewId: 'view-applist',  navId: 'nav-applist',  status: 'Application List' },
-    mastercv: { viewId: 'view-mastercv', navId: 'nav-mastercv', status: 'Master CV' },
-    session:  { viewId: 'view-session',  navId: 'nav-session',  status: 'Acme Corp \u2014 Senior Software Engineer' },
-    settings: { viewId: 'view-settings', navId: 'nav-settings', status: 'Settings' },
+    applist:       { viewId: 'view-applist',       navId: 'nav-applist',       status: 'Application List' },
+    mastercv:      { viewId: 'view-mastercv',      navId: 'nav-mastercv',      status: 'Master CV' },
+    writingprofile:{ viewId: 'view-writingprofile', navId: 'nav-writingprofile', status: 'Writing Profile' },
+    session:       { viewId: 'view-session',       navId: 'nav-session',       status: 'Acme Corp \u2014 Senior Software Engineer' },
+    settings:      { viewId: 'view-settings',      navId: 'nav-settings',      status: 'Settings' },
   };
 
   function switchTab(tab) {
