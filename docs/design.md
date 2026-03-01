@@ -68,8 +68,8 @@ Each suggestion is presented individually for review. The user can accept, edit,
 - Paste a job description directly into the app to generate a tailored resume.
 - All generated content is drawn exclusively from the Master CV — the LLM selects, prioritizes, and refines existing entries but cannot introduce experience that isn't already there.
 - The generated resume is optimized for ATS systems while remaining readable and visually appealing.
-- A match report is generated alongside each resume, where the LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps.
-- Optionally generate a cover letter tailored to the same job description, informed by uploaded cover letters and Master CV content.
+- **Match Report** — generated on demand via a button in the Match Report tab. The LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps. Not generated automatically; the user triggers it when ready.
+- **Cover Letter** — generated on demand via a button in the Cover Letter tab. Tailored to the same job description, informed by uploaded cover letters and Master CV content. Not generated automatically; the user triggers it when ready.
 
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.

@@ -4,16 +4,18 @@
   Static HTML approximation of the main app views.
   Not functional — for layout and visual design reference only.
 
-  Views (click sidebar buttons to switch):
+  Views (click sidebar buttons or topbar icons to switch):
     1. Session view          (default) — resume editor for a specific job application
        Tabs: Resume · Cover Letter · Match Report · Description
        Resume: feedback prompt bar above paper; AI suggestions inline on bullets
-       Cover Letter: document paper only; editing toolbar on hover per paragraph;
-                     AI feedback suggestions appear inline below each paragraph
-       Match Report: full-width expanded report (two-column strengths/gaps)
+       Cover Letter: empty state with Generate button on first visit;
+                     after generating: document paper with per-paragraph toolbar and inline feedback
+       Match Report: empty state with Generate button on first visit;
+                     after generating: full-width expanded report (two-column strengths/gaps)
        Description: full-width job description with inline edit
     2. Application List      (sidebar: ≡) — sortable/filterable table of all applications
     3. Master CV             (sidebar: 📄) — comprehensive, permanent experience record
+    4. Settings              (sidebar footer ⚙ or topbar ⚙) — API key, model, contact info, theme, backups
 -->
 <html lang="en">
 <head>
@@ -1942,6 +1944,365 @@
       color: var(--text-primary);
       font-weight: 600;
     }
+
+    /* ── Resume bullet hover toolbar ─────────────────────────────────────── */
+
+    .r-bullet-wrap {
+      position: relative;
+      margin-bottom: 2px;
+    }
+    .r-bullet-wrap > .r-bullet { margin-bottom: 0; }
+    .r-bullet-block > .r-bullet-wrap { margin-bottom: 0; }
+
+    .r-bullet-toolbar {
+      display: none;
+      position: absolute;
+      top: 100%;
+      margin-top: 2px;
+      right: 0;
+      background: #1a2332;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+      z-index: 10;
+    }
+    .r-bullet-wrap:hover .r-bullet-toolbar { display: flex; }
+
+    .r-bullet-toolbar button {
+      background: transparent;
+      border: none;
+      color: #b8cad6;
+      padding: 4px 11px;
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .r-bullet-toolbar button:hover { background: rgba(255,255,255,0.1); color: white; }
+    .r-bullet-toolbar button + button { border-left: 1px solid rgba(255,255,255,0.1); }
+
+    /* ── Resume entry title click-to-edit ────────────────────────────────── */
+
+    .r-entry-title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin: -1px -5px;
+      transition: background 0.1s;
+    }
+    .r-entry-title-wrap:hover { background: #f0f4ff; }
+
+    .r-entry-edit-icon {
+      display: none;
+      font-size: 11px;
+      color: #9eaab5;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .r-entry-title-wrap:hover .r-entry-edit-icon { display: inline; }
+
+    .r-entry-title-input {
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #111827;
+      background: #f0f5ff;
+      outline: none;
+      min-width: 260px;
+    }
+
+    /* ── Revise with AI inline panel ─────────────────────────────────────── */
+
+    .revise-ai-panel {
+      margin-top: 6px;
+      background: #f0f4ff;
+      border: 1px solid #c5d5f8;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .revise-ai-panel-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1565c0;
+      margin-bottom: 6px;
+    }
+    .revise-ai-panel textarea {
+      width: 100%;
+      border: 1px solid #c5d5f8;
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-family: var(--font);
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      background: white;
+      outline: none;
+      resize: none;
+      min-height: 52px;
+      field-sizing: content;
+      overflow: hidden;
+    }
+    .revise-ai-panel textarea:focus { border-color: var(--primary); }
+    .revise-ai-panel textarea::placeholder { color: #aab0ba; }
+    .revise-ai-panel-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      justify-content: flex-end;
+    }
+
+    /* ── Generate empty state ─────────────────────────────────────────────── */
+
+    .generate-empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 64px 32px;
+      gap: 12px;
+    }
+
+    .generate-empty-icon {
+      font-size: 40px;
+      opacity: 0.3;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+
+    .generate-empty-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .generate-empty-body {
+      font-size: 13px;
+      color: var(--text-secondary);
+      max-width: 360px;
+      line-height: 1.6;
+    }
+
+    .generate-btn { margin-top: 8px; }
+
+    /* ── Settings View ─────────────────────────────────────────────────────── */
+
+    .settings-bar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      flex-shrink: 0;
+    }
+
+    .settings-bar h2 { font-size: 16px; font-weight: 700; }
+
+    .settings-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px 48px;
+      max-width: 640px;
+    }
+    .settings-area::-webkit-scrollbar { width: 6px; }
+    .settings-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
+
+    .settings-section { margin-bottom: 28px; }
+
+    .settings-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .settings-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      border-bottom: 1px solid #f0f1f3;
+    }
+    .settings-row:last-child { border-bottom: none; }
+
+    .settings-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      width: 130px;
+      flex-shrink: 0;
+    }
+
+    .settings-label-req { color: #c62828; }
+
+    .settings-label-block { min-width: 130px; flex-shrink: 0; }
+    .settings-label-block .settings-label { width: auto; }
+    .settings-label-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .settings-input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+      background: #f9fafb;
+    }
+    .settings-input:focus { border-color: var(--primary); background: white; }
+
+    .settings-key-input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-family: monospace;
+      font-size: 12.5px;
+      color: var(--text-primary);
+      outline: none;
+      background: #f9fafb;
+    }
+    .settings-key-input:focus { border-color: var(--primary); background: white; }
+
+    .settings-input-group { display: flex; flex: 1; gap: 8px; }
+
+    .settings-select {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+      background: #f9fafb;
+      cursor: pointer;
+    }
+    .settings-select:focus { border-color: var(--primary); }
+
+    .settings-btn-sm {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .settings-btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+
+    .settings-btn-primary {
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .settings-btn-primary:hover { background: var(--primary-hover); }
+
+    .settings-hint {
+      font-size: 11.5px;
+      color: #9eaab5;
+      padding: 8px 16px 12px;
+      border-top: 1px solid #f0f1f3;
+    }
+
+    .theme-options {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .theme-btn {
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 20px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .theme-btn:last-child { border-right: none; }
+    .theme-btn:hover { background: #f0f4ff; color: var(--primary); }
+    .theme-btn.active { background: var(--primary); color: white; }
+
+    .path-display {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: monospace;
+      background: #f5f6f8;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .settings-actions-row {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid #f0f1f3;
+    }
+
+    /* Sidebar settings button */
+    .sidebar-settings-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--sidebar-text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      transition: all 0.12s;
+      text-align: left;
+    }
+    .sidebar-settings-btn:hover { background: var(--sidebar-hover); color: white; }
+    .sidebar-settings-btn.active { background: var(--sidebar-active); color: white; }
   </style>
 </head>
 <body>
@@ -1954,7 +2315,7 @@
     <button class="topbar-btn" onclick="switchView('session')">
       <span style="font-size:15px; line-height:1">+</span> New Session
     </button>
-    <button class="topbar-icon-btn" title="Settings">&#9881;</button>
+    <button class="topbar-icon-btn" title="Settings" onclick="switchView('settings')">&#9881;</button>
   </header>
 
   <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
@@ -2016,6 +2377,9 @@
     </div>
 
     <div class="sidebar-footer">
+      <button class="sidebar-settings-btn" id="nav-settings" onclick="switchView('settings')">
+        <span>&#9881;</span> Settings
+      </button>
       <button class="btn-new-sidebar">
         <span>+</span> New Session
       </button>
@@ -2083,13 +2447,44 @@
 
             <div class="r-entry">
               <div class="r-entry-header">
-                <span class="r-entry-title">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp</span>
+                <span class="r-entry-title-wrap" onclick="editEntryTitle(this)">
+                  <span class="r-entry-title">Senior Software Engineer &nbsp;&middot;&nbsp; Acme Corp</span>
+                  <span class="r-entry-edit-icon">&#9998;</span>
+                </span>
                 <span class="r-entry-date">Jan 2023 – Present</span>
               </div>
               <div class="r-bullets">
-                <div class="r-bullet">Redesigned the platform's caching layer, cutting P99 API latency by 42% and reducing database load by 60% during peak traffic periods.</div>
+                <div class="r-bullet-wrap">
+                  <div class="r-bullet">Redesigned the platform's caching layer, cutting P99 API latency by 42% and reducing database load by 60% during peak traffic periods.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                </div>
                 <div class="r-bullet-block">
+                  <div class="r-bullet-wrap">
                   <div class="r-bullet">Led a cross-functional team of 5 engineers to deliver a new customer analytics dashboard, shipped on schedule across 3 sprint cycles.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                  </div>
                   <div class="cl-feedback-inline type-strengthen">
                     <div class="cl-fb-header">
                       <span class="feedback-type feedback-type-strengthen">Strengthen</span>
@@ -2112,7 +2507,21 @@
                     </div>
                   </div>
                 </div>
-                <div class="r-bullet">Established on-call runbooks and automated alerting that reduced mean time to resolution by 35% over six months.</div>
+                <div class="r-bullet-wrap">
+                  <div class="r-bullet">Established on-call runbooks and automated alerting that reduced mean time to resolution by 35% over six months.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                </div>
                 <!-- Add suggestion: new Kubernetes bullet -->
                 <div class="cl-feedback-inline type-add" style="margin-top:8px">
                   <div class="cl-fb-header">
@@ -2137,13 +2546,44 @@
 
             <div class="r-entry">
               <div class="r-entry-header">
-                <span class="r-entry-title">Software Engineer II &nbsp;&middot;&nbsp; Wavelength Labs</span>
+                <span class="r-entry-title-wrap" onclick="editEntryTitle(this)">
+                  <span class="r-entry-title">Software Engineer II &nbsp;&middot;&nbsp; Wavelength Labs</span>
+                  <span class="r-entry-edit-icon">&#9998;</span>
+                </span>
                 <span class="r-entry-date">Jun 2020 – Jan 2023</span>
               </div>
               <div class="r-bullets">
-                <div class="r-bullet">Built and maintained REST APIs serving 1.8M+ daily active users with 99.97% uptime over 2.5 years.</div>
+                <div class="r-bullet-wrap">
+                  <div class="r-bullet">Built and maintained REST APIs serving 1.8M+ daily active users with 99.97% uptime over 2.5 years.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                </div>
                 <div class="r-bullet-block">
+                  <div class="r-bullet-wrap">
                   <div class="r-bullet">Migrated a monolithic Rails application to microservices, enabling independent deployments and reducing CI times by 55%.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                  </div>
                   <div class="cl-feedback-inline type-reframe">
                     <div class="cl-fb-header">
                       <span class="feedback-type feedback-type-reframe">Reframe</span>
@@ -2166,17 +2606,48 @@
                     </div>
                   </div>
                 </div>
-                <div class="r-bullet">Shipped a real-time notification system using WebSockets and Redis Pub/Sub, supporting 50k concurrent connections.</div>
+                <div class="r-bullet-wrap">
+                  <div class="r-bullet">Shipped a real-time notification system using WebSockets and Redis Pub/Sub, supporting 50k concurrent connections.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div class="r-entry">
               <div class="r-entry-header">
-                <span class="r-entry-title">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark</span>
+                <span class="r-entry-title-wrap" onclick="editEntryTitle(this)">
+                  <span class="r-entry-title">Software Engineering Intern &nbsp;&middot;&nbsp; DataSpark</span>
+                  <span class="r-entry-edit-icon">&#9998;</span>
+                </span>
                 <span class="r-entry-date">May 2019 – Aug 2019</span>
               </div>
               <div class="r-bullets">
-                <div class="r-bullet">Built a pipeline to ingest and normalize streaming event data from 12 external sources, reducing manual QA effort by 80%.</div>
+                <div class="r-bullet-wrap">
+                  <div class="r-bullet">Built a pipeline to ingest and normalize streaming event data from 12 external sources, reducing manual QA effort by 80%.</div>
+                  <div class="r-bullet-toolbar">
+                    <button>&#9998; Edit</button>
+                    <button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button>
+                  </div>
+                  <div class="revise-ai-panel" style="display:none">
+                    <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+                    <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+                    <div class="revise-ai-panel-actions">
+                      <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                      <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2226,8 +2697,19 @@
 
         </div><!-- /resume-area -->
 
-        <!-- Cover Letter area (bar + paper) -->
+        <!-- Cover Letter area (empty or generated) -->
         <div id="cl-area" style="display:none; flex-direction:column; align-items:center; gap:12px; flex:1; min-width:0">
+
+          <!-- Empty state: shown until generated -->
+          <div id="cl-empty" class="generate-empty-state">
+            <div class="generate-empty-icon">&#9993;</div>
+            <div class="generate-empty-title">No cover letter yet</div>
+            <div class="generate-empty-body">Generate a cover letter tailored to this job description, grounded in your Master CV.</div>
+            <button class="btn-primary generate-btn" onclick="generateCL()">&#10024; Generate Cover Letter</button>
+          </div>
+
+          <!-- Generated state (hidden until generated) -->
+          <div id="cl-generated" style="display:none; flex-direction:column; align-items:center; gap:12px; flex:1; min-width:0; width:100%">
 
           <!-- Feedback prompt bar -->
           <div class="cl-feedback-bar">
@@ -2274,7 +2756,15 @@
           <div class="cl-para-block">
             <div class="cl-para-text-wrap">
               <p class="cl-paragraph">In my time at Wavelength Labs, I led the migration of a monolithic Rails application to a microservices architecture spanning six services, enabling independent deployments for four product teams and reducing CI build times by 55%. I also shipped a real-time notification system using WebSockets and Redis Pub/Sub that handled 50k concurrent connections at peak. These projects deepened my appreciation for the tradeoffs involved in building reliable, high-throughput systems — exactly the kind of work your platform team focuses on.</p>
-              <div class="cl-para-toolbar"><button>&#9998; Edit</button><button>&#10024; Revise with AI</button></div>
+              <div class="cl-para-toolbar"><button>&#9998; Edit</button><button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button></div>
+            </div>
+            <div class="revise-ai-panel" style="display:none">
+              <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+              <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+              <div class="revise-ai-panel-actions">
+                <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+              </div>
             </div>
             <!-- Inline feedback card -->
             <div class="cl-feedback-inline type-add">
@@ -2305,7 +2795,15 @@
           <div class="cl-para-block" style="margin-bottom:0">
             <div class="cl-para-text-wrap">
               <p class="cl-paragraph">What draws me to Acme Corp specifically is the emphasis on on-call ownership and technical leadership. I thrive in environments where engineers are accountable end-to-end, and I've built that culture on the teams I've been part of — establishing runbooks and automated alerting that reduced MTTR by 35%, and mentoring three junior engineers who were promoted within 18 months. I'd welcome the chance to bring that same focus to your team.</p>
-              <div class="cl-para-toolbar"><button>&#9998; Edit</button><button>&#10024; Revise with AI</button></div>
+              <div class="cl-para-toolbar"><button>&#9998; Edit</button><button onclick="toggleReviseAI(this)">&#10024; Revise with AI</button></div>
+            </div>
+            <div class="revise-ai-panel" style="display:none">
+              <div class="revise-ai-panel-label">&#10024; Revise with AI</div>
+              <textarea placeholder="Optional: add context or instructions for the AI…"></textarea>
+              <div class="revise-ai-panel-actions">
+                <button class="jd-cancel-btn" onclick="cancelReviseAI(this)">Cancel</button>
+                <button class="btn-primary" style="font-size:12px;padding:5px 14px;">Submit</button>
+              </div>
             </div>
             <!-- Inline feedback card -->
             <div class="cl-feedback-inline type-strengthen">
@@ -2336,10 +2834,23 @@
           <div class="cl-signature-name">Alex Johnson</div>
 
         </div><!-- /cl-paper -->
+
+          </div><!-- /cl-generated -->
         </div><!-- /cl-area -->
 
         <!-- ── Match Report full view (Match Report tab) ──────────────────── -->
-        <div class="mr-full" id="match-report-area" style="display:none">
+        <div id="match-report-area" style="display:none; flex:1; min-width:0; flex-direction:column; align-items:center; gap:20px;">
+
+          <!-- Empty state: shown until generated -->
+          <div id="mr-empty" class="generate-empty-state">
+            <div class="generate-empty-icon">&#128202;</div>
+            <div class="generate-empty-title">No match report yet</div>
+            <div class="generate-empty-body">Generate a match report to see how well your resume aligns with this job description — keyword coverage, strengths, and gaps.</div>
+            <button class="btn-primary generate-btn" onclick="generateMR()">&#10024; Generate Match Report</button>
+          </div>
+
+          <!-- Generated state (hidden until generated) -->
+          <div id="mr-generated" class="mr-full" style="display:none">
 
           <div class="mr-full-header">
             <div class="mr-full-rating-row">
@@ -2369,6 +2880,7 @@
 
           </div><!-- /mr-full-columns -->
 
+          </div><!-- /mr-generated -->
         </div><!-- /match-report-area -->
 
         <!-- ── Description full view (Description tab) ─────────────────────── -->
@@ -2976,6 +3488,107 @@ About the team:
 
     </div><!-- /view-applist -->
 
+    <!-- ── Settings View ──────────────────────────────────────────────────── -->
+    <div class="view" id="view-settings">
+
+      <div class="settings-bar">
+        <h2>Settings</h2>
+      </div>
+
+      <div class="settings-area">
+
+        <!-- AI -->
+        <div class="settings-section">
+          <div class="settings-section-title">AI</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-label-block">
+                <div class="settings-label">Anthropic API Key</div>
+                <div class="settings-label-sub">Stored in OS keychain</div>
+              </div>
+              <div class="settings-input-group">
+                <input class="settings-key-input" type="password" value="sk-ant-api03-placeholder-key-value" placeholder="sk-ant-api03-…">
+                <button class="settings-btn-sm">Show</button>
+              </div>
+              <button class="settings-btn-primary">Save</button>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">Claude Model</div>
+              <select class="settings-select">
+                <option value="claude-opus-4-6" selected>claude-opus-4-6</option>
+                <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+                <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
+              </select>
+            </div>
+            <div class="settings-hint">Available models are fetched from the Anthropic API at runtime. Token usage and estimated cost are shown after each AI operation.</div>
+          </div>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="settings-section">
+          <div class="settings-section-title">Contact Info</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-label">Full Name <span class="settings-label-req">*</span></div>
+              <input class="settings-input" type="text" value="Alex Johnson">
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">Phone <span class="settings-label-req">*</span></div>
+              <input class="settings-input" type="tel" value="(555) 248-0931">
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">Email <span class="settings-label-req">*</span></div>
+              <input class="settings-input" type="email" value="alex@email.com">
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">LinkedIn</div>
+              <input class="settings-input" type="url" value="linkedin.com/in/alex-johnson" placeholder="linkedin.com/in/…">
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">GitHub</div>
+              <input class="settings-input" type="url" value="github.com/alexjohnson" placeholder="github.com/…">
+            </div>
+            <div class="settings-actions-row">
+              <button class="settings-btn-primary">Save</button>
+              <button class="settings-btn-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Appearance -->
+        <div class="settings-section">
+          <div class="settings-section-title">Appearance</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-label">Theme</div>
+              <div class="theme-options">
+                <button class="theme-btn active">Light</button>
+                <button class="theme-btn">Dark</button>
+                <button class="theme-btn">System</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backups -->
+        <div class="settings-section">
+          <div class="settings-section-title">Backups</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-label">Backup Location</div>
+              <div class="path-display">C:\Users\alex\Documents\ResumeBackups</div>
+              <button class="settings-btn-sm">Browse&hellip;</button>
+            </div>
+            <div class="settings-actions-row">
+              <button class="settings-btn-sm">Export Full Backup&hellip;</button>
+              <button class="settings-btn-sm">Import Backup&hellip;</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /settings-area -->
+    </div><!-- /view-settings -->
+
   </main>
 
   <!-- ── Status Bar ──────────────────────────────────────────────────────────── -->
@@ -2990,11 +3603,12 @@ About the team:
 </div><!-- /app -->
 
 <script>
-  const NAV_IDS  = ['nav-applist', 'nav-mastercv', 'nav-session'];
+  const NAV_IDS  = ['nav-applist', 'nav-mastercv', 'nav-session', 'nav-settings'];
   const VIEW_MAP = {
     applist:  { viewId: 'view-applist',  navId: 'nav-applist',  status: 'Application List' },
     mastercv: { viewId: 'view-mastercv', navId: 'nav-mastercv', status: 'Master CV' },
     session:  { viewId: 'view-session',  navId: 'nav-session',  status: 'Acme Corp \u2014 Senior Software Engineer' },
+    settings: { viewId: 'view-settings', navId: 'nav-settings', status: 'Settings' },
   };
 
   function switchTab(tab) {
@@ -3064,6 +3678,78 @@ About the team:
     });
 
     document.getElementById('status-context').textContent = cfg.status;
+  }
+
+  /* ── Entry title click-to-edit ───────────────────────────────────────── */
+
+  function editEntryTitle(wrap) {
+    if (wrap.dataset.editing === 'true') return;
+    wrap.dataset.editing = 'true';
+
+    const titleSpan = wrap.querySelector('.r-entry-title');
+    const iconSpan  = wrap.querySelector('.r-entry-edit-icon');
+    const savedText = titleSpan.textContent.trim();
+
+    titleSpan.style.display = 'none';
+    if (iconSpan) iconSpan.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.className = 'r-entry-title-input';
+    input.value = savedText;
+    input.onclick = e => e.stopPropagation();
+
+    const restore = () => {
+      [input, saveBtn, cancelBtn].forEach(el => el.remove());
+      titleSpan.style.display = '';
+      if (iconSpan) iconSpan.style.display = '';
+      wrap.dataset.editing = 'false';
+    };
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'jd-save-btn';
+    saveBtn.style.cssText = 'font-size:11px;padding:3px 10px;margin-left:6px;';
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = e => { e.stopPropagation(); titleSpan.textContent = input.value; restore(); };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'jd-cancel-btn';
+    cancelBtn.style.cssText = 'font-size:11px;padding:3px 10px;margin-left:4px;';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = e => { e.stopPropagation(); restore(); };
+
+    wrap.appendChild(input);
+    wrap.appendChild(saveBtn);
+    wrap.appendChild(cancelBtn);
+    input.focus();
+    input.select();
+  }
+
+  /* ── Revise with AI panel ────────────────────────────────────────────── */
+
+  function toggleReviseAI(btn) {
+    const container = btn.closest('.r-bullet-wrap') || btn.closest('.cl-para-block');
+    if (!container) return;
+    const panel = container.querySelector('.revise-ai-panel');
+    if (!panel) return;
+    const isHidden = !panel.style.display || panel.style.display === 'none';
+    panel.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) panel.querySelector('textarea').focus();
+  }
+
+  function cancelReviseAI(btn) {
+    btn.closest('.revise-ai-panel').style.display = 'none';
+  }
+
+  /* ── On-demand generation ─────────────────────────────────────────── */
+
+  function generateCL() {
+    document.getElementById('cl-empty').style.display = 'none';
+    document.getElementById('cl-generated').style.display = 'flex';
+  }
+
+  function generateMR() {
+    document.getElementById('mr-empty').style.display = 'none';
+    document.getElementById('mr-generated').style.display = 'flex';
   }
 </script>
 </body>
