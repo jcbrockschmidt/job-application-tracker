@@ -10,9 +10,9 @@
 // case to a specific user-facing message (see docs/design.md § Error Handling).
 
 export type IngestionError =
-  | { type: 'image-only-pdf' }   // scanned PDF with no extractable text
+  | { type: 'image-only-pdf' } // scanned PDF with no extractable text
   | { type: 'password-protected' } // PDF requires a password
-  | { type: 'corrupt' }           // file cannot be read or parsed
+  | { type: 'corrupt' } // file cannot be read or parsed
   | { type: 'unsupported-format'; ext: string } // extension not in allowed list
 
 // Extracts the full plain text from a file.

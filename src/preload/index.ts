@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { WindowAPI, SourceDocType, DocumentType, MasterCV, WritingProfile } from '../shared/types'
+import type {
+  WindowAPI,
+  SourceDocType,
+  DocumentType,
+  MasterCV,
+  WritingProfile
+} from '../shared/types'
 
 const api: WindowAPI = {
   settings: {
@@ -33,8 +39,7 @@ const api: WindowAPI = {
   masterCV: {
     get: () => ipcRenderer.invoke('masterCV:get'),
     save: (cv: MasterCV) => ipcRenderer.invoke('masterCV:save', cv),
-    regenerate: (documentIds?: string[]) =>
-      ipcRenderer.invoke('masterCV:regenerate', documentIds)
+    regenerate: (documentIds?: string[]) => ipcRenderer.invoke('masterCV:regenerate', documentIds)
   },
 
   writingProfile: {

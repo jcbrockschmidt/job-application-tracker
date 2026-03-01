@@ -6,21 +6,16 @@ export const applications = sqliteTable('applications', {
   roleTitle: text('role_title').notNull(),
   briefSummary: text('brief_summary'),
   dateGenerated: text('date_generated').notNull(),
-  resumeStatus: text('resume_status', { enum: ['draft', 'finalized'] }).notNull().default('draft'),
+  resumeStatus: text('resume_status', { enum: ['draft', 'finalized'] })
+    .notNull()
+    .default('draft'),
   coverLetterStatus: text('cover_letter_status', {
     enum: ['none', 'draft', 'finalized']
   })
     .notNull()
     .default('none'),
   applicationStatus: text('application_status', {
-    enum: [
-      'not_applied',
-      'submitted',
-      'interviewing',
-      'offer_received',
-      'rejected',
-      'withdrawn'
-    ]
+    enum: ['not_applied', 'submitted', 'interviewing', 'offer_received', 'rejected', 'withdrawn']
   })
     .notNull()
     .default('not_applied'),

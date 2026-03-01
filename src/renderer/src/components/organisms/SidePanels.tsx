@@ -103,7 +103,9 @@ function MatchRatingCard({ report }: { report: MatchReport }): JSX.Element {
         return (
           <Box key={i} sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
             {isStrength ? (
-              <CheckCircleOutlineIcon sx={{ fontSize: 13, color: '#16a34a', mt: 0.2, flexShrink: 0 }} />
+              <CheckCircleOutlineIcon
+                sx={{ fontSize: 13, color: '#16a34a', mt: 0.2, flexShrink: 0 }}
+              />
             ) : (
               <WarningAmberIcon sx={{ fontSize: 13, color: '#d97706', mt: 0.2, flexShrink: 0 }} />
             )}

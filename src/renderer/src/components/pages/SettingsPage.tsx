@@ -15,7 +15,17 @@
 //     → dispatch setSpendingLimit(n); window.api.settings.save({ spendingLimit })
 //   - Backup Location: directory path picker (Phase 6)
 
-import { Box, Typography, Divider, TextField, Button, MenuItem, Select, FormControl, InputLabel } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Divider,
+  TextField,
+  Button,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
+} from '@mui/material'
 
 export default function SettingsPage(): JSX.Element {
   // TODO: const settings = useAppSelector(state => state.settings)
@@ -53,7 +63,9 @@ export default function SettingsPage(): JSX.Element {
         <FormControl size="small" sx={{ minWidth: 300 }}>
           <InputLabel>Model</InputLabel>
           <Select label="Model" value="">
-            <MenuItem value="" disabled>Loading models…</MenuItem>
+            <MenuItem value="" disabled>
+              Loading models…
+            </MenuItem>
           </Select>
         </FormControl>
       </SettingsSection>

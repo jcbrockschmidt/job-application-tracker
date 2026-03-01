@@ -39,7 +39,14 @@ export default function OnboardingPage(): JSX.Element {
     >
       <Paper
         elevation={8}
-        sx={{ width: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden' }}
+        sx={{
+          width: 560,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: 3,
+          overflow: 'hidden'
+        }}
       >
         {/* Header */}
         <Box sx={{ px: 4, pt: 4, pb: 2 }}>
@@ -75,7 +82,15 @@ export default function OnboardingPage(): JSX.Element {
         </Box>
 
         {/* Footer actions */}
-        <Box sx={{ px: 4, py: 2.5, borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            px: 4,
+            py: 2.5,
+            borderTop: '1px solid #e0e0e0',
+            display: 'flex',
+            justifyContent: 'space-between'
+          }}
+        >
           {/* TODO: disabled on step 0 */}
           <Button color="inherit" disabled>
             Back

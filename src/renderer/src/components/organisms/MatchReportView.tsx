@@ -143,6 +143,9 @@ const RATING_COLORS: Record<MatchRating, { bg: string; text: string }> = {
 function RatingBadge({ rating }: { rating: MatchRating }): JSX.Element {
   const { bg, text } = RATING_COLORS[rating]
   return (
-    <Chip label={rating} sx={{ bgcolor: bg, color: text, fontWeight: 700, fontSize: 13, px: 0.5 }} />
+    <Chip
+      label={rating}
+      sx={{ bgcolor: bg, color: text, fontWeight: 700, fontSize: 13, px: 0.5 }}
+    />
   )
 }

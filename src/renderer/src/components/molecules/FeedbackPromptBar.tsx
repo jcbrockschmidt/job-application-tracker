@@ -40,11 +40,13 @@ interface FeedbackPromptBarProps {
 }
 
 // STUB: Phase 4
-export default function FeedbackPromptBar({
-  // sessionId,     // TODO: pass to window.api.generate.feedback
-  // documentType,  // TODO: pass to window.api.generate.feedback
-  // onApplyChange  // TODO: call from onAccept handler
-}: FeedbackPromptBarProps): JSX.Element {
+export default function FeedbackPromptBar(
+  {
+    // sessionId,     // TODO: pass to window.api.generate.feedback
+    // documentType,  // TODO: pass to window.api.generate.feedback
+    // onApplyChange  // TODO: call from onAccept handler
+  }: FeedbackPromptBarProps
+): JSX.Element {
   // TODO: const [prompt, setPrompt] = useState('')
   // TODO: const [isLoading, setIsLoading] = useState(false)
   // TODO: const [suggestions, setSuggestions] = useState<FeedbackItem[]>([])

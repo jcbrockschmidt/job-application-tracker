@@ -53,8 +53,8 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
 
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Paste the full job description below. The app will generate a tailored resume
-          from your Master CV.
+          Paste the full job description below. The app will generate a tailored resume from your
+          Master CV.
         </Typography>
 
         {/* TODO: value={jobDescription} onChange={e => setJobDescription(e.target.value)} */}

@@ -41,12 +41,7 @@ export default function SessionHeader({ session }: SessionHeaderProps): JSX.Elem
     >
       {/* Company + role */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="subtitle1"
-          fontWeight={600}
-          noWrap
-          sx={{ fontSize: 15 }}
-        >
+        <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ fontSize: 15 }}>
           {session.companyName || 'Company'}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

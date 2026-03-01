@@ -108,7 +108,9 @@ export default function SessionPage(): JSX.Element {
         }}
       >
         {/* Document area */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <Box
+          sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
+        >
           {activeTab === 'resume' && (
             <>
               {/* FeedbackPromptBar — STUB: Phase 4 */}

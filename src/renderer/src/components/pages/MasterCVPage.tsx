@@ -137,7 +137,17 @@ export default function MasterCVPage(): JSX.Element {
       {/* TODO: shown when regenError !== null */}
       {/* <Alert severity="error" action={<Button onClick={handleRegenerate}>Retry</Button>}>{regenError}</Alert> */}
 
-      <Box sx={{ flex: 1, overflowY: 'auto', px: 4, py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          px: 4,
+          py: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3
+        }}
+      >
         {/* Unincorporated documents banner — STUB: Phase 3 */}
         {/* TODO: shown when unincorporatedDocs.length > 0 */}
         {/* <UnincorporatedDocsBanner docs={unincorporatedDocs} onRegenerate={handleRegenerate} /> */}
@@ -401,7 +411,10 @@ function ExperienceEntryCard({ entry }: { entry: MasterCVExperienceEntry }): JSX
           {/* TODO: when isEditingEntry, replace with TextFields for title / company / startDate / endDate */}
           <Typography fontWeight={700} sx={{ fontSize: 13.5, color: '#111827' }}>
             {entry.title}
-            <Typography component="span" sx={{ fontWeight: 400, color: '#6b7280', ml: 0.75, fontSize: 13 }}>
+            <Typography
+              component="span"
+              sx={{ fontWeight: 400, color: '#6b7280', ml: 0.75, fontSize: 13 }}
+            >
               · {entry.company}
             </Typography>
           </Typography>
@@ -462,9 +475,9 @@ function BulletRow({ bullet }: { bullet: MasterCVBullet }): JSX.Element {
   // TODO: const [draft, setDraft] = useState(bullet.text)
 
   const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
-    manual:      { bg: '#e0e7ff', text: '#3730a3' },
-    ingested:    { bg: '#d1fae5', text: '#065f46' },
-    finalized:   { bg: '#dbeafe', text: '#1e40af' },
+    manual: { bg: '#e0e7ff', text: '#3730a3' },
+    ingested: { bg: '#d1fae5', text: '#065f46' },
+    finalized: { bg: '#dbeafe', text: '#1e40af' },
     regenerated: { bg: '#fce7f3', text: '#9d174d' }
   }
   const colors = SOURCE_COLORS[bullet.source] ?? { bg: '#f3f4f6', text: '#374151' }
@@ -483,7 +496,9 @@ function BulletRow({ bullet }: { bullet: MasterCVBullet }): JSX.Element {
         '&:hover .bullet-delete': { opacity: 1 }
       }}
     >
-      <Typography sx={{ mt: 0.15, color: '#374151', fontSize: 12.5, lineHeight: 1.1, flexShrink: 0 }}>
+      <Typography
+        sx={{ mt: 0.15, color: '#374151', fontSize: 12.5, lineHeight: 1.1, flexShrink: 0 }}
+      >
         •
       </Typography>
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -587,7 +602,9 @@ function EducationSection(): JSX.Element {
   return (
     <Box>
       <SectionHeading title="Education" />
-      <Box sx={{ bgcolor: 'white', border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}>
+      <Box
+        sx={{ bgcolor: 'white', border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}
+      >
         {/* TODO: masterCV.education.map(e => <EducationRow key={e.id} entry={e} onSave={...} onDelete={...} />) */}
         <EducationRow
           degree="Bachelor of Science in Computer Science"
@@ -658,7 +675,10 @@ function EducationRow({
           {institution} · {graduationDate}
         </Typography>
       </Box>
-      <Box className="edu-actions" sx={{ display: 'flex', opacity: 0, transition: 'opacity 0.15s' }}>
+      <Box
+        className="edu-actions"
+        sx={{ display: 'flex', opacity: 0, transition: 'opacity 0.15s' }}
+      >
         {/* TODO: onClick={() => setIsEditing(true)} */}
         <IconButton size="small" sx={{ color: '#9ca3af', '&:hover': { color: '#374151' } }}>
           <EditIcon sx={{ fontSize: 14 }} />
@@ -690,7 +710,9 @@ function SkillsSection(): JSX.Element {
   return (
     <Box>
       <SectionHeading title="Skills" />
-      <Box sx={{ bgcolor: 'white', border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}>
+      <Box
+        sx={{ bgcolor: 'white', border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}
+      >
         {/* TODO: masterCV.skills.map(cat => <SkillCategoryRow key={cat.id} cat={cat} onSave={...} onDelete={...} />) */}
         <SkillCategoryRow
           category="Languages"
@@ -756,7 +778,14 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
       {/* TODO: when isEditingCategory, render TextField for draftCategory */}
       <Typography
         fontWeight={600}
-        sx={{ fontSize: 12.5, color: '#374151', minWidth: 150, pt: 0.35, cursor: 'pointer', flexShrink: 0 }}
+        sx={{
+          fontSize: 12.5,
+          color: '#374151',
+          minWidth: 150,
+          pt: 0.35,
+          cursor: 'pointer',
+          flexShrink: 0
+        }}
       >
         {category}:
       </Typography>
@@ -785,7 +814,13 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
           label="Add"
           size="small"
           variant="outlined"
-          sx={{ fontSize: 11.5, height: 22, cursor: 'pointer', color: '#9ca3af', borderStyle: 'dashed' }}
+          sx={{
+            fontSize: 11.5,
+            height: 22,
+            cursor: 'pointer',
+            color: '#9ca3af',
+            borderStyle: 'dashed'
+          }}
         />
       </Box>
 
@@ -794,7 +829,14 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
       <IconButton
         className="cat-delete"
         size="small"
-        sx={{ opacity: 0, transition: 'opacity 0.15s', color: '#9ca3af', p: 0.25, '&:hover': { color: '#dc2626' }, flexShrink: 0 }}
+        sx={{
+          opacity: 0,
+          transition: 'opacity 0.15s',
+          color: '#9ca3af',
+          p: 0.25,
+          '&:hover': { color: '#dc2626' },
+          flexShrink: 0
+        }}
       >
         <DeleteIcon sx={{ fontSize: 14 }} />
       </IconButton>

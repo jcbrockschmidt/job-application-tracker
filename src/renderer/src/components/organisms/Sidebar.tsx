@@ -167,15 +167,17 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
       >
         <Typography
           noWrap
-          sx={{ fontSize: 12.5, fontWeight: 600, color: isActive ? 'white' : SIDEBAR_TEXT, width: '100%' }}
+          sx={{
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: isActive ? 'white' : SIDEBAR_TEXT,
+            width: '100%'
+          }}
         >
           {session.companyName || 'Unknown Company'}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, width: '100%', mt: 0.25 }}>
-          <Typography
-            noWrap
-            sx={{ fontSize: 11, color: SIDEBAR_TEXT, opacity: 0.7, flex: 1 }}
-          >
+          <Typography noWrap sx={{ fontSize: 11, color: SIDEBAR_TEXT, opacity: 0.7, flex: 1 }}>
             {session.roleTitle || 'Unknown Role'}
           </Typography>
           {/* TODO: show Draft/Final badge based on application.resumeStatus */}
@@ -199,7 +201,10 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
       <IconButton
         className="close-btn"
         size="small"
-        onClick={(e) => { e.stopPropagation(); onClose() }}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClose()
+        }}
         sx={{
           position: 'absolute',
           right: 4,

@@ -21,9 +21,9 @@ import type { FeedbackItem, FeedbackType } from '@shared/types'
 
 const TYPE_COLORS: Record<FeedbackType, { bg: string; text: string }> = {
   Strengthen: { bg: '#dbeafe', text: '#1e40af' },
-  Add:        { bg: '#dcfce7', text: '#15803d' },
-  Remove:     { bg: '#fee2e2', text: '#b91c1c' },
-  Reframe:    { bg: '#fef9c3', text: '#a16207' }
+  Add: { bg: '#dcfce7', text: '#15803d' },
+  Remove: { bg: '#fee2e2', text: '#b91c1c' },
+  Reframe: { bg: '#fef9c3', text: '#a16207' }
 }
 
 interface FeedbackSuggestionCardProps {

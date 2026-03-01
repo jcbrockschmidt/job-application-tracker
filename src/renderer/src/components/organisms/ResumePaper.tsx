@@ -291,9 +291,7 @@ function ResumeHeader({ contact }: { contact: ContactInfo }): JSX.Element {
       <Typography sx={{ fontSize: '22pt', fontWeight: 600, color: '#111827', mb: 0.625 }}>
         {contact.fullName || 'Your Name'}
       </Typography>
-      <Typography
-        sx={{ fontSize: '9.5pt', color: '#374151', letterSpacing: '0.01em', mb: 0.25 }}
-      >
+      <Typography sx={{ fontSize: '9.5pt', color: '#374151', letterSpacing: '0.01em', mb: 0.25 }}>
         {[contact.phone, contact.email, contact.linkedin, contact.github]
           .filter(Boolean)
           .join(' · ')}
@@ -341,9 +339,7 @@ function ResumeSection({ title, sectionScope, children }: ResumeSectionProps): J
 
         {/* "Revise section with AI" chip — STUB: Phase 4 */}
         {/* TODO: onClick → open InlineRevisionPanel with scope={sectionScope} */}
-        {sectionScope && (
-          <SectionReviseChip visible={headingHovered} sectionScope={sectionScope} />
-        )}
+        {sectionScope && <SectionReviseChip visible={headingHovered} sectionScope={sectionScope} />}
       </Box>
 
       {/* InlineRevisionPanel for section-level revisions — STUB: Phase 4 */}

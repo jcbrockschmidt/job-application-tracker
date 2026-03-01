@@ -51,11 +51,7 @@ export default function Statusbar(): JSX.Element {
 }
 
 function StatusText({ children }: { children: React.ReactNode }): JSX.Element {
-  return (
-    <Typography sx={{ fontSize: 11.5, color: '#5f6b7c' }}>
-      {children}
-    </Typography>
-  )
+  return <Typography sx={{ fontSize: 11.5, color: '#5f6b7c' }}>{children}</Typography>
 }
 
 function StatusSep(): JSX.Element {

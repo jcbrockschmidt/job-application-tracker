@@ -151,10 +151,10 @@ export interface MasterCV {
 
 // The type of change a regeneration suggestion proposes.
 export type RegenSuggestionType =
-  | 'add-bullet'       // a bullet present in source docs but missing from the Master CV
-  | 'expand-bullet'    // an existing bullet that could be enriched with more detail
-  | 'add-skill'        // a technology or skill named across docs but absent from the skills section
-  | 'new-entry'        // a role or project referenced in passing with no full entry
+  | 'add-bullet' // a bullet present in source docs but missing from the Master CV
+  | 'expand-bullet' // an existing bullet that could be enriched with more detail
+  | 'add-skill' // a technology or skill named across docs but absent from the skills section
+  | 'new-entry' // a role or project referenced in passing with no full entry
   | 'cover-letter-insight' // an accomplishment or framing from a cover letter not captured anywhere
 
 export interface RegenSuggestion {
@@ -286,7 +286,11 @@ export interface WindowAPI {
     matchReport: (sessionId: string) => Promise<MatchReport>
     // Returns a list of actionable feedback suggestions for the specified document.
     // prompt is an optional focus instruction from the user (e.g. "focus on ATS keywords").
-    feedback: (sessionId: string, documentType: DocumentType, prompt?: string) => Promise<FeedbackItem[]>
+    feedback: (
+      sessionId: string,
+      documentType: DocumentType,
+      prompt?: string
+    ) => Promise<FeedbackItem[]>
     // Returns proposed replacement text for a targeted revision. The caller shows
     // a diff and decides whether to accept or reject before applying.
     revise: (sessionId: string, section: string, instruction: string) => Promise<string>

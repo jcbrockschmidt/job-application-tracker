@@ -95,8 +95,8 @@ export default function SpendingLimitDialog({
         </Box>
 
         <DialogContentText sx={{ fontSize: 12.5, color: '#6b7280' }}>
-          Costs are estimates based on published model pricing and may not match actual charges.
-          You can update the limit in Settings.
+          Costs are estimates based on published model pricing and may not match actual charges. You
+          can update the limit in Settings.
         </DialogContentText>
       </DialogContent>
 

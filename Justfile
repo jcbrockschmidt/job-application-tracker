@@ -37,6 +37,10 @@ typecheck:
 lint:
     npx eslint src
 
+# Auto-format source files with Prettier
+format:
+    npx prettier --write src
+
 # Generate Drizzle migrations from schema changes
 db-generate:
     npx drizzle-kit generate
