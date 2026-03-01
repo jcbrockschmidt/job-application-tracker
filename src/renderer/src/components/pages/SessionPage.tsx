@@ -1,16 +1,26 @@
 // Session view: the main workspace for a single job application.
-// Layout: session header bar / tab bar / (document area + side panels).
+// Layout: session header bar / tab bar / spending-limit warning bar /
+//         (document area + side panels).
 // The document area renders one of four tab views; side panels are always visible.
 //
 // STUB: Phase 1 — Resume tab fully rendered; layout complete.
 // STUB: Phase 2 — Cover Letter, Match Report, Description tabs stubbed below;
-//   auto-save and spending-limit warning bar not yet wired.
-// TODO:
-//   - Auto-save (Phase 2): debounce session changes and call
+//   auto-save not yet wired.
+// STUB: Phase 4 — FeedbackPromptBar placed above Resume and Cover Letter papers;
+//   SpendingWarningBanner placed below the tab bar; SpendingLimitDialog wired
+//   before AI generation calls. Data fetching and actual AI calls not yet wired.
+// TODO (Phase 2):
+//   - Auto-save: debounce session changes and call
 //     window.api.sessions.update(session.id, { resume, coverLetter, matchReport })
-//     ~2s after the last edit; update status bar text "Saving…" → "All changes saved"
-//   - Spending-limit amber warning bar below the tab bar (Phase 3)
-//   - FeedbackPromptBar above resume and cover letter papers (Phase 4)
+//     ~2s after the last edit; update status bar "Saving…" → "All changes saved"
+// TODO (Phase 4):
+//   - Fetch 24h spend total on mount and after each AI call:
+//     window.api.spendLog.getTotal().then(t => setSpendUsd(t.totalUsd))
+//   - Read spendingLimit from settingsSlice.
+//   - Gate every AI call (generate:coverLetter, generate:matchReport, etc.) through
+//     SpendingLimitDialog when spendUsd > spendingLimit > 0.
+//   - FeedbackPromptBar onApplyChange: resolve the target in resume/coverLetter JSON,
+//     push old value onto useUndoRedo stack, apply new text, dispatch updateSession.
 
 import { useState } from 'react'
 import { Box, Button, Typography } from '@mui/material'
@@ -20,6 +30,8 @@ import SidePanels from '../organisms/SidePanels'
 import ResumePaper from '../organisms/ResumePaper'
 import CoverLetterPaper from '../organisms/CoverLetterPaper'
 import MatchReportView from '../organisms/MatchReportView'
+import FeedbackPromptBar from '../molecules/FeedbackPromptBar'
+import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
 import { useAppSelector } from '../../hooks'
 import type { Session, ContactInfo } from '@shared/types'
 
@@ -41,11 +53,18 @@ export default function SessionPage(): JSX.Element {
   //   return () => clearTimeout(timer)
   // }, [session?.resume, session?.coverLetter, session?.matchReport])
 
+  // TODO (Phase 4): fetch 24h spend total on mount and after every AI call
+  // const [spendUsd, setSpendUsd] = useState(0)
+  // useEffect(() => {
+  //   window.api.spendLog.getTotal().then(t => setSpendUsd(t.totalUsd))
+  // }, [])
+
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
   const session = useAppSelector((state) =>
     state.sessions.sessions.find((s) => s.id === activeSessionId)
   )
   const contact = useAppSelector((state) => state.settings.contactInfo)
+  // TODO (Phase 4): const spendingLimit = useAppSelector(state => state.settings.spendingLimit)
 
   if (!session) {
     return (
@@ -60,7 +79,20 @@ export default function SessionPage(): JSX.Element {
       <SessionHeader session={session} />
       <SessionTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* TODO: amber spending-limit warning bar here (Phase 3) */}
+      {/* Spending-limit warning banner — STUB: Phase 4 */}
+      {/* Shown when 24h rolling spend exceeds the configured limit (limit > 0). */}
+      {/* TODO: replace placeholder 0 values with spendUsd and spendingLimit state */}
+      <SpendingWarningBanner spendUsd={0} limitUsd={0} />
+
+      {/* SpendingLimitDialog — STUB: Phase 4 */}
+      {/* TODO: render before every AI generation call in this page */}
+      {/* <SpendingLimitDialog
+            open={showSpendDialog}
+            spendUsd={spendUsd}
+            limitUsd={spendingLimit}
+            onCancel={() => setShowSpendDialog(false)}
+            onGenerateAnyway={() => { setShowSpendDialog(false); pendingGenerate?.() }}
+          /> */}
 
       {/* Document area + side panels */}
       <Box
@@ -79,7 +111,19 @@ export default function SessionPage(): JSX.Element {
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           {activeTab === 'resume' && (
             <>
-              {/* TODO: FeedbackPromptBar above the paper (Phase 4) */}
+              {/* FeedbackPromptBar — STUB: Phase 4 */}
+              {/* Shown above the paper once a resume exists. */}
+              {/* TODO: wire onApplyChange to resolve target in resume JSON, push undo, apply */}
+              {session.resume && (
+                <FeedbackPromptBar
+                  sessionId={session.id}
+                  documentType="resume"
+                  onApplyChange={(_target, _newText) => {
+                    // TODO (Phase 4): look up target in session.resume, push old text to undo
+                    // stack, apply newText, dispatch updateSession
+                  }}
+                />
+              )}
               {session.resume ? (
                 <ResumePaper resume={session.resume} contact={contact} />
               ) : (
@@ -114,11 +158,15 @@ export default function SessionPage(): JSX.Element {
 // ─── Phase 2 tab stubs ────────────────────────────────────────────────────────
 
 // STUB: Phase 2 — shows Generate button in empty state; renders CoverLetterPaper once generated.
-// TODO:
+// STUB: Phase 4 — FeedbackPromptBar placed above the paper.
+// TODO (Phase 2):
 //   - call window.api.generate.coverLetter(session.id) on Generate click
 //   - dispatch updateSession({ coverLetter }) on success
 //   - show LinearProgress while generating; show inline error with Retry on failure
-//   - FeedbackPromptBar above the paper (Phase 4)
+//   - gate the Generate call through SpendingLimitDialog when over limit (Phase 4)
+// TODO (Phase 4):
+//   - FeedbackPromptBar onApplyChange: resolve target in session.coverLetter.paragraphs,
+//     push old text to undo stack, apply newText, dispatch updateSession
 function CoverLetterTab({
   session,
   contact
@@ -131,7 +179,21 @@ function CoverLetterTab({
   // TODO: const dispatch = useAppDispatch()
 
   if (session.coverLetter) {
-    return <CoverLetterPaper coverLetter={session.coverLetter} contact={contact} />
+    return (
+      <>
+        {/* FeedbackPromptBar — STUB: Phase 4 */}
+        {/* TODO: wire onApplyChange to resolve target in coverLetter.paragraphs, push undo, apply */}
+        <FeedbackPromptBar
+          sessionId={session.id}
+          documentType="coverLetter"
+          onApplyChange={(_target, _newText) => {
+            // TODO (Phase 4): look up target in session.coverLetter, push old text to undo
+            // stack, apply newText, dispatch updateSession
+          }}
+        />
+        <CoverLetterPaper coverLetter={session.coverLetter} contact={contact} />
+      </>
+    )
   }
 
   return (

@@ -4,7 +4,9 @@
 //
 // STUB: Phase 3 — page structure, section scaffolding, and all sub-component shells rendered.
 //   Data loading, all CRUD actions, and regeneration review are not yet wired.
-// TODO:
+// STUB: Phase 4 — SpendingWarningBanner and SpendingLimitDialog placed; not yet connected
+//   to real spend data or the regeneration flow.
+// TODO (Phase 3):
 //   - Load Master CV on mount: window.api.masterCV.get().then(setMasterCV)
 //   - Load 24h spend total: window.api.spendLog.getTotal().then(setSpendTotal)
 //     Re-fetch spend total after each AI call.
@@ -18,13 +20,16 @@
 //   - After all suggestions resolved: call window.api.masterCV.save(updatedCV);
 //     call window.api.applications.update(id, { [type]IncorporatedAt: now }) per doc.
 //   - All CRUD on entries/bullets/education/skills call window.api.masterCV.save() on commit.
-//   - Spending warning banner below header when 24h spend > spendingLimit > 0 (Phase 4).
+// TODO (Phase 4):
+//   - Wire SpendingWarningBanner: pass spendTotal.totalUsd and settings.spendingLimit.
+//   - Wire SpendingLimitDialog before masterCV:regenerate calls.
 
 import { Box, Button, Chip, Divider, IconButton, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
+import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
 import type { MasterCVExperienceEntry, MasterCVBullet } from '@shared/types'
 
 export default function MasterCVPage(): JSX.Element {
@@ -109,8 +114,20 @@ export default function MasterCVPage(): JSX.Element {
       {/* AI usage info bar — STUB: Phase 3 */}
       <AiUsageBar />
 
-      {/* TODO: spending warning banner here (Phase 4) */}
-      {/* shown when spendTotal.totalUsd > settings.spendingLimit > 0 */}
+      {/* Spending-limit warning banner — STUB: Phase 4 */}
+      {/* Shown when 24h rolling spend exceeds the configured limit (limit > 0). */}
+      {/* TODO: replace placeholder 0 values with spendTotal.totalUsd and settings.spendingLimit */}
+      <SpendingWarningBanner spendUsd={0} limitUsd={0} />
+
+      {/* SpendingLimitDialog — STUB: Phase 4 */}
+      {/* TODO: render before masterCV:regenerate calls */}
+      {/* <SpendingLimitDialog
+            open={showSpendDialog}
+            spendUsd={spendTotal?.totalUsd ?? 0}
+            limitUsd={settings.spendingLimit}
+            onCancel={() => setShowSpendDialog(false)}
+            onGenerateAnyway={() => { setShowSpendDialog(false); handleRegenerate() }}
+          /> */}
 
       {/* Regeneration loading indicator — STUB: Phase 3 */}
       {/* TODO: shown when isRegenerating === true */}

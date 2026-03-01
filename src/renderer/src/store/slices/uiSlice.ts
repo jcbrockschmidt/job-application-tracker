@@ -15,7 +15,7 @@ export interface LastAiOp {
   estimatedCostUsd: number
 }
 
-interface UIState {
+export interface UIState {
   activePage: Page
   isSidebarOpen: boolean
   // STUB: Phase 3 — null until the first AI call completes in the current session.

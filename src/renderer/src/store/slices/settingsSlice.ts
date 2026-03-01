@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { ContactInfo, Settings, Theme } from '@shared/types'
 
-interface SettingsState extends Settings {
+export interface SettingsState extends Settings {
   onboardingComplete: boolean
 }
 

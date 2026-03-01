@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { Session } from '@shared/types'
 
-interface SessionsState {
+export interface SessionsState {
   sessions: Session[]
   activeSessionId: string | null
 }
