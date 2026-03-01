@@ -42,6 +42,7 @@ The Master CV is the user's permanent, comprehensive record of all their profess
 - **Enriched by finalized resumes:** When a resume is finalized, any bullets it contains that are not already present in the Master CV are automatically added to it. This ensures that well-phrased, AI-refined accomplishments are captured and available for future use — without requiring any manual copy-paste. A **pending update banner** is shown at the top of the Master CV view after finalization, summarizing how many bullets were added and from which session. The user can click "Review" to inspect the additions before they are committed.
 - **Usage tracking:** Each bullet in the Master CV shows which sessions it has been included in, making it easy to see what experience has been highlighted and where.
 - **Source attribution:** Each bullet records where it originated — entered manually, extracted from an uploaded document, or carried over from a specific finalized resume.
+- **AI usage display:** An info bar below the Master CV page header shows the model currently in use, the input and output token counts for the last AI operation (e.g. a Regenerate run), and an estimated cost. The rolling 24-hour estimated spend total is also shown alongside the configured limit; it turns orange when the limit is exceeded.
 
 #### Regeneration
 
@@ -74,9 +75,10 @@ Each suggestion is presented individually for review. The user can accept, edit,
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.
 - Interactively prompt the AI to revise content at multiple levels of granularity. Clicking any **Revise with AI** button expands an inline panel beneath the item where the user can type optional revision instructions; submitting presents a diff of the proposed changes for the user to approve or reject before anything is applied. Three levels are available in the resume:
-  - **Bullet / skill row** — hover any resume bullet or skills row to reveal a dark popup toolbar with an **Edit** button (manual edit) and a **Revise with AI** button (AI-assisted rewrite of that item).
-  - **Job entry** — hover any Experience entry to reveal a **Revise with AI** button in the entry header, for AI-assisted revision of all bullets within that role.
+  - **Bullet / skill row** — hover any resume bullet or skills row to reveal a dark popup toolbar with an **Edit** button (manual edit) and a **Revise with AI** button (AI-assisted rewrite of that item). Hovering a bullet or skill row also applies a subtle background highlight as a visual affordance.
+  - **Job entry** — hover any Experience entry to reveal a **Revise with AI** button that floats over the top-right corner of the entry without displacing the date, for AI-assisted revision of all bullets within that role.
   - **Section** — the Experience and Skills section headings each show a **Revise section with AI** button on hover, for AI-assisted revision of the entire section at once.
+  - All **Revise with AI** buttons — at the bullet/skill, entry, and section levels — share the same dark chip style for visual consistency.
 - Cover letter paragraphs each have the same hover toolbar pattern: **Edit** and **Revise with AI**.
 - All changes — both manual and AI-generated — are tracked in a change history.
   - Changes can be undone and redone via `Ctrl+Z` / `Ctrl+Y`.
@@ -105,7 +107,7 @@ Each suggestion is presented individually for review. The user can accept, edit,
 - Each session contains a resume and an optional cover letter.
 - The **session view** is structured as follows:
   - **Session header bar** — displays the company name, job title, and an **Application Status chip** (e.g. "Not Applied"), with **Finalize** and **Export** action buttons on the right.
-  - **Tab bar** — four tabs organize session content: **Resume**, **Cover Letter**, **Match Report**, and **Description**. Token usage for the last AI operation is shown on the right side of the tab bar (model name, token counts, estimated cost).
+  - **Tab bar** — four tabs organize session content: **Resume**, **Cover Letter**, **Match Report**, and **Description**. Token usage for the last AI operation is shown on the right side of the tab bar (model name, input and output token counts, estimated cost). When the rolling 24-hour estimated spend exceeds the configured limit, an orange badge showing the current vs. limit amounts appears to the left of the token usage, and an amber warning bar is shown below the tab bar across all tabs.
   - **Document area** (left/center) — the active tab's document rendered as a paper card, scrollable.
   - **Side panels** (right, ~272px) — two persistent panels shown alongside the document regardless of active tab:
     - **Match Rating** — a condensed summary of the match report (rating badge + key points). Empty until a Match Report has been generated.
@@ -185,7 +187,8 @@ Errors on blocking operations (generation, ingestion, export) are displayed inli
 
 ### Settings
 - **Anthropic API key** — entered by the user and stored securely in the OS keychain.
-- **Claude model** — select which Claude model to use for all AI operations.
+- **Claude model** — select which Claude model to use for all AI operations. Available models are fetched from the Anthropic API at runtime and displayed as a picker showing each model's name, a brief capability description, and its current input and output pricing per million tokens.
+- **Spending limit** — an optional cost threshold (in USD) applied to a rolling 24-hour window. When the rolling estimated spend exceeds the limit, a warning banner appears in the session view and Master CV view, and a confirmation dialog is shown before any generation proceeds. Set to 0 to disable. Costs displayed throughout the app are estimates based on published model pricing and may not match actual Anthropic charges.
 - **Contact info** — edit the details collected during onboarding: name, phone, email, LinkedIn (optional), GitHub (optional).
 - **Theme** — Light / Dark / System default.
 - **Backup location** — directory path for incremental backups.
@@ -436,7 +439,7 @@ The Master CV is stored as `master-cv.json` in the app's data directory. It exte
 
 A hybrid approach is used: SQLite for structured, queryable data; the file system for document content.
 
-- **SQLite** via `better-sqlite3` — stores the Application Master List metadata, session state, and file path references. Enables fast sorting, filtering, and search without loading document files.
+- **SQLite** via `better-sqlite3` — stores the Application Master List metadata, session state, file path references, and the AI spend log. Enables fast sorting, filtering, and search without loading document files. The `spend_log` table records each AI operation (timestamp, model, input tokens, output tokens, estimated cost in USD) and is used to compute the rolling 24-hour spend total.
 - **Drizzle ORM** — provides type-safe, SQL-close query building over SQLite. Schema migrations are managed with **Drizzle Kit**.
 - **File system** — document content is stored as human-readable files, organized by application. Original uploaded source documents are stored as-is.
 
@@ -460,7 +463,8 @@ Directory structure:
 - **SDK:** Anthropic TypeScript SDK (`@anthropic-ai/sdk`), called from the Electron main process
 - **API key** is configured by the user in app settings and stored securely in the OS keychain
 - **Model selection** is user-configurable in settings. Available Claude models are fetched from the Anthropic API at runtime; the user selects from this list and the selected model is used for all AI operations.
-- **Token usage** is displayed after each AI operation in the right side of the session tab bar, showing the model name, input and output token counts, and an estimated cost based on the selected model's pricing. Cost is labeled as an estimate since pricing may change.
+- **Token usage** is displayed after each AI operation in the right side of the session tab bar and in a dedicated info bar on the Master CV page, showing the model name, input and output token counts, and an estimated cost based on the selected model's pricing. Cost is labeled as an estimate since pricing may change.
+- **Spending limit** — the app logs each AI operation with a timestamp, model, input tokens, output tokens, and estimated cost. The rolling 24-hour spend total is computed from log entries within the last 24 hours; entries older than 24 hours are excluded automatically. This log is persisted to the SQLite database (`spend_log` table) and loaded on app launch, so the rolling window remains accurate across restarts. When the total exceeds the user-configured limit, a persistent warning banner appears in the session and Master CV views. Any subsequent generation attempt shows a **spending limit warning dialog** before proceeding, displaying the 24-hour estimated spend vs. the limit with options to cancel or generate anyway. The limit can be set to 0 to disable warnings.
 
 ### Privacy & Security
 - All user data — uploaded documents, generated resumes and cover letters, and the application database — is stored locally on the user's machine. Nothing is transmitted externally except the content sent to the Anthropic API during document generation.
