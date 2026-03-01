@@ -29,6 +29,10 @@ test:
 test-watch:
     npx vitest --watch
 
+# Type-check all TypeScript project references
+typecheck:
+    npx tsc --build --noEmit
+
 # Lint the source
 lint:
     npx eslint src
