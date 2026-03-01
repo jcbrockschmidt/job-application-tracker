@@ -212,6 +212,7 @@
     }
 
     .session-item {
+      position: relative;
       border-radius: 8px;
       padding: 10px 12px;
       margin-bottom: 2px;
@@ -220,6 +221,28 @@
     }
     .session-item:hover { background: var(--sidebar-hover); }
     .session-item.active { background: var(--sidebar-active); }
+
+    .session-close-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: transparent;
+      border: none;
+      color: var(--sidebar-text);
+      cursor: pointer;
+      font-size: 15px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.12s, background 0.12s;
+      line-height: 1;
+    }
+    .session-item:hover .session-close-btn { opacity: 1; }
+    .session-close-btn:hover { background: rgba(255,255,255,0.15); color: white; }
 
     .session-company {
       font-size: 13px;
@@ -2339,6 +2362,7 @@
     <div class="sidebar-list">
 
       <div class="session-item active" id="nav-session" onclick="switchView('session')">
+        <button class="session-close-btn" title="Close session" onclick="event.stopPropagation()">&#215;</button>
         <div class="session-company">Acme Corp</div>
         <div class="session-role">Senior Software Engineer</div>
         <div class="session-meta">
@@ -2348,6 +2372,7 @@
       </div>
 
       <div class="session-item">
+        <button class="session-close-btn" title="Close session" onclick="event.stopPropagation()">&#215;</button>
         <div class="session-company">Google</div>
         <div class="session-role">Software Engineer III</div>
         <div class="session-meta">
@@ -2357,6 +2382,7 @@
       </div>
 
       <div class="session-item">
+        <button class="session-close-btn" title="Close session" onclick="event.stopPropagation()">&#215;</button>
         <div class="session-company">Stripe</div>
         <div class="session-role">Backend Engineer</div>
         <div class="session-meta">
@@ -2366,6 +2392,7 @@
       </div>
 
       <div class="session-item">
+        <button class="session-close-btn" title="Close session" onclick="event.stopPropagation()">&#215;</button>
         <div class="session-company">Linear</div>
         <div class="session-role">Staff Engineer</div>
         <div class="session-meta">
@@ -2859,6 +2886,7 @@
                 <div class="mr-full-meta-stat"><strong>14 / 18</strong> keywords aligned</div>
                 <div class="mr-full-meta-stat"><strong>3</strong> strengths &nbsp;·&nbsp; <strong>2</strong> gaps</div>
               </div>
+              <button class="btn-outline" style="margin-left:auto; font-size:12px; padding:6px 14px;" onclick="generateMR()">&#8635; Regenerate</button>
             </div>
             <div class="mr-full-note">No experience was misrepresented or hallucinated.</div>
           </div>
@@ -3352,7 +3380,8 @@ About the team:
               <th>Company <span class="sort-arrow on">&#9650;</span></th>
               <th>Role <span class="sort-arrow">&#8597;</span></th>
               <th>Summary <span class="sort-arrow">&#8597;</span></th>
-              <th>Date <span class="sort-arrow">&#8597;</span></th>
+              <th>Started <span class="sort-arrow">&#8597;</span></th>
+              <th>Submitted <span class="sort-arrow">&#8597;</span></th>
               <th>Resume</th>
               <th>Cover Letter</th>
               <th>App Status <span class="sort-arrow">&#8597;</span></th>
@@ -3370,6 +3399,7 @@ About the team:
               <td><span class="al-role">Senior Software Engineer</span></td>
               <td><span class="al-summary">Backend platform, distributed systems focus</span></td>
               <td><span class="al-date">Feb 27</span></td>
+              <td><span class="al-date empty" style="color:#b0bec5">—</span></td>
               <td><span class="schip schip-draft">Draft</span></td>
               <td><span class="schip schip-none">None</span></td>
               <td><span class="schip schip-not-applied schip-editable" title="Click to update">Not Applied</span></td>
@@ -3385,6 +3415,7 @@ About the team:
               <td><span class="al-role">Software Engineer III</span></td>
               <td><span class="al-summary">Core infrastructure, L5-equivalent scope</span></td>
               <td><span class="al-date">Feb 25</span></td>
+              <td><span class="al-date empty" style="color:#b0bec5">—</span></td>
               <td><span class="schip schip-draft">Draft</span></td>
               <td><span class="schip schip-draft">Draft</span></td>
               <td><span class="schip schip-not-applied schip-editable">Not Applied</span></td>
@@ -3400,6 +3431,7 @@ About the team:
               <td><span class="al-role">Backend Engineer</span></td>
               <td><span class="al-summary">Payments API, reliability and scale</span></td>
               <td><span class="al-date">Feb 20</span></td>
+              <td><span class="al-date">Feb 21</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-submitted schip-editable">Submitted</span></td>
@@ -3415,6 +3447,7 @@ About the team:
               <td><span class="al-role">Staff Engineer</span></td>
               <td><span class="al-summary">Product engineering, growth-stage scope</span></td>
               <td><span class="al-date">Feb 17</span></td>
+              <td><span class="al-date">Feb 18</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-none">None</span></td>
               <td><span class="schip schip-interviewing schip-editable">Interviewing</span></td>
@@ -3430,6 +3463,7 @@ About the team:
               <td><span class="al-role">Senior Engineer</span></td>
               <td><span class="al-summary">Edge runtime and performance team</span></td>
               <td><span class="al-date">Feb 14</span></td>
+              <td><span class="al-date">Feb 15</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-offer schip-editable">Offer Received</span></td>
@@ -3445,6 +3479,7 @@ About the team:
               <td><span class="al-role">Software Engineer</span></td>
               <td><span class="al-summary">Mobile apps and offline sync</span></td>
               <td><span class="al-date">Feb 10</span></td>
+              <td><span class="al-date">Feb 11</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-draft">Draft</span></td>
               <td><span class="schip schip-rejected schip-editable">Rejected</span></td>
@@ -3460,6 +3495,7 @@ About the team:
               <td><span class="al-role">Staff Engineer</span></td>
               <td><span class="al-summary">Design tools infrastructure</span></td>
               <td><span class="al-date">Jan 28</span></td>
+              <td><span class="al-date">Jan 29</span></td>
               <td><span class="schip schip-final">Finalized</span></td>
               <td><span class="schip schip-none">None</span></td>
               <td><span class="schip schip-withdrawn schip-editable">Withdrawn</span></td>
@@ -3475,6 +3511,7 @@ About the team:
               <td><span class="al-role">Senior Software Engineer</span></td>
               <td><span class="al-summary">Platform reliability and observability</span></td>
               <td><span class="al-date">Jan 15</span></td>
+              <td><span class="al-date empty" style="color:#b0bec5">—</span></td>
               <td><span class="schip schip-draft">Draft</span></td>
               <td><span class="schip schip-none">None</span></td>
               <td><span class="schip schip-not-applied schip-editable">Not Applied</span></td>

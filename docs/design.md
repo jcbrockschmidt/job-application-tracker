@@ -39,7 +39,7 @@ The Master CV is the user's permanent, comprehensive record of all their profess
 - **Comprehensive by design:** Unlike a resume, the Master CV has no length limit. Every experience entry, every bullet, every skill belongs here. Nothing gets left out because it isn't relevant to a particular job.
 - **Manually editable:** Users can add, edit, and delete experience entries, bullets, education, and skills at any time. This is the primary place to record new experience as it happens.
 - **Populated by ingestion:** When an existing resume or CV is uploaded, its extracted, structured content is merged into the Master CV rather than stored as a separate artifact.
-- **Enriched by finalized resumes:** When a resume is finalized, any bullets it contains that are not already present in the Master CV are automatically added to it. This ensures that well-phrased, AI-refined accomplishments are captured and available for future use — without requiring any manual copy-paste.
+- **Enriched by finalized resumes:** When a resume is finalized, any bullets it contains that are not already present in the Master CV are automatically added to it. This ensures that well-phrased, AI-refined accomplishments are captured and available for future use — without requiring any manual copy-paste. A **pending update banner** is shown at the top of the Master CV view after finalization, summarizing how many bullets were added and from which session. The user can click "Review" to inspect the additions before they are committed.
 - **Usage tracking:** Each bullet in the Master CV shows which sessions it has been included in, making it easy to see what experience has been highlighted and where.
 - **Source attribution:** Each bullet records where it originated — entered manually, extracted from an uploaded document, or carried over from a specific finalized resume.
 
@@ -68,17 +68,18 @@ Each suggestion is presented individually for review. The user can accept, edit,
 - Paste a job description directly into the app to generate a tailored resume.
 - All generated content is drawn exclusively from the Master CV — the LLM selects, prioritizes, and refines existing entries but cannot introduce experience that isn't already there.
 - The generated resume is optimized for ATS systems while remaining readable and visually appealing.
-- **Match Report** — generated on demand via a button in the Match Report tab. The LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps. Not generated automatically; the user triggers it when ready.
+- **Match Report** — generated on demand via a button in the Match Report tab. The LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps. Never generated automatically — the user must explicitly trigger it. Once generated, a Regenerate button in the report header allows the user to request a fresh evaluation at any time (e.g. after editing the resume or updating the job description).
 - **Cover Letter** — generated on demand via a button in the Cover Letter tab. Tailored to the same job description, informed by uploaded cover letters and Master CV content. Not generated automatically; the user triggers it when ready.
 
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.
-- Interactively prompt the AI to revise specific sections of either document. Before applying, the AI presents a diff of the proposed changes for the user to review and approve or reject.
+- Interactively prompt the AI to revise specific sections of either document. Each resume bullet and each cover letter paragraph has a hover toolbar with an **Edit** button (for manual editing) and a **Revise with AI** button. Clicking **Revise with AI** expands an inline panel beneath the item where the user types revision instructions; submitting presents a diff of the proposed changes for the user to approve or reject before anything is applied.
 - All changes — both manual and AI-generated — are tracked in a change history.
-  - Changes can be undone and redone via dedicated buttons or `Ctrl+Z` / `Ctrl+Y`.
+  - Changes can be undone and redone via `Ctrl+Z` / `Ctrl+Y`.
   - Change history is in-memory only and is not persisted across app restarts.
 
 ### Feedback
+- A **feedback prompt bar** is shown above the document in both the Resume and Cover Letter tabs. It contains an optional freeform textarea (e.g. "Focus on ATS keywords, tone, conciseness…") and a **Get Feedback** button. Leaving the textarea blank requests general feedback; filling it in focuses the feedback on the specified concern.
 - After a resume or cover letter has been generated, the user can request holistic feedback from the LLM.
 - Feedback is returned as a list of suggestions, each with:
   - A **type** (e.g. Strengthen, Add, Remove, Reframe)
@@ -95,15 +96,23 @@ Each suggestion is presented individually for review. The user can accept, edit,
 
 ### Sessions
 - Multiple sessions can be open simultaneously, each representing a job application for a specific role.
-- A **New Session** button creates a session, prompting the user to paste a job description. Submitting it triggers document generation and opens the new session in a tab.
-- Sessions are displayed as tabs within the main window. Tabs can be torn off into separate windows.
+- A **New Session** button creates a session, prompting the user to paste a job description. Submitting it triggers document generation and opens the new session.
+- Sessions are listed in a persistent **sidebar** on the left of the main window. Each sidebar entry shows the company name, job title, date, and a status badge (Draft / Final). The active session is highlighted; clicking any entry opens that session.
 - Each session contains a resume and an optional cover letter.
-- The full job description for a session can be viewed and edited at any time from within the session. Editing the job description does not automatically regenerate documents — the user can manually trigger regeneration after updating it.
-- Sessions can be closed at any time and reopened later without losing progress.
+- The **session view** is structured as follows:
+  - **Session header bar** — displays the company name, job title, and an **Application Status chip** (e.g. "Not Applied"), with **Finalize** and **Export** action buttons on the right.
+  - **Tab bar** — four tabs organize session content: **Resume**, **Cover Letter**, **Match Report**, and **Description**. Token usage for the last AI operation is shown on the right side of the tab bar (model name, token counts, estimated cost).
+  - **Document area** (left/center) — the active tab's document rendered as a paper card, scrollable.
+  - **Side panels** (right, ~272px) — two persistent panels shown alongside the document regardless of active tab:
+    - **Match Rating** — a condensed summary of the match report (rating badge + key points). Empty until a Match Report has been generated.
+    - **Job Description** — the full job description text, scrollable, with an inline Edit button. Editing here is equivalent to editing in the Description tab.
+- The full job description for a session can be viewed and edited at any time from within the session — either in the Description tab or the Job Description side panel. Editing the job description does not automatically regenerate documents — the user can manually trigger regeneration after updating it.
+- Sessions can be closed at any time and reopened later without losing progress. Each session in the sidebar has a close button (×) that appears on hover.
 - The app auto-saves all open sessions when closed and restores them when reopened.
 - Persisted state includes:
   - All open and previously closed sessions
   - The internal database of previously uploaded resumes and cover letters
+- A persistent **status bar** runs across the bottom of the window, showing a save-state indicator ("All changes saved"), the current context (active view or session name), and a last-saved timestamp.
 
 ### Application Master List
 - All sessions — both in-progress and finalized — appear in a single master list.
@@ -111,18 +120,21 @@ Each suggestion is presented individually for review. The user can accept, edit,
   - **Company name**
   - **Role title**
   - **Brief summary of the position**
-  - **Date generated**
+  - **Started date** — when the session was created (read-only, set automatically)
+  - **Submitted date** — when the application was submitted to the company (user-entered)
   - **Resume Status** (Draft / Finalized)
   - **Cover Letter Status** (None / Draft / Finalized)
   - **Application Status** (Not Applied / Submitted / Interviewing / Offer Received / Rejected / Withdrawn)
   - **Notes** (user-entered free-form text)
 - All fields are editable inline from the master list.
   - Editing **company name** or **role title** renames the corresponding directory in the file system to keep storage in sync.
-  - **Date generated** and **Resume Status** / **Cover Letter Status** are read-only (managed by the app).
+  - **Started date** and **Resume Status** / **Cover Letter Status** are read-only (managed by the app).
+  - **Submitted date** is user-entered and optional; blank until the user fills it in.
 - Any session can be reopened directly from the master list, regardless of status.
 - The list supports:
   - **Sorting** by any column
   - **Filtering** by any column (e.g. filter to a specific application status or resume status)
+  - **Quick-filter chips** above the table for common application status values (All, Not Applied, Submitted, Interviewing, Offer) as a faster alternative to column filtering
   - **Search** via a text search bar that matches across all text fields
 - Finalized resumes and cover letters are used as additional context when generating future documents, improving consistency and quality over time.
 
@@ -444,7 +456,7 @@ Directory structure:
 - **SDK:** Anthropic TypeScript SDK (`@anthropic-ai/sdk`), called from the Electron main process
 - **API key** is configured by the user in app settings and stored securely in the OS keychain
 - **Model selection** is user-configurable in settings. Available Claude models are fetched from the Anthropic API at runtime; the user selects from this list and the selected model is used for all AI operations.
-- **Token usage** is displayed after each AI operation in a non-intrusive status line, showing input and output token counts alongside an estimated cost based on the selected model's pricing. Cost is labeled as an estimate since pricing may change.
+- **Token usage** is displayed after each AI operation in the right side of the session tab bar, showing the model name, input and output token counts, and an estimated cost based on the selected model's pricing. Cost is labeled as an estimate since pricing may change.
 
 ### Privacy & Security
 - All user data — uploaded documents, generated resumes and cover letters, and the application database — is stored locally on the user's machine. Nothing is transmitted externally except the content sent to the Anthropic API during document generation.
@@ -458,7 +470,7 @@ Directory structure:
 ## Testing
 
 ### Unit Tests — Vitest
-- Business logic: undo/redo history, session state management, file naming
+- Business logic: undo/redo history (keyboard shortcuts only), session state management, file naming
 - Document ingestion and parsing
 - Match report generation (AI calls mocked)
 - Drizzle queries, tested against an in-memory SQLite instance for speed and isolation
