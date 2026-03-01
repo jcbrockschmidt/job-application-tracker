@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { WindowAPI, SourceDocType, DocumentType } from '../shared/types'
+import type { WindowAPI, SourceDocType, DocumentType, MasterCV, WritingProfile } from '../shared/types'
 
 const api: WindowAPI = {
   settings: {
@@ -30,9 +30,25 @@ const api: WindowAPI = {
     delete: (id) => ipcRenderer.invoke('docs:delete', id)
   },
 
+  masterCV: {
+    get: () => ipcRenderer.invoke('masterCV:get'),
+    save: (cv: MasterCV) => ipcRenderer.invoke('masterCV:save', cv),
+    regenerate: (documentIds?: string[]) =>
+      ipcRenderer.invoke('masterCV:regenerate', documentIds)
+  },
+
+  writingProfile: {
+    get: () => ipcRenderer.invoke('writingProfile:get'),
+    save: (profile: WritingProfile) => ipcRenderer.invoke('writingProfile:save', profile),
+    regenerate: () => ipcRenderer.invoke('writingProfile:regenerate')
+  },
+
   generate: {
     resume: (sessionId) => ipcRenderer.invoke('generate:resume', sessionId),
     coverLetter: (sessionId) => ipcRenderer.invoke('generate:coverLetter', sessionId),
+    matchReport: (sessionId) => ipcRenderer.invoke('generate:matchReport', sessionId),
+    feedback: (sessionId: string, documentType: DocumentType, prompt?: string) =>
+      ipcRenderer.invoke('generate:feedback', sessionId, documentType, prompt),
     revise: (sessionId, section, instruction) =>
       ipcRenderer.invoke('generate:revise', sessionId, section, instruction)
   },
@@ -42,6 +58,10 @@ const api: WindowAPI = {
       ipcRenderer.invoke('export:pdf', sessionId, type),
     docx: (sessionId: string, type: DocumentType) =>
       ipcRenderer.invoke('export:docx', sessionId, type)
+  },
+
+  spendLog: {
+    getTotal: () => ipcRenderer.invoke('spendLog:getTotal')
   },
 
   backup: {

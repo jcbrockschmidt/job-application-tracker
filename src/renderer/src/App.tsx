@@ -1,32 +1,25 @@
 import { useAppSelector } from './hooks'
+import AppShell from './components/organisms/AppShell'
+import OnboardingPage from './components/pages/OnboardingPage'
+import SessionPage from './components/pages/SessionPage'
+import MasterListPage from './components/pages/MasterListPage'
+import SettingsPage from './components/pages/SettingsPage'
 
 export default function App(): JSX.Element {
   const activePage = useAppSelector((state) => state.ui.activePage)
   const onboardingComplete = useAppSelector((state) => state.settings.onboardingComplete)
 
-  if (!onboardingComplete) {
-    return (
-      <main>
-        {/* TODO: <OnboardingPage /> */}
-        <p>Onboarding — not yet implemented</p>
-      </main>
-    )
-  }
-
   return (
-    <main>
-      {activePage === 'masterList' && (
-        // TODO: <MasterListPage />
-        <p>Application Master List — not yet implemented</p>
-      )}
-      {activePage === 'session' && (
-        // TODO: <SessionPage />
-        <p>Session — not yet implemented</p>
-      )}
-      {activePage === 'settings' && (
-        // TODO: <SettingsPage />
-        <p>Settings — not yet implemented</p>
-      )}
-    </main>
+    <>
+      {/* Onboarding overlays on top of the app shell until setup is complete */}
+      {!onboardingComplete && <OnboardingPage />}
+
+      <AppShell>
+        {activePage === 'masterList' && <MasterListPage />}
+        {activePage === 'session' && <SessionPage />}
+        {activePage === 'settings' && <SettingsPage />}
+        {/* TODO: 'masterCV' page (Phase 3), 'writingProfile' page (Phase 5) */}
+      </AppShell>
+    </>
   )
 }

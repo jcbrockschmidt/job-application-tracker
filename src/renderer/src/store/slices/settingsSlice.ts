@@ -16,6 +16,7 @@ const initialState: SettingsState = {
   model: 'claude-opus-4-6',
   theme: 'system',
   backupLocation: '',
+  spendingLimit: 0,
   onboardingComplete: false
 }
 
@@ -35,6 +36,9 @@ const settingsSlice = createSlice({
     setBackupLocation(state, action: PayloadAction<string>) {
       state.backupLocation = action.payload
     },
+    setSpendingLimit(state, action: PayloadAction<number>) {
+      state.spendingLimit = action.payload
+    },
     setOnboardingComplete(state, action: PayloadAction<boolean>) {
       state.onboardingComplete = action.payload
     },
@@ -49,6 +53,7 @@ export const {
   setModel,
   setTheme,
   setBackupLocation,
+  setSpendingLimit,
   setOnboardingComplete,
   hydrate
 } = settingsSlice.actions
