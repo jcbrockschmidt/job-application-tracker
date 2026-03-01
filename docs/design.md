@@ -64,13 +64,24 @@ Each suggestion is presented individually for review. The user can accept, edit,
 - **Supported formats:** DOCX, PDF, and plain text files.
 - Raw text is extracted from the uploaded file and sent to the LLM, which reads, interprets, and contextualizes the content — normalizing structure, resolving ambiguities, and extracting structured data (e.g. work history, skills, dates, accomplishments).
 - The LLM-processed output is merged into the Master CV. Entries that already exist are updated; new entries are added. The original uploaded files are preserved as-is alongside the structured output.
+- When a cover letter source document is ingested, the app runs a summarization pass to seed or update the **writing profile** — a compact internal record of the user's cover letter voice, structure, and recurring phrasings.
 
 ### Document Generation
 - Paste a job description directly into the app to generate a tailored resume.
 - All generated content is drawn exclusively from the Master CV — the LLM selects, prioritizes, and refines existing entries but cannot introduce experience that isn't already there.
 - The generated resume is optimized for ATS systems while remaining readable and visually appealing.
 - **Match Report** — generated on demand via a button in the Match Report tab. The LLM evaluates how well the resume aligns with the job description — identifying strengths, gaps, and any areas of concern. The report uses a qualitative rating (e.g. Strong, Good, Fair, Weak) rather than a numeric score, paired with a plain-language breakdown of keyword alignment and notable gaps. Never generated automatically — the user must explicitly trigger it. Once generated, a Regenerate button in the report header allows the user to request a fresh evaluation at any time (e.g. after editing the resume or updating the job description).
-- **Cover Letter** — generated on demand via a button in the Cover Letter tab. Tailored to the same job description, informed by uploaded cover letters and Master CV content. Not generated automatically; the user triggers it when ready.
+- **Cover Letter** — generated on demand via a button in the Cover Letter tab. Tailored to the same job description and grounded in Master CV content. When a writing profile is available, generation is also informed by it to maintain a consistent voice across letters. Not generated automatically; the user triggers it when ready.
+
+#### Writing Profile
+
+The writing profile is a compact (~400–600 word) internal summary of the user's cover letter style — capturing tone, formality, sentence structure, how they open and close letters, and recurring phrasings. It is maintained by Claude and stored at `writing-profile.json` in the app's data directory.
+
+Updated automatically in two situations:
+- When a cover letter source document is uploaded, ingestion seeds or refines the profile from that document.
+- When a cover letter is finalized, the profile is updated with patterns from the newly finished letter.
+
+Because Claude distills each letter's stylistic patterns into the profile rather than accumulating the full letter text, the profile stays a fixed, small size regardless of how many sessions the user has completed.
 
 ### Editing
 - Manually edit any entry in the generated resume or cover letter.
@@ -448,6 +459,7 @@ Directory structure:
 /data/
   app.db
   master-cv.json
+  writing-profile.json     ← cover letter style profile; see Writing Profile
   /applications/
     /<company>/
       <role>_<YYYY-MM>_<id>/
