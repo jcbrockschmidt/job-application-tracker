@@ -1,7 +1,13 @@
 # Resume Builder — development commands
 
+set windows-shell := ["powershell.exe", "-Command"]
+
 default:
     just --list
+
+# Install dependencies
+install:
+    npm install
 
 # Start the app in development mode with HMR
 dev:
