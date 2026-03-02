@@ -11,21 +11,101 @@
 //   Phase 6 — export:docx, backup:*
 
 import { ipcMain, app } from 'electron'
-import { join } from 'path'
-import { readFileSync, existsSync } from 'fs'
+import { join, extname, basename } from 'path'
+import { readFileSync, existsSync, copyFileSync, mkdirSync } from 'fs'
 import keytar from 'keytar'
-import { atomicWriteJson } from '../fs'
-import { validateApiKey, resetAnthropicClient } from '../ai'
+import { nanoid } from 'nanoid'
+import { atomicWriteJson, getDataPaths, readMasterCV, writeMasterCV } from '../fs'
+import { validateApiKey, resetAnthropicClient, getAnthropicClient } from '../ai'
+import { getDb } from '../db'
+import { sourceDocs, spendLog } from '../db/schema'
+import { extractText } from '../ingestion'
+import { mergeMasterCV } from '../utils/masterCVMerge'
+import { estimateCostUsd } from '../utils/spendCalculation'
 import type {
   Settings,
   SourceDocType,
   DocumentType,
   MasterCV,
-  WritingProfile
+  MasterCVExperienceEntry,
+  MasterCVEducationEntry,
+  MasterCVSkillCategory,
+  MasterCVBullet,
+  WritingProfile,
+  SourceDoc
 } from '../../shared/types'
 
 const KEYCHAIN_SERVICE = 'job-application-kit'
 const KEYCHAIN_ACCOUNT = 'anthropic-api-key'
+
+// ─── Ingestion helpers ────────────────────────────────────────────────────────
+
+// Shape returned by Claude when extracting a resume.
+interface RawExtractedCV {
+  experience: Array<{
+    title: string
+    company: string
+    startDate: string
+    endDate: string
+    bullets: string[]
+  }>
+  education: Array<{
+    degree: string
+    institution: string
+    graduationDate: string
+  }>
+  skills: Array<{ category: string; items: string[] }>
+}
+
+// Strip markdown code fences that Claude may wrap around JSON responses.
+function stripCodeFence(text: string): string {
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+  return match ? match[1].trim() : text.trim()
+}
+
+// Format upload date as "Mon YYYY" for source labels (e.g. "Feb 2026").
+function formatUploadMonth(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+// Convert the raw AI extraction output to a MasterCV with nanoid IDs and source
+// metadata so it can be fed directly into mergeMasterCV().
+function rawToMasterCV(raw: RawExtractedCV, sourceLabel: string): MasterCV {
+  const cv: MasterCV = {
+    experience: (raw.experience ?? []).map((entry) => ({
+      id: nanoid(),
+      title: entry.title,
+      company: entry.company,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      bullets: (entry.bullets ?? []).map(
+        (text): MasterCVBullet => ({
+          id: nanoid(),
+          text,
+          source: 'ingested',
+          sourceLabel,
+          usedIn: []
+        })
+      )
+    })),
+    education: (raw.education ?? []).map(
+      (edu): MasterCVEducationEntry => ({
+        id: nanoid(),
+        degree: edu.degree,
+        institution: edu.institution,
+        graduationDate: edu.graduationDate
+      })
+    ),
+    skills: (raw.skills ?? []).map(
+      (skill): MasterCVSkillCategory => ({
+        id: nanoid(),
+        category: skill.category,
+        items: skill.items ?? []
+      })
+    )
+  }
+  return cv
+}
 
 const DEFAULT_SETTINGS: Settings = {
   contactInfo: { fullName: '', phone: '', email: '', linkedin: '', github: '' },
@@ -156,22 +236,99 @@ export function registerIpcHandlers(): void {
   // ─── Source Documents ────────────────────────────────────────────────────────
   // STUB: Phase 1
 
-  ipcMain.handle('docs:ingest', async (_event, _filePath: string, _type: SourceDocType) => {
-    // TODO:
-    // 1. Extract raw text from the file using pdf-parse (PDF), mammoth (DOCX), or
-    //    fs.readFile (plain text). Throw typed errors for image-only PDFs, corrupt
-    //    files, and password-protected PDFs — callers display specific messages.
-    // 2. Copy the original file into data/source-documents/ with a stable filename.
-    // 3. Send the extracted text to Claude with a prompt tailored to the doc type:
-    //    - Resume: extract structured MasterCV data (experience, education, skills)
-    //      with per-bullet id, source: "ingested", sourceLabel, usedIn: [].
-    //    - Cover letter: run a summarization pass to seed/update writing-profile.json.
-    // 4. Merge the extracted data into the existing master-cv.json (no duplicates;
-    //    match on company + title + approximate dates).
-    // 5. Log the AI operation to spendLog.
-    // 6. Insert a row into source_docs and return the SourceDoc object.
-    throw new Error('Not implemented')
-  })
+  ipcMain.handle(
+    'docs:ingest',
+    async (_event, filePath: string, type: SourceDocType): Promise<SourceDoc> => {
+      // 1. Extract raw text — throws a typed IngestionError on known failure modes.
+      const text = await extractText(filePath)
+
+      // 2. Copy the file into data/source-documents/ with a stable <id><ext> name.
+      const { sourceDocsDir } = getDataPaths()
+      mkdirSync(sourceDocsDir, { recursive: true })
+      const originalFilename = basename(filePath)
+      const ext = extname(filePath)
+      const docId = nanoid()
+      const storedPath = join(sourceDocsDir, `${docId}${ext}`)
+      copyFileSync(filePath, storedPath)
+
+      const uploadedAt = new Date()
+      const db = getDb()
+
+      // 3. For resumes: call Claude to extract structured MasterCV data and merge.
+      //    Cover letter ingestion records the file but defers writing-profile updates
+      //    to Phase 5 (writingProfile:regenerate).
+      if (type === 'resume') {
+        const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+        if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+
+        const settings = readSettings()
+        const model = settings.model
+        const client = getAnthropicClient(apiKey)
+        const sourceLabel = `${originalFilename} uploaded ${formatUploadMonth(uploadedAt)}`
+
+        const response = await client.messages.create({
+          model,
+          max_tokens: 4096,
+          system:
+            'You are a structured data extractor. Output valid JSON only — no markdown, no explanation.',
+          messages: [
+            {
+              role: 'user',
+              content:
+                `Extract all structured content from this resume and output it as JSON matching this exact schema:\n\n` +
+                `{\n` +
+                `  "experience": [{ "title": string, "company": string, "startDate": string, "endDate": string, "bullets": string[] }],\n` +
+                `  "education": [{ "degree": string, "institution": string, "graduationDate": string }],\n` +
+                `  "skills": [{ "category": string, "items": string[] }]\n` +
+                `}\n\n` +
+                `Rules:\n` +
+                `- Include ALL experience, education, and skills — be exhaustive\n` +
+                `- One bullet per achievement/responsibility; preserve all numbers and detail\n` +
+                `- Dates: use the format as written in the resume (e.g. "Jan 2023", "Present")\n` +
+                `- Skills: group by category if already grouped; otherwise use "Technical Skills"\n\n` +
+                `Resume:\n${text}`
+            }
+          ]
+        })
+
+        const rawText = response.content[0].type === 'text' ? response.content[0].text : '{}'
+        const parsed = JSON.parse(stripCodeFence(rawText)) as RawExtractedCV
+        const incomingCV = rawToMasterCV(parsed, sourceLabel)
+        writeMasterCV(mergeMasterCV(readMasterCV(), incomingCV))
+
+        // 4. Log spend.
+        const inputTokens = response.usage.input_tokens
+        const outputTokens = response.usage.output_tokens
+        db.insert(spendLog).values({
+          id: nanoid(),
+          timestamp: uploadedAt,
+          model,
+          inputTokens,
+          outputTokens,
+          estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
+        })
+      }
+
+      // 5. Record source doc in the database.
+      db.insert(sourceDocs).values({
+        id: docId,
+        filename: originalFilename,
+        type,
+        path: storedPath,
+        uploadedAt,
+        writingProfileIncorporatedAt: null
+      })
+
+      return {
+        id: docId,
+        filename: originalFilename,
+        type,
+        path: storedPath,
+        uploadedAt: uploadedAt.toISOString(),
+        writingProfileIncorporatedAt: null
+      }
+    }
+  )
 
   ipcMain.handle('docs:getAll', async () => {
     // TODO: Query the source_docs table via Drizzle. Return all rows sorted by

@@ -37,6 +37,11 @@ vi.mock('keytar', () => ({
   }
 }))
 
+// pdf-parse reads a test PDF from disk at import time when not the main module.
+// Mock it to prevent the ENOENT error when ipc/index.ts imports the ingestion module.
+vi.mock('pdf-parse', () => ({ default: vi.fn() }))
+vi.mock('mammoth', () => ({ default: { extractRawText: vi.fn() } }))
+
 vi.mock('../../../main/ai', () => ({
   validateApiKey: vi.fn(),
   resetAnthropicClient: vi.fn()

@@ -1,41 +1,32 @@
-// STUB: Phase 8 — Unit tests for the Master CV merge logic.
+// Unit tests for the Master CV merge logic in src/main/utils/masterCVMerge.ts
 //
 // When a resume is ingested (docs:ingest), its structured content is merged into
 // the existing master-cv.json. The merge must:
-//   - Match existing experience entries by company + title + approximate dates.
+//   - Match existing experience entries by company + title (case-insensitive).
 //   - Append bullets from the incoming data that are not already present
 //     (deduplicate by exact text match; fuzzy matching is out of scope for now).
 //   - Never duplicate an existing entry.
 //   - Append entirely new entries that have no match in the existing CV.
-//   - Merge education entries (match on degree + institution).
-//   - Merge skill categories (match on category name; union items).
+//   - Merge education entries (match on degree + institution, case-insensitive).
+//   - Merge skill categories (match on category name, case-insensitive; union items).
 //   - Preserve all existing IDs, sources, and usedIn arrays.
 //   - Assign new nanoid IDs to newly added entries and bullets.
 //
 // All Claude API calls are mocked — the merge logic itself is pure / synchronous.
-//
-// TODO (Phase 8): implement the merge utility before enabling these tests.
-//   Expected location: src/main/utils/masterCVMerge.ts
-//   Exports expected:
-//     mergeMasterCV(existing: MasterCV, incoming: MasterCV) → MasterCV
 
 import { describe, it, expect, vi } from 'vitest'
+import type { MasterCV } from '@shared/types'
 
 // Mock the nanoid dependency so IDs are deterministic in tests.
-// TODO: adjust the mock path to match the actual nanoid import used in the merge module.
 vi.mock('nanoid', () => ({
   nanoid: vi.fn().mockReturnValue('test-id')
 }))
 
-// TODO: replace with real import once the module exists:
-//   import { mergeMasterCV } from '../../../main/utils/masterCVMerge'
-//   import type { MasterCV, MasterCVExperienceEntry } from '@shared/types'
-const mergeMasterCV: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ((existing: any, incoming: any) => any) | null = null // STUB
+import { mergeMasterCV } from '../../../main/utils/masterCVMerge'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const EXISTING_CV = {
+const EXISTING_CV: MasterCV = {
   experience: [
     {
       id: 'exp_existing',
@@ -71,10 +62,10 @@ const EXISTING_CV = {
   ]
 }
 
-const INCOMING_CV_SAME_ENTRY = {
+const INCOMING_CV_SAME_ENTRY: MasterCV = {
   experience: [
     {
-      id: 'exp_incoming', // new ID — should be replaced/merged
+      id: 'exp_incoming', // new ID — should be merged, not appended
       title: 'Software Engineer', // same title
       company: 'Acme Corp', // same company
       startDate: 'Jan 2023',
@@ -83,14 +74,14 @@ const INCOMING_CV_SAME_ENTRY = {
         {
           id: 'bul_incoming_dup',
           text: 'Built scalable APIs serving 1M+ requests per day.', // duplicate
-          source: 'ingested' as const,
+          source: 'ingested',
           sourceLabel: 'Resume uploaded Feb 2026',
           usedIn: []
         },
         {
           id: 'bul_incoming_new',
           text: 'Reduced p99 latency by 40% by redesigning the caching layer.',
-          source: 'ingested' as const,
+          source: 'ingested',
           sourceLabel: 'Resume uploaded Feb 2026',
           usedIn: []
         }
@@ -107,7 +98,7 @@ const INCOMING_CV_SAME_ENTRY = {
   ]
 }
 
-const INCOMING_CV_NEW_ENTRY = {
+const INCOMING_CV_NEW_ENTRY: MasterCV = {
   experience: [
     {
       id: 'exp_new',
@@ -119,7 +110,7 @@ const INCOMING_CV_NEW_ENTRY = {
         {
           id: 'bul_new',
           text: 'Led a team of 4 engineers to deliver a customer dashboard.',
-          source: 'ingested' as const,
+          source: 'ingested',
           sourceLabel: 'Resume uploaded Feb 2026',
           usedIn: []
         }
@@ -130,51 +121,192 @@ const INCOMING_CV_NEW_ENTRY = {
   skills: []
 }
 
+const EMPTY_CV: MasterCV = { experience: [], education: [], skills: [] }
+
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('mergeMasterCV', () => {
-  it.todo('returns the existing CV unchanged when the incoming CV has no new content')
+  it('returns the existing CV unchanged when the incoming CV has no new content', () => {
+    const result = mergeMasterCV(EXISTING_CV, EMPTY_CV)
 
-  it.todo('appends new bullets to a matched entry without duplicating existing bullets (same text)')
-
-  it.todo('does not duplicate a bullet whose text already exists in the matched entry')
-
-  it.todo('appends an entirely new experience entry when no match is found')
-
-  it.todo('preserves the existing entry id, source, and usedIn when merging bullets')
-
-  it.todo('assigns a new id to newly appended bullets')
-
-  it.todo('merges education entries: same degree+institution does not create a duplicate row')
-
-  it.todo('appends a new education entry when no match is found')
-
-  it.todo('merges skill categories: union of items with no duplicates within a category')
-
-  it.todo('appends a new skill category when no match for that category name exists')
-
-  it.todo('returns a new MasterCV object and does not mutate the existing one')
-
-  it('placeholder: test file loads without errors', () => {
-    expect(mergeMasterCV).toBeNull() // remove once implemented
-    expect(EXISTING_CV.experience).toHaveLength(1)
-    expect(INCOMING_CV_SAME_ENTRY.experience[0].bullets).toHaveLength(2)
-    expect(INCOMING_CV_NEW_ENTRY.experience[0].company).toBe('New Corp')
+    expect(result.experience).toHaveLength(1)
+    expect(result.experience[0].id).toBe('exp_existing')
+    expect(result.experience[0].bullets).toHaveLength(1)
+    expect(result.education).toHaveLength(1)
+    expect(result.skills).toHaveLength(1)
   })
 
-  // TODO: sample test to enable once mergeMasterCV is implemented:
-  //
-  //   it('appends new bullets without duplicating existing ones', () => {
-  //     const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
-  //     const entry = result.experience[0]
-  //     expect(entry.id).toBe('exp_existing') // original ID preserved
-  //     expect(entry.bullets).toHaveLength(2)  // 1 original + 1 new; duplicate excluded
-  //     expect(entry.bullets[1].text).toContain('latency')
-  //   })
-  //
-  //   it('appends a new experience entry', () => {
-  //     const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_NEW_ENTRY)
-  //     expect(result.experience).toHaveLength(2)
-  //     expect(result.experience[1].company).toBe('New Corp')
-  //   })
+  it('appends new bullets to a matched entry without duplicating existing bullets (same text)', () => {
+    const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
+    const entry = result.experience[0]
+
+    // 1 original + 1 new bullet; the duplicate text is excluded.
+    expect(entry.bullets).toHaveLength(2)
+    expect(entry.bullets[0].text).toBe('Built scalable APIs serving 1M+ requests per day.')
+    expect(entry.bullets[1].text).toContain('latency')
+  })
+
+  it('does not duplicate a bullet whose text already exists in the matched entry', () => {
+    const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
+    const texts = result.experience[0].bullets.map((b) => b.text)
+    const unique = new Set(texts)
+
+    expect(texts.length).toBe(unique.size)
+  })
+
+  it('appends an entirely new experience entry when no match is found', () => {
+    const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_NEW_ENTRY)
+
+    expect(result.experience).toHaveLength(2)
+    expect(result.experience[1].company).toBe('New Corp')
+    expect(result.experience[1].title).toBe('Senior Software Engineer')
+  })
+
+  it('preserves the existing entry id, source, and usedIn when merging bullets', () => {
+    const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
+    const entry = result.experience[0]
+
+    expect(entry.id).toBe('exp_existing')
+    // Original bullet's metadata must be preserved.
+    expect(entry.bullets[0].id).toBe('bul_existing')
+    expect(entry.bullets[0].source).toBe('ingested')
+    expect(entry.bullets[0].usedIn).toEqual(['sess_abc'])
+  })
+
+  it('assigns a new id to newly appended bullets', () => {
+    const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
+    const newBullet = result.experience[0].bullets[1]
+
+    // New bullets get a nanoid() → 'test-id' from our mock.
+    expect(newBullet.id).toBe('test-id')
+  })
+
+  it('merges education entries: same degree+institution does not create a duplicate row', () => {
+    const incomingWithSameEdu: MasterCV = {
+      experience: [],
+      education: [
+        {
+          id: 'edu_incoming',
+          degree: "Bachelor's in Computer Science",
+          institution: 'State University',
+          graduationDate: 'May 2020'
+        }
+      ],
+      skills: []
+    }
+
+    const result = mergeMasterCV(EXISTING_CV, incomingWithSameEdu)
+
+    expect(result.education).toHaveLength(1)
+    expect(result.education[0].id).toBe('edu_existing')
+  })
+
+  it('appends a new education entry when no match is found', () => {
+    const incomingWithNewEdu: MasterCV = {
+      experience: [],
+      education: [
+        {
+          id: 'edu_new',
+          degree: 'Master of Science in Data Science',
+          institution: 'Tech University',
+          graduationDate: 'Dec 2022'
+        }
+      ],
+      skills: []
+    }
+
+    const result = mergeMasterCV(EXISTING_CV, incomingWithNewEdu)
+
+    expect(result.education).toHaveLength(2)
+    expect(result.education[1].degree).toBe('Master of Science in Data Science')
+  })
+
+  it('merges skill categories: union of items with no duplicates within a category', () => {
+    const result = mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
+    const languages = result.skills.find((s) => s.category === 'Languages')
+
+    expect(languages).toBeDefined()
+    expect(languages!.items).toContain('TypeScript')
+    expect(languages!.items).toContain('Python')
+    expect(languages!.items).toContain('Go')
+    // TypeScript appears exactly once.
+    expect(languages!.items.filter((i) => i === 'TypeScript')).toHaveLength(1)
+  })
+
+  it('appends a new skill category when no match for that category name exists', () => {
+    const incomingWithNewCategory: MasterCV = {
+      experience: [],
+      education: [],
+      skills: [{ id: 'sk_new', category: 'Databases', items: ['PostgreSQL', 'Redis'] }]
+    }
+
+    const result = mergeMasterCV(EXISTING_CV, incomingWithNewCategory)
+
+    expect(result.skills).toHaveLength(2)
+    expect(result.skills[1].category).toBe('Databases')
+    expect(result.skills[1].items).toEqual(['PostgreSQL', 'Redis'])
+  })
+
+  it('returns a new MasterCV object and does not mutate the existing one', () => {
+    const existingCopy = JSON.parse(JSON.stringify(EXISTING_CV)) as MasterCV
+
+    mergeMasterCV(EXISTING_CV, INCOMING_CV_SAME_ENTRY)
+
+    expect(EXISTING_CV).toEqual(existingCopy)
+  })
+
+  it('matches experience entries case-insensitively on company and title', () => {
+    const incomingLowercase: MasterCV = {
+      experience: [
+        {
+          id: 'exp_lower',
+          title: 'software engineer', // lowercase
+          company: 'acme corp', // lowercase
+          startDate: 'Jan 2023',
+          endDate: 'Present',
+          bullets: [
+            {
+              id: 'bul_lower',
+              text: 'New bullet from lowercase match.',
+              source: 'ingested',
+              sourceLabel: 'Resume uploaded Mar 2026',
+              usedIn: []
+            }
+          ]
+        }
+      ],
+      education: [],
+      skills: []
+    }
+
+    const result = mergeMasterCV(EXISTING_CV, incomingLowercase)
+
+    // Should merge into the existing entry, not create a second one.
+    expect(result.experience).toHaveLength(1)
+    expect(result.experience[0].id).toBe('exp_existing')
+    expect(result.experience[0].bullets).toHaveLength(2)
+  })
+
+  it('matches skill categories case-insensitively and deduplicates items case-insensitively', () => {
+    const incomingMixedCase: MasterCV = {
+      experience: [],
+      education: [],
+      skills: [
+        {
+          id: 'sk_mc',
+          category: 'languages', // lowercase — should match 'Languages'
+          items: ['typescript', 'rust'] // 'typescript' is a case-insensitive dup; 'rust' is new
+        }
+      ]
+    }
+
+    const result = mergeMasterCV(EXISTING_CV, incomingMixedCase)
+    const languages = result.skills.find((s) => s.category.toLowerCase() === 'languages')
+
+    expect(languages).toBeDefined()
+    // 'typescript' matches 'TypeScript' — must not be added again.
+    expect(languages!.items.filter((i) => i.toLowerCase() === 'typescript')).toHaveLength(1)
+    // 'rust' is genuinely new.
+    expect(languages!.items.map((i) => i.toLowerCase())).toContain('rust')
+  })
 })

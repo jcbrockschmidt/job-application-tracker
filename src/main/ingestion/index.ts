@@ -1,13 +1,12 @@
 // Document ingestion: extract raw text from uploaded resume and cover letter files.
 //
-// STUB: Phase 1 — all functions throw "Not implemented".
-//
-// Dependencies to install before implementing:
-//   npm install pdf-parse mammoth
-//   npm install --save-dev @types/pdf-parse @types/mammoth
-//
 // Typed errors are used instead of thrown strings so IPC handlers can map each
 // case to a specific user-facing message (see docs/design.md § Error Handling).
+
+import { extname } from 'path'
+import { readFile } from 'fs/promises'
+import pdfParse from 'pdf-parse'
+import mammoth from 'mammoth'
 
 export type IngestionError =
   | { type: 'image-only-pdf' } // scanned PDF with no extractable text
@@ -19,14 +18,49 @@ export type IngestionError =
 // Supported extensions: .pdf, .docx, .txt
 // Throws an IngestionError (as a plain object) for known failure modes so callers
 // can display a specific error message rather than a generic one.
-export async function extractText(_filePath: string): Promise<string> {
-  // TODO:
-  // 1. Read the file extension to determine which parser to use.
-  // 2. For .pdf: use pdf-parse. If numpages > 0 but text is empty, throw { type: 'image-only-pdf' }.
-  //    If pdf-parse throws with a password error, throw { type: 'password-protected' }.
-  //    If pdf-parse throws for any other reason, throw { type: 'corrupt' }.
-  // 3. For .docx: use mammoth.extractRawText(). If mammoth throws, throw { type: 'corrupt' }.
-  // 4. For .txt: use fs.readFile with 'utf-8'. If it throws, throw { type: 'corrupt' }.
-  // 5. For any other extension: throw { type: 'unsupported-format', ext }.
-  throw new Error('Not implemented')
+export async function extractText(filePath: string): Promise<string> {
+  const ext = extname(filePath).toLowerCase()
+
+  if (ext === '.pdf') {
+    let buffer: Buffer
+    try {
+      buffer = await readFile(filePath)
+    } catch {
+      throw { type: 'corrupt' } as IngestionError
+    }
+    try {
+      const data = await pdfParse(buffer)
+      if (data.numpages > 0 && data.text.trim() === '') {
+        throw { type: 'image-only-pdf' } as IngestionError
+      }
+      return data.text
+    } catch (err) {
+      // Re-throw our own typed errors unchanged.
+      if (err && typeof err === 'object' && 'type' in err) throw err
+      const msg = String((err as Error).message ?? '').toLowerCase()
+      if (msg.includes('password') || msg.includes('encrypted')) {
+        throw { type: 'password-protected' } as IngestionError
+      }
+      throw { type: 'corrupt' } as IngestionError
+    }
+  }
+
+  if (ext === '.docx') {
+    try {
+      const result = await mammoth.extractRawText({ path: filePath })
+      return result.value
+    } catch {
+      throw { type: 'corrupt' } as IngestionError
+    }
+  }
+
+  if (ext === '.txt') {
+    try {
+      return await readFile(filePath, 'utf-8')
+    } catch {
+      throw { type: 'corrupt' } as IngestionError
+    }
+  }
+
+  throw { type: 'unsupported-format', ext } as IngestionError
 }

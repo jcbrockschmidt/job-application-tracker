@@ -30,9 +30,9 @@ The minimum to go end-to-end: onboard → ingest resume → generate tailored re
 
 ### 1.3 Document Ingestion
 
-- [ ] **Text extraction** — integrate `pdf-parse` (PDF) and `mammoth` (DOCX) in main process; handle errors: image-only PDF, corrupt file, password-protected PDF (return typed errors, not throws)
-- [ ] **`docs:ingest` IPC** — extract raw text from uploaded file; send to Claude with a prompt to output structured data in `master-cv.json` schema, with per-bullet `id` (nanoid), `source: "ingested"`, `sourceLabel` (filename + date), `usedIn: []`; write result to `master-cv.json` (merge with existing, matching on company + title); record source doc in `source_docs` table; return `SourceDoc`
-- [ ] **Master CV file I/O** — helper functions: `readMasterCV()` and `writeMasterCV()`; if file doesn't exist, return empty structure; merge strategy: match existing entries by company + title, append new entries, merge bullets without duplicating
+- [x] **Text extraction** — integrate `pdf-parse` (PDF) and `mammoth` (DOCX) in main process; handle errors: image-only PDF, corrupt file, password-protected PDF (return typed errors, not throws)
+- [x] **`docs:ingest` IPC** — extract raw text from uploaded file; send to Claude with a prompt to output structured data in `master-cv.json` schema, with per-bullet `id` (nanoid), `source: "ingested"`, `sourceLabel` (filename + date), `usedIn: []`; write result to `master-cv.json` (merge with existing, matching on company + title); record source doc in `source_docs` table; return `SourceDoc`
+- [x] **Master CV file I/O** — helper functions: `readMasterCV()` and `writeMasterCV()`; if file doesn't exist, return empty structure; merge strategy: match existing entries by company + title, append new entries, merge bullets without duplicating
 
 ### 1.4 New Session + Resume Generation
 

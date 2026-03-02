@@ -30,6 +30,9 @@
     "better-sqlite3": "^11.7.0",
     "drizzle-orm": "^0.40.0",
     "keytar": "^7.9.0",
+    "mammoth": "^1.11.0",
+    "nanoid": "^5.1.6",
+    "pdf-parse": "^1.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0"
@@ -40,6 +43,7 @@
     "@storybook/test": "^8.6.17",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.5",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
