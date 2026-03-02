@@ -9,6 +9,15 @@
 // STUB: Phase 4 — FeedbackPromptBar placed above Resume and Cover Letter papers;
 //   SpendingWarningBanner placed below the tab bar; SpendingLimitDialog wired
 //   before AI generation calls. Data fetching and actual AI calls not yet wired.
+// STUB: Phase 7 — ARIA live region stub added below; not yet implemented.
+// TODO (Phase 7 — ARIA live regions):
+//   - Add a visually hidden <Box> with aria-live="polite" aria-atomic="true" below the
+//     tab bar. Update its text content during AI generation ("Generating resume…",
+//     "Resume generation complete", "Generation failed — see error below") so screen
+//     readers announce progress without requiring the user to inspect the page.
+//   - Example: const [liveMessage, setLiveMessage] = useState('')
+//     Then render:  <Box role="status" aria-live="polite" sx={visuallyHidden}>{liveMessage}</Box>
+//     Set liveMessage before and after each generate:* IPC call.
 // TODO (Phase 2):
 //   - Auto-save: debounce session changes and call
 //     window.api.sessions.update(session.id, { resume, coverLetter, matchReport })
@@ -83,6 +92,21 @@ export default function SessionPage(): JSX.Element {
       {/* Shown when 24h rolling spend exceeds the configured limit (limit > 0). */}
       {/* TODO: replace placeholder 0 values with spendUsd and spendingLimit state */}
       <SpendingWarningBanner spendUsd={0} limitUsd={0} />
+
+      {/* ARIA live region for AI generation status — STUB: Phase 7 */}
+      {/* Visually hidden; screen readers announce generation progress and completion. */}
+      {/* TODO (Phase 7): const [liveMessage, setLiveMessage] = useState('') */}
+      {/* TODO (Phase 7): set liveMessage to "Generating…", "Complete", or error text
+          around each generate:* IPC call; clear it after a short delay on success. */}
+      {/* <Box
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+                  clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
+          >
+            {liveMessage}
+          </Box> */}
 
       {/* SpendingLimitDialog — STUB: Phase 4 */}
       {/* TODO: render before every AI generation call in this page */}

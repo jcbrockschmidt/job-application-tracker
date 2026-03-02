@@ -4,12 +4,21 @@
 // navigates to the new session on completion.
 //
 // STUB: Phase 1 — structure and props defined; generation logic not yet wired.
+// STUB: Phase 7 — focus management note added; MUI Dialog handles focus trap automatically.
 // TODO:
 //   - Call window.api.sessions.create(jobDescription) on submit
 //   - Dispatch addSession(session) and setActivePage('session') on success
 //   - Show LinearProgress / status text during generation (streaming if possible)
 //   - Show inline error with Retry button on failure (network, rate limit, auth, context)
 //   - Disable Generate button when jobDescription is empty
+// TODO (Phase 7 — focus management):
+//   - MUI Dialog already provides a FocusTrap; focus is contained inside while it is open.
+//   - Add autoFocus to the job-description TextField so focus lands there immediately on open.
+//   - On close (Cancel or success), MUI Dialog automatically returns focus to the element
+//     that was focused before the dialog opened — verify this works with the "+ New Session"
+//     button trigger in Topbar and Sidebar.
+//   - Add aria-labelledby={dialogTitleId} to the Dialog and id={dialogTitleId} to
+//     DialogTitle so screen readers announce the dialog name when it opens.
 
 import {
   Dialog,
@@ -48,7 +57,9 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
   // }
 
   return (
+    // STUB: Phase 7 — add aria-labelledby="new-session-dialog-title" when wiring
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      {/* STUB: Phase 7 — add id="new-session-dialog-title" for aria-labelledby */}
       <DialogTitle>New Session</DialogTitle>
 
       <DialogContent>
@@ -58,6 +69,7 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
         </Typography>
 
         {/* TODO: value={jobDescription} onChange={e => setJobDescription(e.target.value)} */}
+        {/* STUB: Phase 7 — add autoFocus so focus lands here when the dialog opens */}
         <TextField
           label="Job description"
           multiline
@@ -65,6 +77,7 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
           fullWidth
           placeholder="Paste the job description here…"
           variant="outlined"
+          // TODO (Phase 7): autoFocus
         />
 
         {/* TODO: show LinearProgress when isGenerating */}

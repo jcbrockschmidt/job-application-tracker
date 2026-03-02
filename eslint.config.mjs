@@ -1,3 +1,8 @@
+// STUB: Phase 7 — eslint-plugin-jsx-a11y is installed and enabled below with
+// the recommended rule set. After implementing Phase 7:
+// TODO: Run `npx eslint src/renderer --ext .tsx` and fix every jsx-a11y violation
+//   reported across the codebase before marking the linting task complete.
+
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import reactPlugin from 'eslint-plugin-react'

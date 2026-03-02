@@ -5,6 +5,7 @@
 // and inline editing are not yet implemented.
 // STUB: Phase 4 — hover toolbar shapes (BulletHoverToolbar, EntryReviseChip,
 // SectionReviseChip) rendered; InlineRevisionPanel expansion not yet wired.
+// STUB: Phase 7 — accessibility hooks identified below; not yet implemented.
 // TODO (Phase 1):
 //   - Inline bullet editing: clicking Edit in BulletHoverToolbar turns the bullet
 //     into an in-place text input; Save commits (push to undo stack); Escape cancels.
@@ -19,6 +20,16 @@
 //     (scope = 'experience' | 'skills').
 //   - Gate all generate:revise calls through SpendingLimitDialog when over limit.
 //   - Push old text onto the undo stack (useUndoRedo) before applying accepted revisions.
+// TODO (Phase 7 — keyboard navigation):
+//   - BulletItem: show BulletHoverToolbar when the item receives keyboard focus (onFocus),
+//     not only on mouse hover. Hide on blur (onBlur) unless focus has moved into the
+//     toolbar itself — use relatedTarget to detect this.
+//   - EntryReviseChip / SectionReviseChip: same focus-based visibility — the chip must be
+//     keyboard-reachable even when the mouse has never hovered the entry/section.
+// TODO (Phase 7 — color contrast):
+//   - Audit custom color values '#1e3a5f' (section heading), '#6b7280' (secondary text),
+//     '#9eaab5', and '#8fa3b5' (sidebar text) against their backgrounds. Each must meet
+//     WCAG AA: 4.5:1 for normal text, 3:1 for large/bold text. Fix failures.
 
 import { useState } from 'react'
 import { Box, Button, IconButton, Typography } from '@mui/material'
@@ -134,6 +145,7 @@ export default function ResumePaper({ resume, contact }: ResumePaperProps): JSX.
 //
 // STUB: Phase 4 — hover state wired; toolbar buttons are not yet connected to
 // InlineRevisionPanel or the inline edit TextField.
+// STUB: Phase 7 — keyboard focus stub added; toolbar must show on focus too.
 // TODO (Phase 1):
 //   - Edit button: replace the bullet Typography with a controlled TextField (single line);
 //     on Save, push old text to undo stack then call a parent-supplied onBulletSave callback;
@@ -142,9 +154,13 @@ export default function ResumePaper({ resume, contact }: ResumePaperProps): JSX.
 //   - "Revise with AI" button: set reviseOpen = true to expand InlineRevisionPanel
 //     beneath this bullet. Needs sessionId threaded from ResumePaperProps.
 //   - InlineRevisionPanel onAccept: push old text to undo stack, call onBulletSave, close.
+// TODO (Phase 7):
+//   - Add onFocus / onBlur handlers so the toolbar is keyboard-accessible.
+//     On blur, only hide if relatedTarget is outside both the bullet and the toolbar.
 
 function BulletItem({ bullet }: { bullet: string }): JSX.Element {
   const [hovered, setHovered] = useState(false)
+  // TODO (Phase 7): const [focused, setFocused] = useState(false)
   // TODO: const [isEditing, setIsEditing] = useState(false)
   // TODO: const [draft, setDraft] = useState(bullet)
   // TODO: const [reviseOpen, setReviseOpen] = useState(false)
@@ -154,6 +170,8 @@ function BulletItem({ bullet }: { bullet: string }): JSX.Element {
       component="li"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      // TODO (Phase 7): onFocus={() => setFocused(true)}
+      // TODO (Phase 7): onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false) }}
       sx={{
         fontSize: '9.5pt',
         color: '#374151',
@@ -170,6 +188,7 @@ function BulletItem({ bullet }: { bullet: string }): JSX.Element {
       {bullet}
 
       {/* Dark popup toolbar — STUB: Phase 4 */}
+      {/* TODO (Phase 7): visible={hovered || focused} */}
       <BulletHoverToolbar visible={hovered} />
 
       {/* InlineRevisionPanel — STUB: Phase 4 */}
@@ -184,10 +203,12 @@ function BulletItem({ bullet }: { bullet: string }): JSX.Element {
   )
 }
 
-// Dark popup toolbar shown above a bullet on hover.
+// Dark popup toolbar shown above a bullet on hover (or on keyboard focus — Phase 7).
 // Contains an Edit icon button and a "Revise with AI" button.
 //
 // STUB: Phase 4 — rendered; buttons have no onClick handlers yet.
+// STUB: Phase 7 — aria-label added to Edit button; toolbar visibility must also
+//   respond to keyboard focus (see BulletItem TODO above).
 // TODO: accept onEdit and onRevise callbacks from BulletItem and wire them.
 
 function BulletHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
@@ -212,7 +233,12 @@ function BulletHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
       }}
     >
       {/* TODO: onClick={() => onEdit()} */}
-      <IconButton size="small" sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}>
+      {/* STUB: Phase 7 — aria-label added; icon-only buttons must always have an accessible name */}
+      <IconButton
+        size="small"
+        aria-label="Edit bullet"
+        sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}
+      >
         <EditIcon sx={{ fontSize: 13 }} />
       </IconButton>
       {/* TODO: onClick={() => onRevise()} */}

@@ -6,6 +6,7 @@
 // STUB: Phase 1 — nav structure and new-session button rendered.
 // STUB: Phase 2 — session list populated from Redux; SessionItem stub below.
 // STUB: Phase 5 — Writing Profile nav item wired to activePage; badge count is a stub (always 0).
+// STUB: Phase 7 — accessibility stubs identified below; not yet implemented.
 // TODO:
 //   - Wire all nav items to dispatch setActivePage(...)
 //   - SessionItem close (×) button: call window.api.sessions.close(id), dispatch removeSession
@@ -14,6 +15,16 @@
 //   - Show yellow unincorporated-count badge on Master CV item (Phase 3)
 //   - Writing Profile badge (Phase 5): load unincorporated cover letter count from
 //     WritingProfilePage data or a shared Redux slice; pass as badgeCount to NavItem
+// TODO (Phase 7 — ARIA labels):
+//   - NavItem in compact mode (Writing Profile, Settings footer icons): these show only an
+//     icon; pass an aria-label to the ButtonBase so screen readers announce the destination.
+//   - "New Session" ButtonBase: add aria-label="New session" for screen reader clarity.
+//   - SessionItem close IconButton: add aria-label that includes the session name,
+//     e.g. aria-label={`Close ${session.companyName} – ${session.roleTitle}`}.
+// TODO (Phase 7 — keyboard navigation):
+//   - SessionItem close button is opacity:0 until hover. The button is in the DOM and
+//     already keyboard-focusable; add an :focus-visible rule (or inline sx) so it becomes
+//     visible when focused via keyboard, not just on mouse hover.
 
 import { Box, Typography, ButtonBase, Chip, Divider, IconButton, Badge } from '@mui/material'
 import ListAltIcon from '@mui/icons-material/ListAlt'
@@ -128,6 +139,8 @@ export default function Sidebar(): JSX.Element {
       <Box sx={{ px: 1, py: 1.5, display: 'flex', gap: 0.5 }}>
         {/* STUB: Phase 5 — active state and onClick wired; badge count is a stub (always 0). */}
         {/* TODO: replace writingProfileUnincorporatedCount with a live value once data is loaded. */}
+        {/* TODO (Phase 7): pass aria-label="Writing Profile" to NavItem so the compact icon
+            has an accessible name for screen readers (label is hidden in compact mode). */}
         <NavItem
           icon={
             <Badge
@@ -145,6 +158,7 @@ export default function Sidebar(): JSX.Element {
         />
 
         {/* TODO: active={activePage === 'settings'}, onClick */}
+        {/* TODO (Phase 7): pass aria-label="Settings" for compact icon-only accessibility */}
         <NavItem icon={<SettingsIcon sx={{ fontSize: 15 }} />} label="Settings" compact />
       </Box>
     </Box>
@@ -154,6 +168,7 @@ export default function Sidebar(): JSX.Element {
 // ─── Internal sub-components ─────────────────────────────────────────────────
 
 // STUB: Phase 2 — renders company + role; close button visible on hover.
+// STUB: Phase 7 — close button aria-label and focus-visibility stubs added below.
 // TODO:
 //   - Draft/Final badge: source resumeStatus from the application row
 //   - Close button: calls window.api.sessions.close(session.id) then dispatches removeSession
@@ -223,9 +238,12 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
 
       {/* Close button — visible on row hover */}
       {/* TODO: onClick={onClose} */}
+      {/* STUB: Phase 7 — aria-label added; also add '&:focus-visible': { opacity: 1 } to
+          sx so keyboard users see the button when they tab to it. */}
       <IconButton
         className="close-btn"
         size="small"
+        aria-label={`Close ${session.companyName || 'session'} – ${session.roleTitle || ''}`}
         onClick={(e) => {
           e.stopPropagation()
           onClose()
@@ -240,6 +258,7 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
           color: SIDEBAR_TEXT,
           p: 0.25,
           '&:hover': { color: 'white' }
+          // TODO (Phase 7): '&:focus-visible': { opacity: 1, color: 'white' }
         }}
       >
         <CloseIcon sx={{ fontSize: 13 }} />
@@ -254,12 +273,17 @@ interface NavItemProps {
   active?: boolean
   compact?: boolean
   onClick?: () => void
+  // STUB: Phase 7 — aria-label for compact (icon-only) mode; callers must supply this
+  // when compact={true} so the ButtonBase has an accessible name for screen readers.
+  'aria-label'?: string
 }
 
-function NavItem({ icon, label, active, compact, onClick }: NavItemProps): JSX.Element {
+function NavItem({ icon, label, active, compact, onClick, 'aria-label': ariaLabel }: NavItemProps): JSX.Element {
   return (
     <ButtonBase
       onClick={onClick}
+      // STUB: Phase 7 — pass aria-label in compact mode; in full mode the visible label suffices
+      aria-label={compact ? (ariaLabel ?? label) : undefined}
       sx={{
         mx: 1,
         mt: compact ? 0 : 0.5,

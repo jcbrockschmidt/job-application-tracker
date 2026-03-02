@@ -5,6 +5,7 @@
 // STUB: Phase 2 — layout complete; interactive features not yet implemented.
 // STUB: Phase 4 — ParagraphItem hover toolbar shape rendered; InlineRevisionPanel
 // expansion and inline editing not yet wired.
+// STUB: Phase 7 — accessibility hooks identified below; not yet implemented.
 // TODO (Phase 2):
 //   - Inline paragraph editing: clicking Edit in ParagraphHoverToolbar turns the
 //     paragraph into an auto-growing TextField (MUI multiline); Save / Cancel.
@@ -14,6 +15,12 @@
 //   - "Revise with AI" button: expand InlineRevisionPanel beneath the paragraph
 //     (scope = `paragraph:${i}`). Gate through SpendingLimitDialog when over limit.
 //   - Push old paragraph text onto the undo stack before applying accepted revisions.
+// TODO (Phase 7 — keyboard navigation):
+//   - ParagraphItem: show ParagraphHoverToolbar on keyboard focus (onFocus), not only
+//     on mouse hover. Hide on blur unless focus has moved into the toolbar itself.
+// TODO (Phase 7 — color contrast):
+//   - Verify '#374151' body text on white background meets WCAG AA (4.5:1 normal text).
+//   - Apply the same contrast audit as ResumePaper for shared colors '#1e3a5f' and '#6b7280'.
 
 import { useState } from 'react'
 import { Box, Button, IconButton, Typography } from '@mui/material'
@@ -82,6 +89,7 @@ export default function CoverLetterPaper({
 //
 // STUB: Phase 4 — hover state wired; toolbar buttons are not yet connected to
 // InlineRevisionPanel or the inline edit TextField.
+// STUB: Phase 7 — keyboard focus stub added; toolbar must show on focus too.
 // TODO (Phase 2):
 //   - Edit button: replace the paragraph Typography with a multiline TextField
 //     (auto-growing); Save commits via sessions:update; Escape cancels.
@@ -89,9 +97,13 @@ export default function CoverLetterPaper({
 //   - "Revise with AI" button: expand InlineRevisionPanel beneath the paragraph
 //     (scope = `paragraph:${index}`). Needs sessionId from CoverLetterPaperProps.
 //   - InlineRevisionPanel onAccept: push old text to undo stack, call onParagraphSave.
+// TODO (Phase 7):
+//   - Add onFocus / onBlur handlers so the toolbar is keyboard-accessible.
+//     On blur, only hide if relatedTarget is outside both the paragraph and the toolbar.
 
 function ParagraphItem({ paragraph, index }: { paragraph: string; index: number }): JSX.Element {
   const [hovered, setHovered] = useState(false)
+  // TODO (Phase 7): const [focused, setFocused] = useState(false)
   // TODO: const [isEditing, setIsEditing] = useState(false)
   // TODO: const [draft, setDraft] = useState(paragraph)
   // TODO: const [reviseOpen, setReviseOpen] = useState(false)
@@ -100,6 +112,8 @@ function ParagraphItem({ paragraph, index }: { paragraph: string; index: number 
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      // TODO (Phase 7): onFocus={() => setFocused(true)}
+      // TODO (Phase 7): onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false) }}
       sx={{ position: 'relative', mb: 1.5 }}
     >
       {/* TODO (Phase 2): when isEditing, render TextField multiline instead */}
@@ -118,6 +132,7 @@ function ParagraphItem({ paragraph, index }: { paragraph: string; index: number 
       </Typography>
 
       {/* Dark popup hover toolbar — STUB: Phase 4 */}
+      {/* TODO (Phase 7): visible={hovered || focused} */}
       <ParagraphHoverToolbar visible={hovered} />
 
       {/* InlineRevisionPanel — STUB: Phase 4 */}
@@ -133,10 +148,12 @@ function ParagraphItem({ paragraph, index }: { paragraph: string; index: number 
   )
 }
 
-// Dark popup toolbar shown below a cover letter paragraph on hover.
+// Dark popup toolbar shown below a cover letter paragraph on hover (or keyboard focus — Phase 7).
 // Contains an Edit icon button and a "Revise with AI" button.
 //
 // STUB: Phase 4 — rendered; buttons have no onClick handlers yet.
+// STUB: Phase 7 — aria-label added to Edit button; toolbar visibility must also
+//   respond to keyboard focus (see ParagraphItem TODO above).
 // TODO: accept onEdit and onRevise callbacks from ParagraphItem and wire them.
 
 function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
@@ -161,7 +178,12 @@ function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
       }}
     >
       {/* TODO: onClick={() => onEdit()} */}
-      <IconButton size="small" sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}>
+      {/* STUB: Phase 7 — aria-label added; icon-only buttons must always have an accessible name */}
+      <IconButton
+        size="small"
+        aria-label="Edit paragraph"
+        sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}
+      >
         <EditIcon sx={{ fontSize: 13 }} />
       </IconButton>
       {/* TODO: onClick={() => onRevise()} */}

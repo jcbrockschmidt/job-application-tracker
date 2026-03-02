@@ -4,6 +4,16 @@
 // statusbar are always rendered regardless of which page is active.
 //
 // STUB: Phase 1 — layout structure is defined; child organisms are stubs.
+// STUB: Phase 7 — focus management on view change identified below; not yet implemented.
+// TODO (Phase 7 — focus management):
+//   - When `activePage` changes (tracked via useEffect on the uiSlice value), move focus
+//     to the page heading of the newly active page. Each page component should expose a
+//     ref on its <h1> or primary heading element; AppShell calls ref.current.focus() on
+//     navigation. Use tabIndex={-1} on the heading so it can receive programmatic focus
+//     without entering the tab order permanently.
+//   - MUI Dialog components (NewSessionDialog, ExportDialog, SpendingLimitDialog) already
+//     use FocusTrap internally — verify focus returns to the trigger element on close by
+//     checking that onClose restores focus to the button that opened the dialog.
 
 import { Box } from '@mui/material'
 import Topbar from './Topbar'
