@@ -3,6 +3,9 @@
 // Strategy: mock `electron` so ipcMain.handle() captures each handler function,
 // then call handlers directly. The electron app.getPath mock points at a real
 // temporary directory so fs operations run against the actual filesystem.
+//
+// keytar and the ai module are mocked so no network calls or OS keychain
+// access occur during tests.
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'fs'
@@ -28,7 +31,20 @@ vi.mock('electron', () => ({
   }
 }))
 
+vi.mock('keytar', () => ({
+  default: {
+    setPassword: vi.fn().mockResolvedValue(undefined)
+  }
+}))
+
+vi.mock('../../../main/ai', () => ({
+  validateApiKey: vi.fn(),
+  resetAnthropicClient: vi.fn()
+}))
+
 import { registerIpcHandlers } from '../../../main/ipc/index'
+import keytar from 'keytar'
+import { validateApiKey, resetAnthropicClient } from '../../../main/ai'
 
 // Register all handlers once. The handler functions close over app.getPath which
 // reads tempDir at call time, so they work correctly with per-test temp dirs.
@@ -38,6 +54,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), 'job-app-settings-test-'))
+  vi.clearAllMocks()
 })
 
 afterEach(() => {
@@ -50,6 +67,9 @@ const settingsGet = (): Promise<Settings> =>
 
 const settingsSave = (updates: Partial<Settings>): Promise<void> =>
   capturedHandlers['settings:save'](null, updates) as Promise<void>
+
+const settingsValidateApiKey = (apiKey: string): Promise<boolean> =>
+  capturedHandlers['settings:validateApiKey'](null, apiKey) as Promise<boolean>
 
 const DEFAULT_SETTINGS: Settings = {
   contactInfo: { fullName: '', phone: '', email: '', linkedin: '', github: '' },
@@ -149,5 +169,33 @@ describe('settings:save', () => {
   it('can update the spending limit', async () => {
     await settingsSave({ spendingLimit: 10 })
     expect((await settingsGet()).spendingLimit).toBe(10)
+  })
+})
+
+// ── settings:validateApiKey ───────────────────────────────────────────────────
+
+describe('settings:validateApiKey', () => {
+  it('returns true, saves the key to the keychain, and resets the client when the key is valid', async () => {
+    vi.mocked(validateApiKey).mockResolvedValue(true)
+
+    const result = await settingsValidateApiKey('sk-valid-key')
+
+    expect(result).toBe(true)
+    expect(keytar.setPassword).toHaveBeenCalledWith(
+      'job-application-kit',
+      'anthropic-api-key',
+      'sk-valid-key'
+    )
+    expect(resetAnthropicClient).toHaveBeenCalled()
+  })
+
+  it('returns false and does not touch the keychain when the key is invalid', async () => {
+    vi.mocked(validateApiKey).mockResolvedValue(false)
+
+    const result = await settingsValidateApiKey('sk-bad-key')
+
+    expect(result).toBe(false)
+    expect(keytar.setPassword).not.toHaveBeenCalled()
+    expect(resetAnthropicClient).not.toHaveBeenCalled()
   })
 })

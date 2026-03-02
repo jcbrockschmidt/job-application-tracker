@@ -13,7 +13,9 @@
 import { ipcMain, app } from 'electron'
 import { join } from 'path'
 import { readFileSync, existsSync } from 'fs'
+import keytar from 'keytar'
 import { atomicWriteJson } from '../fs'
+import { validateApiKey, resetAnthropicClient } from '../ai'
 import type {
   Settings,
   SourceDocType,
@@ -21,6 +23,9 @@ import type {
   MasterCV,
   WritingProfile
 } from '../../shared/types'
+
+const KEYCHAIN_SERVICE = 'job-application-kit'
+const KEYCHAIN_ACCOUNT = 'anthropic-api-key'
 
 const DEFAULT_SETTINGS: Settings = {
   contactInfo: { fullName: '', phone: '', email: '', linkedin: '', github: '' },
@@ -63,10 +68,13 @@ export function registerIpcHandlers(): void {
     atomicWriteJson(getSettingsPath(), merged)
   })
 
-  ipcMain.handle('settings:validateApiKey', async (_event, _apiKey: string) => {
-    // TODO: Call validateApiKey() from src/main/ai/index.ts and return the result.
-    // This makes a live Anthropic API call (models.list) to confirm the key works.
-    throw new Error('Not implemented')
+  ipcMain.handle('settings:validateApiKey', async (_event, apiKey: string): Promise<boolean> => {
+    const isValid = await validateApiKey(apiKey)
+    if (isValid) {
+      await keytar.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, apiKey)
+      resetAnthropicClient()
+    }
+    return isValid
   })
 
   ipcMain.handle('settings:getAvailableModels', async () => {

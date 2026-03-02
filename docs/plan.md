@@ -21,12 +21,12 @@ The minimum to go end-to-end: onboard → ingest resume → generate tailored re
 
 ### 1.2 Onboarding
 
-- [ ] **Onboarding overlay** — shown on launch when `onboardingComplete === false`; four-step wizard (MUI Stepper) rendered over the app shell; closes on "Get Started" or after step 4
-- [ ] **Step 1 — API key** — masked text input + Validate button; calls `settings:validateApiKey`; inline error on failure; advances only on success; persists key to keychain
-- [ ] **Step 2 — Contact info** — required: full name, phone, email; optional: LinkedIn URL, GitHub URL; calls `settings:save` on Next; inline validation
-- [ ] **Step 3 — Upload resume** — file picker restricted to PDF, DOCX, TXT; required to advance; on select calls `docs:ingest`; shows progress spinner while ingesting; inline error on failure
-- [ ] **Step 4 — Upload cover letter** — same file picker pattern; optional; Skip button available; "Get Started" sets `onboardingComplete = true` and dismisses overlay
-- [ ] **`settings:validateApiKey` IPC** — make a minimal Anthropic API call (e.g. list models) to confirm the key works; return `true`/`false`
+- [x] **Onboarding overlay** — shown on launch when `onboardingComplete === false`; four-step wizard (MUI Stepper) rendered over the app shell; closes on "Get Started" or after step 4
+- [x] **Step 1 — API key** — masked text input + Validate button; calls `settings:validateApiKey`; inline error on failure; advances only on success; persists key to keychain
+- [x] **Step 2 — Contact info** — required: full name, phone, email; optional: LinkedIn URL, GitHub URL; calls `settings:save` on Next; inline validation
+- [x] **Step 3 — Upload resume** — file picker restricted to PDF, DOCX, TXT; required to advance; on select calls `docs:ingest`; shows progress spinner while ingesting; inline error on failure
+- [x] **Step 4 — Upload cover letter** — same file picker pattern; optional; Skip button available; "Get Started" sets `onboardingComplete = true` and dismisses overlay
+- [x] **`settings:validateApiKey` IPC** — make a minimal Anthropic API call (e.g. list models) to confirm the key works; return `true`/`false`
 
 ### 1.3 Document Ingestion
 

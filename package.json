@@ -29,6 +29,7 @@
     "@reduxjs/toolkit": "^2.5.0",
     "better-sqlite3": "^11.7.0",
     "drizzle-orm": "^0.40.0",
+    "keytar": "^7.9.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0"
