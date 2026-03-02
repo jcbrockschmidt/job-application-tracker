@@ -31,7 +31,7 @@ vi.mock('nanoid', () => ({
 //   import { mergeMasterCV } from '../../main/utils/masterCVMerge'
 //   import type { MasterCV, MasterCVExperienceEntry } from '@shared/types'
 const mergeMasterCV: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-((existing: any, incoming: any) => any) | null = null // STUB
+  ((existing: any, incoming: any) => any) | null = null // STUB
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -135,9 +135,7 @@ const INCOMING_CV_NEW_ENTRY = {
 describe('mergeMasterCV', () => {
   it.todo('returns the existing CV unchanged when the incoming CV has no new content')
 
-  it.todo(
-    'appends new bullets to a matched entry without duplicating existing bullets (same text)'
-  )
+  it.todo('appends new bullets to a matched entry without duplicating existing bullets (same text)')
 
   it.todo('does not duplicate a bullet whose text already exists in the matched entry')
 

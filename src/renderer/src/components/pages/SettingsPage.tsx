@@ -211,8 +211,8 @@ function BackupSection(): JSX.Element {
         </Button>
       </Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-        Incremental backups run automatically on app close. Only files changed since the last
-        backup are copied.
+        Incremental backups run automatically on app close. Only files changed since the last backup
+        are copied.
       </Typography>
 
       {/* Manual backup and import actions */}

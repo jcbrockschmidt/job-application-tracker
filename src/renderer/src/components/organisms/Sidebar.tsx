@@ -278,7 +278,14 @@ interface NavItemProps {
   'aria-label'?: string
 }
 
-function NavItem({ icon, label, active, compact, onClick, 'aria-label': ariaLabel }: NavItemProps): JSX.Element {
+function NavItem({
+  icon,
+  label,
+  active,
+  compact,
+  onClick,
+  'aria-label': ariaLabel
+}: NavItemProps): JSX.Element {
   return (
     <ButtonBase
       onClick={onClick}

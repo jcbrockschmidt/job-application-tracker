@@ -141,9 +141,7 @@ describe('spendLog table', () => {
 
   it.todo('sumSpendLast24Hours: excludes entries older than 24 hours')
 
-  it.todo(
-    'sumSpendLast24Hours: entries exactly at the 24-hour boundary are included (>=)'
-  )
+  it.todo('sumSpendLast24Hours: entries exactly at the 24-hour boundary are included (>=)')
 
   it('placeholder: fixture has the expected shape', () => {
     expect(MOCK_SPEND_ENTRY.estimatedCostUsd).toBe(0.0045)

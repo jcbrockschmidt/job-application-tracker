@@ -27,8 +27,8 @@ const COVER_LETTER_STANDARD: CoverLetterJson = {
   date: 'March 1, 2026',
   salutation: 'Dear Hiring Manager,',
   paragraphs: [
-    "I am writing to express my strong interest in the Senior Software Engineer role at Acme Corp. With five years of experience building high-throughput APIs and leading cross-functional engineering teams, I am confident I can contribute meaningfully from day one.",
-    "At Some Company, I designed and maintained REST APIs serving over two million daily requests at 99.95% uptime, and led the migration of a monolithic application to a microservices architecture that reduced our release cycle from two weeks to two days. Most recently at Acme Corp, I reduced API response times by 40% through a targeted caching redesign and led a four-engineer team to ship a new customer dashboard on schedule.",
+    'I am writing to express my strong interest in the Senior Software Engineer role at Acme Corp. With five years of experience building high-throughput APIs and leading cross-functional engineering teams, I am confident I can contribute meaningfully from day one.',
+    'At Some Company, I designed and maintained REST APIs serving over two million daily requests at 99.95% uptime, and led the migration of a monolithic application to a microservices architecture that reduced our release cycle from two weeks to two days. Most recently at Acme Corp, I reduced API response times by 40% through a targeted caching redesign and led a four-engineer team to ship a new customer dashboard on schedule.',
     "I am excited by Acme Corp's focus on developer tooling and the opportunity to work on systems at scale. I would welcome the chance to discuss how my background aligns with your team's goals. Thank you for your consideration."
   ],
   signoff: 'Sincerely,'

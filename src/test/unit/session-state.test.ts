@@ -65,9 +65,7 @@ describe('session state management', () => {
 
   // ── sessions:create thunk ─────────────────────────────────────────────────
 
-  it.todo(
-    'createSession dispatches addSession on success and sets the new session as active'
-  )
+  it.todo('createSession dispatches addSession on success and sets the new session as active')
 
   it.todo('createSession surfaces an error when window.api.sessions.create rejects')
 
@@ -79,21 +77,15 @@ describe('session state management', () => {
 
   // ── sessions:close thunk ──────────────────────────────────────────────────
 
-  it.todo(
-    'closeSession calls window.api.sessions.close then dispatches removeSession'
-  )
+  it.todo('closeSession calls window.api.sessions.close then dispatches removeSession')
 
-  it.todo(
-    'closeSession sets activeSessionId to null when the closed session was active'
-  )
+  it.todo('closeSession sets activeSessionId to null when the closed session was active')
 
   it.todo('closeSession sets activeSessionId to the next available session when present')
 
   // ── Initial load (getAll) ─────────────────────────────────────────────────
 
-  it.todo(
-    'loadAllSessions populates store.sessions with all returned sessions on launch'
-  )
+  it.todo('loadAllSessions populates store.sessions with all returned sessions on launch')
 
   // ── Edge cases ────────────────────────────────────────────────────────────
 

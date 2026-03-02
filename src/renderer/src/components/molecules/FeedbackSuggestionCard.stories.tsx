@@ -51,7 +51,7 @@ const ADD: FeedbackItem = {
   suggestion:
     'Add GraphQL to the Languages / Web section. The JD mentions GraphQL four times and it is a key requirement.',
   justification:
-    'GraphQL appears in the top three requirements in the JD but is absent from the resume. Adding it signals direct fit.',
+    'GraphQL appears in the top three requirements in the JD but is absent from the resume. Adding it signals direct fit.'
   // No proposedText — "Add" suggestions describe what to add, not an exact replacement.
 }
 

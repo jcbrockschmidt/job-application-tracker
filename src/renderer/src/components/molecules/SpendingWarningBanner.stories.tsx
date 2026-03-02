@@ -30,7 +30,7 @@ type Story = StoryObj<typeof meta>
 export const OverLimit: Story = {
   args: {
     spendUsd: 3.75,
-    limitUsd: 2.00
+    limitUsd: 2.0
   }
 }
 
@@ -38,15 +38,15 @@ export const OverLimit: Story = {
 export const SlightlyOverLimit: Story = {
   args: {
     spendUsd: 2.01,
-    limitUsd: 2.00
+    limitUsd: 2.0
   }
 }
 
 /** At limit — renders nothing (component returns null when spendUsd === limitUsd). */
 export const AtLimit: Story = {
   args: {
-    spendUsd: 2.00,
-    limitUsd: 2.00
+    spendUsd: 2.0,
+    limitUsd: 2.0
   }
 }
 
@@ -54,7 +54,7 @@ export const AtLimit: Story = {
 export const UnderLimit: Story = {
   args: {
     spendUsd: 0.45,
-    limitUsd: 2.00
+    limitUsd: 2.0
   }
 }
 
