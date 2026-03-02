@@ -93,6 +93,13 @@ All four must pass cleanly. Fix errors — don't suppress them.
 
 New features need tests. Bug fixes should include a regression test where practical.
 
+### Test integrity rules
+
+- **Tests are written to fit the spec, not the code** — if a test and the implementation disagree, fix the implementation, not the test.
+- **Never disable or skip tests to make a build pass** — a skipped test is a hidden bug. Only skip a test if it has become genuinely irrelevant (e.g. the feature it covered was removed), and delete it rather than leaving it skipped.
+- **Never reduce test coverage or assertion strength to make tests pass** — weakening a test to avoid a failure is the same as deleting it.
+- **Never disable lint rules to solve a problem** — fix the underlying issue instead. Inline `eslint-disable` comments are not acceptable unless the rule is provably wrong for that specific case and a comment explains why.
+
 ---
 
 ## Design Doc
