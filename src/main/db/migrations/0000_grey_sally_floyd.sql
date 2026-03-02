@@ -9,8 +9,6 @@ CREATE TABLE `applications` (
 	`application_status` text DEFAULT 'not_applied' NOT NULL,
 	`notes` text,
 	`submitted_date` text,
-	`resume_json_path` text,
-	`cover_letter_json_path` text,
 	`directory_path` text,
 	`resume_last_finalized_at` integer,
 	`resume_incorporated_at` integer,

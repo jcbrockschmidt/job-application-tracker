@@ -67,8 +67,6 @@ const MOCK_APP = {
   applicationStatus: 'not_applied' as const,
   notes: null,
   submittedDate: null,
-  resumeJsonPath: null,
-  coverLetterJsonPath: null,
   directoryPath: null,
   resumeLastFinalizedAt: null,
   resumeIncorporatedAt: null,

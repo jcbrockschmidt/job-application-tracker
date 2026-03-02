@@ -111,14 +111,13 @@ export function registerIpcHandlers(): void {
     // 4. Insert a row into the applications table and a row into the sessions table.
     // 5. Call the generate:resume handler logic (or a shared helper) to run Claude
     //    and write resume.json into the session directory.
-    // 6. Update applications.resumeJsonPath.
-    // 7. Return the full Session object (with resume loaded).
+    // 6. Return the full Session object (with resume loaded).
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('sessions:get', async (_event, _id: string) => {
-    // TODO: Load the session row joined with its application row. If resumeJsonPath
-    // is set, read and parse resume.json from disk. Same for coverLetterJsonPath.
+    // TODO: Load the session row joined with its application row. If directoryPath
+    // is set, read and parse resume.json and cover-letter.json from disk (if present).
     // Deserialize matchReport from JSON string to MatchReport object if present.
     // Return the assembled Session object.
     throw new Error('Not implemented')
@@ -189,7 +188,7 @@ export function registerIpcHandlers(): void {
     //    from the Master CV that best match the JD, refine phrasing for ATS alignment,
     //    and return a valid ResumeJson. No invented content — only Master CV material.
     // 3. Write resume.json to the session directory.
-    // 4. Update sessions and applications rows (resumeStatus = 'draft', resumeJsonPath).
+    // 4. Update sessions and applications rows (resumeStatus = 'draft').
     // 5. Log the AI operation to spendLog (timestamp, model, tokens, estimated cost).
     // 6. Return the ResumeJson.
     throw new Error('Not implemented')

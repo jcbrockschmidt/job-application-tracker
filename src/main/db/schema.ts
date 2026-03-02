@@ -22,8 +22,6 @@ export const applications = sqliteTable('applications', {
   notes: text('notes'),
   // User-entered date when the application was actually submitted to the company
   submittedDate: text('submitted_date'),
-  resumeJsonPath: text('resume_json_path'),
-  coverLetterJsonPath: text('cover_letter_json_path'),
   directoryPath: text('directory_path'),
   // Incorporation tracking: a document is "unincorporated" into the Master CV when
   // lastFinalizedAt is set and (incorporatedAt is null OR lastFinalizedAt > incorporatedAt).

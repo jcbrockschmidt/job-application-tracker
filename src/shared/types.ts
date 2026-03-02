@@ -48,8 +48,6 @@ export interface Application {
   notes: string | null
   // User-entered date when the application was submitted to the company. Null until filled in.
   submittedDate: string | null
-  resumeJsonPath: string | null
-  coverLetterJsonPath: string | null
   directoryPath: string | null
   // Incorporation tracking for Master CV. ISO timestamp strings or null.
   // A document is "unincorporated" when lastFinalizedAt is set and
