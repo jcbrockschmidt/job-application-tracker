@@ -321,6 +321,8 @@ export interface WindowAPI {
     trigger: () => Promise<void>
     import: (backupPath: string) => Promise<void>
   }
+
+  getPathForFile: (file: File) => string
 }
 
 // Augment the global Window type so renderer code gets full type safety

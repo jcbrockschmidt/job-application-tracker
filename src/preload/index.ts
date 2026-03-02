@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type {
   WindowAPI,
   SourceDocType,
@@ -72,7 +72,9 @@ const api: WindowAPI = {
   backup: {
     trigger: () => ipcRenderer.invoke('backup:trigger'),
     import: (backupPath) => ipcRenderer.invoke('backup:import', backupPath)
-  }
+  },
+
+  getPathForFile: (file: File) => webUtils.getPathForFile(file)
 }
 
 contextBridge.exposeInMainWorld('api', api)

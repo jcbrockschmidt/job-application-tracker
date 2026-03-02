@@ -234,7 +234,7 @@ function StepUpload({ docType, required, onNext, onSkip }: StepUploadProps): JSX
     const file = e.target.files?.[0]
     if (!file) return
 
-    const nativePath = (file as File & { path: string }).path
+    const nativePath = window.api.getPathForFile(file)
     setIngesting(true)
     setError(null)
     setFileName(file.name)
