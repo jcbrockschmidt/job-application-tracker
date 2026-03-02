@@ -20,6 +20,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { configureStore } from '@reduxjs/toolkit'
 import { Provider } from 'react-redux'
+import type { ComponentType } from 'react'
 import type { Session } from '@shared/types'
 import Sidebar from './Sidebar'
 
@@ -77,7 +78,7 @@ function makeStore(sessions: Session[], activeSessionId: string | null) {
 
 function withStore(sessions: Session[], activeSessionId: string | null) {
   const store = makeStore(sessions, activeSessionId)
-  return function StoreDecorator(Story: React.ComponentType) {
+  return function StoreDecorator(Story: ComponentType) {
     return (
       <Provider store={store}>
         <div style={{ width: 220, height: 600 }}>

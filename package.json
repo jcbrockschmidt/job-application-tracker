@@ -35,6 +35,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
+    "@storybook/react": "^8.6.17",
+    "@storybook/test": "^8.6.17",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.0",
