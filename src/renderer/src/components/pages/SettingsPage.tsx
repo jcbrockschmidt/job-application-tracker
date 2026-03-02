@@ -2,6 +2,9 @@
 // Accessible from the sidebar footer icon and the topbar settings icon.
 //
 // STUB: Phase 1 — section structure is scaffolded; all inputs are uncontrolled placeholders.
+// STUB: Phase 6 — Backup section expanded with Browse button, "Export full backup now",
+//   and "Import backup…" stubs. ErrorToast stub placed for backup success feedback.
+//   None of the backup actions are wired yet.
 // TODO:
 //   - API Key section: masked input + Validate button
 //     → window.api.settings.validateApiKey(key); persist to keychain on success
@@ -13,7 +16,7 @@
 //     → dispatch setTheme(theme); apply to MUI ThemeProvider
 //   - Spending Limit: number input (0 = disabled)
 //     → dispatch setSpendingLimit(n); window.api.settings.save({ spendingLimit })
-//   - Backup Location: directory path picker (Phase 6)
+//   - Backup section (Phase 6): see BackupSection TODO below
 
 import {
   Box,
@@ -26,12 +29,17 @@ import {
   FormControl,
   InputLabel
 } from '@mui/material'
+// STUB: Phase 6 — import ready; uncomment when wiring backup success toast.
+// import ErrorToast from '../molecules/ErrorToast'
 
 export default function SettingsPage(): JSX.Element {
   // TODO: const settings = useAppSelector(state => state.settings)
   // TODO: const dispatch = useAppDispatch()
   // TODO: const [models, setModels] = useState<string[]>([])
   // TODO: useEffect(() => { window.api.settings.getAvailableModels().then(setModels) }, [])
+
+  // STUB: Phase 6 — backup toast state. Uncomment when wiring backup actions.
+  // TODO: const [backupToast, setBackupToast] = useState<string | null>(null)
 
   return (
     <Box sx={{ flex: 1, overflowY: 'auto', p: 4 }}>
@@ -113,24 +121,119 @@ export default function SettingsPage(): JSX.Element {
         </Box>
       </SettingsSection>
 
-      <SettingsSection title="Backup Location">
-        {/* TODO: directory picker; save to settings; Phase 6 */}
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <TextField
-            label="Backup directory"
-            size="small"
-            sx={{ flex: 1, maxWidth: 400 }}
-            placeholder="Not set"
-            disabled
-          />
-          <Button variant="outlined" size="medium" disabled>
-            Browse…
-          </Button>
-        </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          Incremental backups run automatically on app close. (Phase 6)
-        </Typography>
-      </SettingsSection>
+      {/* Backup section — STUB: Phase 6 */}
+      <BackupSection />
+
+      {/* Backup success toast — STUB: Phase 6 */}
+      {/* TODO: render ErrorToast when wiring backup actions:
+          <ErrorToast
+            message={backupToast}
+            onClose={() => setBackupToast(null)}
+          /> */}
+    </Box>
+  )
+}
+
+// ─── Backup Section ───────────────────────────────────────────────────────────
+
+// STUB: Phase 6 — full backup section layout rendered; no actions are wired.
+// TODO (Phase 6):
+//   - Browse button: a new IPC handler is needed to open the OS folder picker.
+//       Add 'backup:chooseDirectory' to the IPC surface (ipc/index.ts) and preload:
+//         ipcMain.handle('backup:chooseDirectory', async () => {
+//           const { filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+//           return filePaths[0] ?? null
+//         })
+//       On click: path = await window.api.backup.chooseDirectory()
+//         → dispatch setBackupLocation(path) + window.api.settings.save({ backupLocation: path })
+//   - "Export full backup now" button:
+//       Call window.api.backup.trigger(). On success show a toast with the path.
+//       Update backup:trigger return type from Promise<void> to Promise<string>
+//       so the destination path can be shown in the toast. Add loading state.
+//   - "Import backup…" button:
+//       Call window.api.backup.import('') — the IPC opens the file picker internally.
+//       Warn the user that current data will be overwritten before calling the IPC.
+//       After import, prompt the user to restart the app for changes to take effect.
+//   - Inline error: show an Alert below the buttons if trigger/import throws.
+
+function BackupSection(): JSX.Element {
+  // TODO: const backupLocation = useAppSelector(state => state.settings.backupLocation)
+  // TODO: const dispatch = useAppDispatch()
+  // TODO: const [isBackingUp, setIsBackingUp] = useState(false)
+  // TODO: const [backupError, setBackupError] = useState<string | null>(null)
+
+  // TODO: async function handleBrowse() {
+  //   const path = await window.api.backup.chooseDirectory()  // IPC not yet added — see TODO above
+  //   if (path) {
+  //     dispatch(setBackupLocation(path))
+  //     await window.api.settings.save({ backupLocation: path })
+  //   }
+  // }
+
+  // TODO: async function handleExportNow() {
+  //   setIsBackingUp(true)
+  //   setBackupError(null)
+  //   try {
+  //     const path = await window.api.backup.trigger()  // update return type to Promise<string>
+  //     setBackupToast(`Backup saved to ${path}`)       // lifted to parent via prop or uiSlice
+  //   } catch (err) {
+  //     setBackupError(String(err))
+  //   } finally {
+  //     setIsBackingUp(false)
+  //   }
+  // }
+
+  // TODO: async function handleImport() {
+  //   // Warn the user before proceeding — current data will be overwritten.
+  //   await window.api.backup.import('')  // IPC opens file picker internally
+  //   // TODO: prompt user to restart the app after import
+  // }
+
+  return (
+    <Box sx={{ mb: 4 }}>
+      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+        Backup
+      </Typography>
+
+      {/* Backup location picker */}
+      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1 }}>
+        <TextField
+          label="Backup directory"
+          size="small"
+          sx={{ flex: 1, maxWidth: 400 }}
+          placeholder="Not set"
+          // TODO: value={backupLocation || ''}; remove disabled when wiring Browse button
+          disabled
+        />
+        {/* TODO: onClick={handleBrowse} */}
+        <Button variant="outlined" size="medium">
+          Browse…
+        </Button>
+      </Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+        Incremental backups run automatically on app close. Only files changed since the last
+        backup are copied.
+      </Typography>
+
+      {/* Manual backup and import actions */}
+      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+        {/* TODO: onClick={handleExportNow}, disabled={!backupLocation || isBackingUp} */}
+        {/* TODO: show CircularProgress inside button when isBackingUp */}
+        <Button variant="contained" disableElevation size="small">
+          Export full backup now
+        </Button>
+
+        {/* TODO: onClick={handleImport} */}
+        <Button variant="outlined" size="small">
+          Import backup…
+        </Button>
+      </Box>
+
+      {/* Inline backup error — STUB: Phase 6 */}
+      {/* TODO: shown when backupError !== null */}
+      {/* <Alert severity="error" sx={{ mt: 1.5, fontSize: 12.5 }}>{backupError}</Alert> */}
+
+      <Divider sx={{ mt: 4 }} />
     </Box>
   )
 }

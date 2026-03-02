@@ -4,6 +4,23 @@ import { is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
 import { initDatabase } from './db'
 
+// STUB: Phase 6 — auto-backup on app close.
+// TODO: Extract the backup logic from the 'backup:trigger' IPC handler into a
+//   shared helper (e.g. src/main/backup.ts → runBackup()). Call runBackup() here
+//   and also from the IPC handler so both paths share the same implementation.
+//   The IPC surface (ipcMain.handle) is renderer-to-main only and cannot be
+//   invoked directly from the main process.
+//
+// Implementation sketch:
+//   app.on('before-quit', (event) => {
+//     const backupLocation = readBackupLocationFromSettings()  // sync read from settings.json
+//     if (!backupLocation) return  // backup not configured — skip
+//     event.preventDefault()       // delay quit until backup finishes
+//     runBackup(backupLocation)
+//       .catch(err => console.error('Auto-backup failed:', err))
+//       .finally(() => app.quit())
+//   })
+
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 1280,

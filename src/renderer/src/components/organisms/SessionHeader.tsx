@@ -3,6 +3,7 @@
 // Sits above the tab bar in the session view.
 //
 // STUB: Phase 1 — renders static props; actions not yet wired.
+// STUB: Phase 6 — ExportDialog import and open-state stubs added; dialog not yet rendered.
 // TODO:
 //   - Application Status chip: click to cycle through statuses,
 //     call window.api.applications.update(applicationId, { applicationStatus })
@@ -10,8 +11,13 @@
 //       resumeStatus: 'finalized',
 //       resumeLastFinalizedAt: new Date().toISOString()  ← marks doc as unincorporated in Master CV
 //     }); dispatch update to sessionsSlice; update the Draft/Final badge in the sidebar.
-//   - Export button: open an export options popover (PDF / DOCX), then call window.api.export.pdf/docx
-//   - Show error inline if export fails (disk full, permissions, path not found)
+//   - Export button (Phase 6): set exportDialogOpen = true; uncomment ExportDialog below.
+//   - Determine documentType from the active tab so the dialog exports the right document.
+//   - Wire ErrorToast for export success: pass onSuccess={(path) => showToast(`Exported to ${path}`)}
+//     to ExportDialog, or dispatch a toast action via uiSlice.
+//
+// TODO (Phase 6): uncomment this import when wiring the Export button.
+// import ExportDialog from './ExportDialog'
 
 import { Box, Typography, Chip, Button } from '@mui/material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
@@ -24,7 +30,12 @@ interface SessionHeaderProps {
 export default function SessionHeader({ session }: SessionHeaderProps): JSX.Element {
   // TODO: const dispatch = useAppDispatch()
   // TODO: handle Finalize — update status in DB + Redux
-  // TODO: handle Export — show PDF/DOCX choice, call IPC, handle errors
+
+  // STUB: Phase 6 — export dialog state. Uncomment when wiring the Export button.
+  // TODO: const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  // TODO: const [exportDocumentType, setExportDocumentType] = useState<DocumentType>('resume')
+  //   Set exportDocumentType based on the active session tab before opening the dialog:
+  //   'resume' when the Resume tab is active, 'coverLetter' when Cover Letter is active.
 
   return (
     <Box
@@ -68,7 +79,7 @@ export default function SessionHeader({ session }: SessionHeaderProps): JSX.Elem
         Finalize
       </Button>
 
-      {/* TODO: onClick opens export dialog */}
+      {/* TODO (Phase 6): onClick={() => setExportDialogOpen(true)} */}
       <Button
         variant="contained"
         size="small"
@@ -78,6 +89,16 @@ export default function SessionHeader({ session }: SessionHeaderProps): JSX.Elem
       >
         Export
       </Button>
+
+      {/* Export dialog — STUB: Phase 6 */}
+      {/* TODO: render when exportDialogOpen is wired. Example:
+          <ExportDialog
+            open={exportDialogOpen}
+            onClose={() => setExportDialogOpen(false)}
+            sessionId={session.id}
+            documentType={exportDocumentType}
+            documentLabel={exportDocumentType === 'resume' ? 'Resume' : 'Cover Letter'}
+          /> */}
     </Box>
   )
 }
