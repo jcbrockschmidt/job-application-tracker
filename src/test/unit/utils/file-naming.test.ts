@@ -22,7 +22,7 @@ import { describe, it, expect } from 'vitest'
 
 // TODO: replace with real import once module exists:
 //   import { buildSessionDirectoryPath, buildPdfFilename, buildDocxFilename, slugify }
-//     from '../../main/utils/fileNaming'
+//     from '../../../main/utils/fileNaming'
 const buildSessionDirectoryPath:
   | ((companyName: string, roleTitle: string, date: Date, id: string) => string)
   | null = null // STUB

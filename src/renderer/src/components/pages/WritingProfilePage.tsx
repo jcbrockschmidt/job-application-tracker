@@ -35,7 +35,7 @@
 //   - Wire SpendingWarningBanner: pass spendTotal.totalUsd and settings.spendingLimit.
 //   - Wire SpendingLimitDialog before writingProfile:regenerate calls.
 
-import { Box, Button, Divider, LinearProgress, Typography } from '@mui/material'
+import { Box, Button, Divider, Typography } from '@mui/material'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import EditIcon from '@mui/icons-material/Edit'
 import SpendingWarningBanner from '../molecules/SpendingWarningBanner'

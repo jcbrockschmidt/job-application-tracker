@@ -10,25 +10,57 @@
 //   Phase 5 — writingProfile:*
 //   Phase 6 — export:docx, backup:*
 
-import { ipcMain } from 'electron'
-import type { SourceDocType, DocumentType, MasterCV, WritingProfile } from '../../shared/types'
+import { ipcMain, app } from 'electron'
+import { join } from 'path'
+import { readFileSync, existsSync } from 'fs'
+import { atomicWriteJson } from '../fs'
+import type {
+  Settings,
+  SourceDocType,
+  DocumentType,
+  MasterCV,
+  WritingProfile
+} from '../../shared/types'
+
+const DEFAULT_SETTINGS: Settings = {
+  contactInfo: { fullName: '', phone: '', email: '', linkedin: '', github: '' },
+  model: 'claude-opus-4-6',
+  theme: 'system',
+  backupLocation: '',
+  spendingLimit: 0,
+  onboardingComplete: false
+}
+
+function getSettingsPath(): string {
+  return join(app.getPath('userData'), 'settings.json')
+}
+
+function readSettings(): Settings {
+  const path = getSettingsPath()
+  if (!existsSync(path)) return { ...DEFAULT_SETTINGS }
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf-8')) as Partial<Settings>
+    return { ...DEFAULT_SETTINGS, ...parsed }
+  } catch {
+    return { ...DEFAULT_SETTINGS }
+  }
+}
 
 export function registerIpcHandlers(): void {
   // ─── Settings ───────────────────────────────────────────────────────────────
-  // STUB: Phase 1
 
-  ipcMain.handle('settings:get', async () => {
-    // TODO: Read API key from OS keychain (keytar). Read everything else from
-    // settings.json in app.getPath('userData'). Return merged Settings object.
-    // Return sensible defaults if the file doesn't exist yet.
-    throw new Error('Not implemented')
+  ipcMain.handle('settings:get', async (): Promise<Settings> => {
+    return readSettings()
   })
 
-  ipcMain.handle('settings:save', async (_event, _settings: unknown) => {
-    // TODO: If settings includes an API key, write it to OS keychain (keytar).
-    // Write all other fields to settings.json in userData. Partial updates
-    // should deep-merge with the existing file rather than overwriting it.
-    throw new Error('Not implemented')
+  ipcMain.handle('settings:save', async (_event, updates: Partial<Settings>): Promise<void> => {
+    const current = readSettings()
+    const merged: Settings = {
+      ...current,
+      ...updates,
+      contactInfo: { ...current.contactInfo, ...(updates.contactInfo ?? {}) }
+    }
+    atomicWriteJson(getSettingsPath(), merged)
   })
 
   ipcMain.handle('settings:validateApiKey', async (_event, _apiKey: string) => {

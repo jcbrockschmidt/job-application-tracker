@@ -32,12 +32,12 @@ import { describe, it, expect, beforeEach } from 'vitest'
 //   import Database from 'better-sqlite3'
 //   import { drizzle } from 'drizzle-orm/better-sqlite3'
 //   import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-//   import * as schema from '../../main/db/schema'
+//   import * as schema from '../../../main/db/schema'
 //   import {
 //     insertApplication, getAllApplications, updateApplication, deleteApplication,
 //     insertSession, getSessionById, getAllSessions,
 //     insertSpendLog, sumSpendLast24Hours
-//   } from '../../main/db/queries'
+//   } from '../../../main/db/queries'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null // STUB — will be a Drizzle instance over an in-memory SQLite DB

@@ -10,7 +10,9 @@
 //     })
 //   }, [])
 
-import { useAppSelector } from './hooks'
+import { useEffect } from 'react'
+import { useAppDispatch, useAppSelector } from './hooks'
+import { hydrate } from './store/slices/settingsSlice'
 import AppShell from './components/organisms/AppShell'
 import OnboardingPage from './components/pages/OnboardingPage'
 import SessionPage from './components/pages/SessionPage'
@@ -21,9 +23,15 @@ import MasterCVPage from './components/pages/MasterCVPage'
 import WritingProfilePage from './components/pages/WritingProfilePage'
 
 export default function App(): JSX.Element {
-  // TODO: const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch()
   const activePage = useAppSelector((state) => state.ui.activePage)
   const onboardingComplete = useAppSelector((state) => state.settings.onboardingComplete)
+
+  useEffect(() => {
+    window.api.settings.get().then((settings) => {
+      dispatch(hydrate(settings))
+    })
+  }, [dispatch])
 
   return (
     <>

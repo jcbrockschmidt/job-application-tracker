@@ -3,6 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
 import { initDatabase } from './db'
+import { ensureDataDirectories } from './fs'
 
 // STUB: Phase 6 — auto-backup on app close.
 // TODO: Extract the backup logic from the 'backup:trigger' IPC handler into a
@@ -56,6 +57,7 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  ensureDataDirectories()
   initDatabase()
   registerIpcHandlers()
   createWindow()

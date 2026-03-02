@@ -205,10 +205,8 @@ function ExportFormatRow({
       </Box>
 
       {/* Inline error — STUB: Phase 6 */}
-      {/* TODO: replace `false` with `error !== null` when wiring real export state */}
-      {false && error !== null && (
-        <ExportErrorBlock error={error!} onSaveDifferentLocation={onRetry} />
-      )}
+      {/* TODO: remove the null guard below in Phase 6 when wiring real export state */}
+      {error !== null && <ExportErrorBlock error={error} onSaveDifferentLocation={onRetry} />}
     </Box>
   )
 }

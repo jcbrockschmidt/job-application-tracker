@@ -30,6 +30,8 @@ export interface Settings {
   backupLocation: string
   // Maximum estimated spend in USD over a rolling 24-hour window. 0 = disabled.
   spendingLimit: number
+  // Whether the user has completed the onboarding wizard. Persisted to settings.json.
+  onboardingComplete: boolean
 }
 
 // ─── Data Models ──────────────────────────────────────────────────────────────

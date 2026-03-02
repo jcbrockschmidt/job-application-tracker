@@ -1,26 +1,29 @@
 // Top bar: app brand, "+ New Session" button, settings icon.
 // Spans the full window width above the sidebar and main area.
 //
-// STUB: Phase 1 — renders placeholder layout; NewSessionDialog not yet wired.
-// TODO:
-//   - Wire "+ New Session" button to open NewSessionDialog
-//   - Wire settings icon to navigate to settings page (dispatch setActivePage('settings'))
-//   - Add hamburger to toggle sidebar (dispatch setSidebarOpen)
+// STUB: Phase 1.4 — "+ New Session" button not yet wired to NewSessionDialog.
+// TODO: Wire "+ New Session" button to open NewSessionDialog
 
 import { AppBar, Toolbar, Typography, Button, IconButton } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import AddIcon from '@mui/icons-material/Add'
 import SettingsIcon from '@mui/icons-material/Settings'
+import { useAppDispatch, useAppSelector } from '../../hooks'
+import { setActivePage, setSidebarOpen } from '../../store/slices/uiSlice'
 
 export default function Topbar(): JSX.Element {
-  // TODO: dispatch(setSidebarOpen(!isSidebarOpen)) on hamburger click
-  // TODO: open NewSessionDialog on "+ New Session" click
-  // TODO: dispatch(setActivePage('settings')) on settings click
+  const dispatch = useAppDispatch()
+  const isSidebarOpen = useAppSelector((state) => state.ui.isSidebarOpen)
 
   return (
     <AppBar position="static" elevation={2} sx={{ height: '100%', justifyContent: 'center' }}>
       <Toolbar variant="dense" sx={{ gap: 1 }}>
-        <IconButton color="inherit" size="small" aria-label="Toggle sidebar">
+        <IconButton
+          color="inherit"
+          size="small"
+          aria-label="Toggle sidebar"
+          onClick={() => dispatch(setSidebarOpen(!isSidebarOpen))}
+        >
           <MenuIcon fontSize="small" />
         </IconButton>
 
@@ -28,7 +31,7 @@ export default function Topbar(): JSX.Element {
           Job Application Kit
         </Typography>
 
-        {/* TODO: onClick opens NewSessionDialog */}
+        {/* TODO: Phase 1.4 — onClick opens NewSessionDialog */}
         <Button
           variant="outlined"
           color="inherit"
@@ -39,8 +42,12 @@ export default function Topbar(): JSX.Element {
           New Session
         </Button>
 
-        {/* TODO: onClick dispatches setActivePage('settings') */}
-        <IconButton color="inherit" size="small" aria-label="Settings">
+        <IconButton
+          color="inherit"
+          size="small"
+          aria-label="Settings"
+          onClick={() => dispatch(setActivePage('settings'))}
+        >
           <SettingsIcon fontSize="small" />
         </IconButton>
       </Toolbar>

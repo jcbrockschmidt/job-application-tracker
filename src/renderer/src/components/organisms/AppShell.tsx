@@ -19,18 +19,21 @@ import { Box } from '@mui/material'
 import Topbar from './Topbar'
 import Sidebar from './Sidebar'
 import Statusbar from './Statusbar'
+import { useAppSelector } from '../../hooks'
 
 interface AppShellProps {
   children: React.ReactNode
 }
 
 export default function AppShell({ children }: AppShellProps): JSX.Element {
+  const isSidebarOpen = useAppSelector((state) => state.ui.isSidebarOpen)
+
   return (
     <Box
       sx={{
         display: 'grid',
         gridTemplateRows: '52px 1fr 28px',
-        gridTemplateColumns: '224px 1fr',
+        gridTemplateColumns: isSidebarOpen ? '224px 1fr' : '0 1fr',
         gridTemplateAreas: `
           "topbar  topbar"
           "sidebar main"

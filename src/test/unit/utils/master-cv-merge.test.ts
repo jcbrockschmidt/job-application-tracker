@@ -28,7 +28,7 @@ vi.mock('nanoid', () => ({
 }))
 
 // TODO: replace with real import once the module exists:
-//   import { mergeMasterCV } from '../../main/utils/masterCVMerge'
+//   import { mergeMasterCV } from '../../../main/utils/masterCVMerge'
 //   import type { MasterCV, MasterCVExperienceEntry } from '@shared/types'
 const mergeMasterCV: // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ((existing: any, incoming: any) => any) | null = null // STUB

@@ -24,7 +24,6 @@
 //   - Per-card onDismiss: remove from local suggestions array.
 //   - Track remaining count ("N of M remaining") in the section header.
 
-import { useState } from 'react'
 import { Box, Button, TextField, Typography } from '@mui/material'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import FeedbackSuggestionCard from './FeedbackSuggestionCard'
@@ -41,11 +40,8 @@ interface FeedbackPromptBarProps {
 
 // STUB: Phase 4
 export default function FeedbackPromptBar(
-  {
-    // sessionId,     // TODO: pass to window.api.generate.feedback
-    // documentType,  // TODO: pass to window.api.generate.feedback
-    // onApplyChange  // TODO: call from onAccept handler
-  }: FeedbackPromptBarProps
+  // sessionId, documentType, onApplyChange wired in Phase 4
+  _props: FeedbackPromptBarProps
 ): JSX.Element {
   // TODO: const [prompt, setPrompt] = useState('')
   // TODO: const [isLoading, setIsLoading] = useState(false)

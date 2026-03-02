@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest'
 
 // TODO: replace with real imports once the module exists:
 //   import { computeRolling24hTotal, isOverLimit, estimateCostUsd }
-//     from '../../main/utils/spendCalculation'
+//     from '../../../main/utils/spendCalculation'
 
 // Inline type to match the spend_log table schema. Remove and import from
 // @shared/types once a SpendLogEntry type is defined there.

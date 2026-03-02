@@ -14,6 +14,17 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Allow _-prefixed names to mark intentionally unused parameters and variables.
+    // The convention of prefixing with _ is the established way to signal "intentionally
+    // unused" in TypeScript — used extensively in stub handlers awaiting implementation.
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+      ]
+    }
+  },
+  {
     files: ['src/renderer/**/*.{ts,tsx}'],
     plugins: {
       react: reactPlugin,

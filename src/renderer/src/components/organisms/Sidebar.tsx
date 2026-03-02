@@ -42,8 +42,6 @@ const SIDEBAR_TEXT = '#8fa3b5'
 export default function Sidebar(): JSX.Element {
   const sessions = useAppSelector((state) => state.sessions.sessions)
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
-  // TODO: const activePage = useAppSelector((state) => state.ui.activePage)
-  // TODO: const dispatch = useAppDispatch()
   // STUB: Phase 5
   const activePage = useAppSelector((state) => state.ui.activePage)
   const dispatch = useAppDispatch()
@@ -62,11 +60,20 @@ export default function Sidebar(): JSX.Element {
       }}
     >
       {/* Top nav: Application List */}
-      {/* TODO: active={activePage === 'masterList'}, onClick={() => dispatch(setActivePage('masterList'))} */}
-      <NavItem icon={<ListAltIcon sx={{ fontSize: 15 }} />} label="Applications" />
+      <NavItem
+        icon={<ListAltIcon sx={{ fontSize: 15 }} />}
+        label="Applications"
+        active={activePage === 'masterList'}
+        onClick={() => dispatch(setActivePage('masterList'))}
+      />
 
-      {/* TODO: active={activePage === 'masterCV'}, onClick, yellow unincorporated badge (Phase 3) */}
-      <NavItem icon={<ArticleIcon sx={{ fontSize: 15 }} />} label="Master CV" />
+      {/* TODO: yellow unincorporated badge (Phase 3) */}
+      <NavItem
+        icon={<ArticleIcon sx={{ fontSize: 15 }} />}
+        label="Master CV"
+        active={activePage === 'masterCV'}
+        onClick={() => dispatch(setActivePage('masterCV'))}
+      />
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', mt: 1 }} />
 
@@ -157,9 +164,14 @@ export default function Sidebar(): JSX.Element {
           onClick={() => dispatch(setActivePage('writingProfile'))}
         />
 
-        {/* TODO: active={activePage === 'settings'}, onClick */}
         {/* TODO (Phase 7): pass aria-label="Settings" for compact icon-only accessibility */}
-        <NavItem icon={<SettingsIcon sx={{ fontSize: 15 }} />} label="Settings" compact />
+        <NavItem
+          icon={<SettingsIcon sx={{ fontSize: 15 }} />}
+          label="Settings"
+          compact
+          active={activePage === 'settings'}
+          onClick={() => dispatch(setActivePage('settings'))}
+        />
       </Box>
     </Box>
   )

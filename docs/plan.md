@@ -13,11 +13,11 @@ The minimum to go end-to-end: onboard → ingest resume → generate tailored re
 
 ### 1.1 Infrastructure
 
-- [ ] **DB: initial migration** — run `just db-generate` and `just db-migrate`; verify `app.db` initializes correctly at `<userData>/data/app.db` on first launch
-- [ ] **Add `spendLog` table to schema** — columns: `id`, `timestamp` (integer/timestamp), `model`, `inputTokens`, `outputTokens`, `estimatedCostUsd`; regenerate and apply migration
-- [ ] **Settings persistence** — implement `settings:get` and `settings:save`: API key in OS keychain via `keytar`; everything else in `settings.json` in userData
-- [ ] **File system helpers** — utility to create/ensure the data directory tree on first launch: `/data/`, `/data/applications/`, `/data/source-documents/`
-- [ ] **App shell layout** — render the full CSS grid (topbar, sidebar, main area, status bar) matching the mockup; wire sidebar nav buttons to the `uiSlice` `activePage`; render the correct page component per active page
+- [x] **DB: initial migration** — run `just db-generate` and `just db-migrate`; verify `app.db` initializes correctly at `<userData>/data/app.db` on first launch
+- [x] **Add `spendLog` table to schema** — columns: `id`, `timestamp` (integer/timestamp), `model`, `inputTokens`, `outputTokens`, `estimatedCostUsd`; regenerate and apply migration
+- [x] **Settings persistence** — implement `settings:get` and `settings:save`: API key in OS keychain via `keytar`; everything else in `settings.json` in userData
+- [x] **File system helpers** — utility to create/ensure the data directory tree on first launch: `/data/`, `/data/applications/`, `/data/source-documents/`
+- [x] **App shell layout** — render the full CSS grid (topbar, sidebar, main area, status bar) matching the mockup; wire sidebar nav buttons to the `uiSlice` `activePage`; render the correct page component per active page
 
 ### 1.2 Onboarding
 

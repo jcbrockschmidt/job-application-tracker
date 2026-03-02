@@ -93,6 +93,19 @@ All four must pass cleanly. Fix errors — don't suppress them.
 
 New features need tests. Bug fixes should include a regression test where practical.
 
+### Unit test file structure
+
+`src/test/unit/` mirrors the source tree. Place each test file in the subdirectory that matches the module under test:
+
+| Source module | Test location |
+|---------------|---------------|
+| `src/main/db/*` | `src/test/unit/db/` |
+| `src/main/fs/*` | `src/test/unit/fs/` |
+| `src/main/ipc/*` | `src/test/unit/ipc/` |
+| `src/main/ingestion/*` | `src/test/unit/ingestion/` |
+| `src/main/utils/*` | `src/test/unit/utils/` |
+| `src/renderer/src/*` | `src/test/unit/renderer/` |
+
 ### Test integrity rules
 
 - **Tests are written to fit the spec, not the code** — if a test and the implementation disagree, fix the implementation, not the test.

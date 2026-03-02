@@ -15,7 +15,7 @@
 //
 // RevisionDiffView (below) is co-located here because it is only used by this panel.
 
-import { Box, Button, LinearProgress, TextField, Typography } from '@mui/material'
+import { Box, Button, TextField, Typography } from '@mui/material'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 
 interface InlineRevisionPanelProps {

@@ -98,7 +98,7 @@ export default function FeedbackSuggestionCard({
               lineHeight: 1.55
             }}
           >
-            [Current text of "{item.target}" — wire to document state in Phase 4]
+            [Current text of &ldquo;{item.target}&rdquo; — wire to document state in Phase 4]
           </Box>
 
           {/* After row */}
