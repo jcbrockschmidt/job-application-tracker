@@ -56,6 +56,12 @@ export interface Application {
   resumeIncorporatedAt: string | null
   coverLetterLastFinalizedAt: string | null
   coverLetterIncorporatedAt: string | null
+  // STUB: Phase 5 — writing profile incorporation tracking for session cover letters.
+  // A session cover letter is unincorporated into the writing profile when
+  // coverLetterLastFinalizedAt is set and (coverLetterWritingProfileIncorporatedAt is null
+  // OR coverLetterLastFinalizedAt > coverLetterWritingProfileIncorporatedAt).
+  // TODO: add 'cover_letter_writing_profile_incorporated_at' column to applications table and migrate.
+  coverLetterWritingProfileIncorporatedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -66,6 +72,11 @@ export interface SourceDoc {
   type: SourceDocType
   path: string
   uploadedAt: string
+  // STUB: Phase 5 — writing profile incorporation tracking for cover letter source docs.
+  // A cover letter source doc is unincorporated into the writing profile when this is null
+  // or when the doc has been modified since this timestamp.
+  // TODO: add 'writing_profile_incorporated_at' column to source_docs table and migrate.
+  writingProfileIncorporatedAt: string | null
 }
 
 // ─── Document JSON Schemas ────────────────────────────────────────────────────

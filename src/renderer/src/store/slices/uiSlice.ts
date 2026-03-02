@@ -1,6 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-export type Page = 'onboarding' | 'masterList' | 'session' | 'settings' | 'masterCV'
+// STUB: Phase 5 — 'writingProfile' added.
+export type Page =
+  | 'onboarding'
+  | 'masterList'
+  | 'session'
+  | 'settings'
+  | 'masterCV'
+  | 'writingProfile'
 
 // STUB: Phase 3 — token usage recorded after an AI call completes.
 // Dispatched by SessionPage / MasterCVPage after each generate:* or masterCV:regenerate IPC call.

@@ -17,6 +17,8 @@ import SessionPage from './components/pages/SessionPage'
 import MasterListPage from './components/pages/MasterListPage'
 import SettingsPage from './components/pages/SettingsPage'
 import MasterCVPage from './components/pages/MasterCVPage'
+// STUB: Phase 5
+import WritingProfilePage from './components/pages/WritingProfilePage'
 
 export default function App(): JSX.Element {
   // TODO: const dispatch = useAppDispatch()
@@ -34,7 +36,8 @@ export default function App(): JSX.Element {
         {activePage === 'settings' && <SettingsPage />}
         {/* STUB: Phase 3 */}
         {activePage === 'masterCV' && <MasterCVPage />}
-        {/* TODO: 'writingProfile' page (Phase 5) */}
+        {/* STUB: Phase 5 */}
+        {activePage === 'writingProfile' && <WritingProfilePage />}
       </AppShell>
     </>
   )

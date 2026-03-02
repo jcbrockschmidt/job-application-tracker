@@ -5,20 +5,24 @@
 //
 // STUB: Phase 1 — nav structure and new-session button rendered.
 // STUB: Phase 2 — session list populated from Redux; SessionItem stub below.
+// STUB: Phase 5 — Writing Profile nav item wired to activePage; badge count is a stub (always 0).
 // TODO:
 //   - Wire all nav items to dispatch setActivePage(...)
 //   - SessionItem close (×) button: call window.api.sessions.close(id), dispatch removeSession
 //   - Show Draft/Final badge per session (requires resumeStatus from applications table —
 //     either join into Session or store separately in sessionsSlice)
-//   - Show yellow unincorporated-count badge on Master CV and Writing Profile items (Phase 3/5)
+//   - Show yellow unincorporated-count badge on Master CV item (Phase 3)
+//   - Writing Profile badge (Phase 5): load unincorporated cover letter count from
+//     WritingProfilePage data or a shared Redux slice; pass as badgeCount to NavItem
 
-import { Box, Typography, ButtonBase, Chip, Divider, IconButton } from '@mui/material'
+import { Box, Typography, ButtonBase, Chip, Divider, IconButton, Badge } from '@mui/material'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import ArticleIcon from '@mui/icons-material/Article'
 import EditNoteIcon from '@mui/icons-material/EditNote'
 import SettingsIcon from '@mui/icons-material/Settings'
 import CloseIcon from '@mui/icons-material/Close'
-import { useAppSelector } from '../../hooks'
+import { useAppDispatch, useAppSelector } from '../../hooks'
+import { setActivePage } from '../../store/slices/uiSlice'
 import type { Session } from '@shared/types'
 
 const SIDEBAR_BG = '#1a2332'
@@ -29,6 +33,12 @@ export default function Sidebar(): JSX.Element {
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
   // TODO: const activePage = useAppSelector((state) => state.ui.activePage)
   // TODO: const dispatch = useAppDispatch()
+  // STUB: Phase 5
+  const activePage = useAppSelector((state) => state.ui.activePage)
+  const dispatch = useAppDispatch()
+  // STUB: Phase 5 — unincorporated cover letter count for the Writing Profile badge.
+  // TODO: derive from WritingProfilePage load or a dedicated Redux slice; 0 for now.
+  const writingProfileUnincorporatedCount = 0
 
   return (
     <Box
@@ -116,8 +126,23 @@ export default function Sidebar(): JSX.Element {
 
       {/* Footer */}
       <Box sx={{ px: 1, py: 1.5, display: 'flex', gap: 0.5 }}>
-        {/* TODO: active state, onClick, yellow unincorporated badge (Phase 5) */}
-        <NavItem icon={<EditNoteIcon sx={{ fontSize: 15 }} />} label="Writing Profile" compact />
+        {/* STUB: Phase 5 — active state and onClick wired; badge count is a stub (always 0). */}
+        {/* TODO: replace writingProfileUnincorporatedCount with a live value once data is loaded. */}
+        <NavItem
+          icon={
+            <Badge
+              badgeContent={writingProfileUnincorporatedCount}
+              color="warning"
+              sx={{ '& .MuiBadge-badge': { fontSize: 9, minWidth: 14, height: 14 } }}
+            >
+              <EditNoteIcon sx={{ fontSize: 15 }} />
+            </Badge>
+          }
+          label="Writing Profile"
+          compact
+          active={activePage === 'writingProfile'}
+          onClick={() => dispatch(setActivePage('writingProfile'))}
+        />
 
         {/* TODO: active={activePage === 'settings'}, onClick */}
         <NavItem icon={<SettingsIcon sx={{ fontSize: 15 }} />} label="Settings" compact />
@@ -228,11 +253,13 @@ interface NavItemProps {
   label: string
   active?: boolean
   compact?: boolean
+  onClick?: () => void
 }
 
-function NavItem({ icon, label, active, compact }: NavItemProps): JSX.Element {
+function NavItem({ icon, label, active, compact, onClick }: NavItemProps): JSX.Element {
   return (
     <ButtonBase
+      onClick={onClick}
       sx={{
         mx: 1,
         mt: compact ? 0 : 0.5,
