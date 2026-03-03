@@ -52,7 +52,7 @@ These are non-negotiable. Do not violate them.
 ## Before Writing Code
 
 1. Read the relevant section of `docs/design.md` to understand intent before implementing.
-2. Check `docs/plan.md` for the phased implementation order — it maps each IPC handler to a phase and describes sequencing dependencies.
+2. Check `docs/plan/` for the phased implementation order — it maps each IPC handler to a phase and describes sequencing dependencies.
 3. Check `src/shared/types.ts` for existing types before defining new ones.
 4. Check whether an IPC channel already exists in `src/preload/index.ts` before adding one.
 
