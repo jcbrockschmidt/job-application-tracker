@@ -20,6 +20,7 @@ These are non-negotiable. Do not violate them.
 - **Atomic writes for JSON files** — always use `atomicWriteJson()` from `src/main/fs/index.ts` when writing `master-cv.json` or `writing-profile.json`. Never use a plain `writeFileSync` on these files.
 - **API key lives in the OS keychain** — read and write it via `keytar` (key name: `job-application-kit`, account: `anthropic-api-key`). Never write the API key to a plain file.
 - **IPC handlers are registered in `src/main/ipc/index.ts`** — add new channels there, not scattered across files.
+- **All prompt templates live in `src/main/ai/prompts.ts`** — never inline prompt strings in IPC handlers. Each prompt is a function returning `{ system, max_tokens, messages }` that can be spread into `client.messages.create({ model, ...prompt })`.
 - **IPC channels are named `namespace:action`** — e.g. `settings:get`, `masterCV:save`, `generate:resume`. Match the pattern already established in `src/preload/index.ts`.
 - **Never call AI APIs from tests** — mock all Anthropic SDK calls. Tests must be deterministic and fast.
 
@@ -34,6 +35,7 @@ These are non-negotiable. Do not violate them.
 | `src/main/db/schema.ts` | Drizzle schema — edit this, then run `just db-generate` |
 | `src/main/db/index.ts` | DB init + `getDb()` getter |
 | `src/main/ai/index.ts` | Anthropic client factory |
+| `src/main/ai/prompts.ts` | All LLM prompt templates — add new prompts here, never inline them in IPC handlers |
 | `src/main/fs/index.ts` | FS helpers: `getDataPaths()`, `getSessionDir()`, `atomicWriteJson()`, `readMasterCV()`, `writeMasterCV()` |
 | `src/main/ingestion/index.ts` | Text extraction from PDF/DOCX/TXT (needs `pdf-parse` + `mammoth` installed before implementing) |
 | `src/main/export/index.ts` | PDF and DOCX export stub |
@@ -99,6 +101,7 @@ New features need tests. Bug fixes should include a regression test where practi
 
 | Source module | Test location |
 |---------------|---------------|
+| `src/main/ai/*` | `src/test/unit/ai/` |
 | `src/main/db/*` | `src/test/unit/db/` |
 | `src/main/fs/*` | `src/test/unit/fs/` |
 | `src/main/ipc/*` | `src/test/unit/ipc/` |

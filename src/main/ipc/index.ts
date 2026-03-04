@@ -30,6 +30,12 @@ import {
   spendLog
 } from '../db/schema'
 import { extractText } from '../ingestion'
+import {
+  stripCodeFence,
+  extractCompanyRolePrompt,
+  extractResumePrompt,
+  tailorResumePrompt
+} from '../ai/prompts'
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
 import type {
@@ -67,12 +73,6 @@ interface RawExtractedCV {
     graduationDate: string
   }>
   skills: Array<{ category: string; items: string[] }>
-}
-
-// Strip markdown code fences that Claude may wrap around JSON responses.
-function stripCodeFence(text: string): string {
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  return match ? match[1].trim() : text.trim()
 }
 
 // Format upload date as "Mon YYYY" for source labels (e.g. "Feb 2026").
@@ -213,28 +213,7 @@ async function generateResumeFromCV(
 
   const response = await client.messages.create({
     model,
-    max_tokens: 8192,
-    system:
-      'You are a professional resume writer. Output valid JSON only — no markdown, no explanation.',
-    messages: [
-      {
-        role: 'user',
-        content:
-          `Create a tailored ATS-optimized resume from the Master CV below for the given job description.\n\n` +
-          `Rules:\n` +
-          `- Select the most relevant experience entries and bullets from the Master CV\n` +
-          `- Prioritize entries that match keywords, skills, and responsibilities in the job description\n` +
-          `- Refine bullet phrasing for ATS alignment — all content must exist in the Master CV, nothing invented\n` +
-          `- Include all education entries\n` +
-          `- Include the most relevant skill categories\n` +
-          `- Return JSON matching this schema exactly:\n` +
-          `  { "experience": [{ "title": string, "company": string, "startDate": string, "endDate": string, "bullets": string[] }],\n` +
-          `    "education": [{ "degree": string, "institution": string, "graduationDate": string }],\n` +
-          `    "skills": [{ "category": string, "items": string[] }] }\n\n` +
-          `Master CV:\n${JSON.stringify(masterCV, null, 2)}\n\n` +
-          `Job Description:\n${jobDescription}`
-      }
-    ]
+    ...tailorResumePrompt(masterCV, jobDescription)
   })
 
   const rawText = response.content[0].type === 'text' ? response.content[0].text : '{}'
@@ -340,17 +319,7 @@ export function registerIpcHandlers(): void {
     try {
       const extractResponse = await client.messages.create({
         model,
-        max_tokens: 256,
-        system: 'You are a structured data extractor. Output valid JSON only.',
-        messages: [
-          {
-            role: 'user',
-            content:
-              `Extract the company name and job title from this job description.\n` +
-              `Return JSON: {"company": "...", "role": "..."}\n\n` +
-              `Job description:\n${jobDescription.slice(0, 3000)}`
-          }
-        ]
+        ...extractCompanyRolePrompt(jobDescription)
       })
       const rawText =
         extractResponse.content[0].type === 'text' ? extractResponse.content[0].text : '{}'
@@ -567,27 +536,7 @@ export function registerIpcHandlers(): void {
 
         const response = await client.messages.create({
           model,
-          max_tokens: 4096,
-          system:
-            'You are a structured data extractor. Output valid JSON only — no markdown, no explanation.',
-          messages: [
-            {
-              role: 'user',
-              content:
-                `Extract all structured content from this resume and output it as JSON matching this exact schema:\n\n` +
-                `{\n` +
-                `  "experience": [{ "title": string, "company": string, "startDate": string, "endDate": string, "bullets": string[] }],\n` +
-                `  "education": [{ "degree": string, "institution": string, "graduationDate": string }],\n` +
-                `  "skills": [{ "category": string, "items": string[] }]\n` +
-                `}\n\n` +
-                `Rules:\n` +
-                `- Include ALL experience, education, and skills — be exhaustive\n` +
-                `- One bullet per achievement/responsibility; preserve all numbers and detail\n` +
-                `- Dates: use the format as written in the resume (e.g. "Jan 2023", "Present")\n` +
-                `- Skills: group by category if already grouped; otherwise use "Technical Skills"\n\n` +
-                `Resume:\n${text}`
-            }
-          ]
+          ...extractResumePrompt(text)
         })
 
         const rawText = response.content[0].type === 'text' ? response.content[0].text : '{}'
