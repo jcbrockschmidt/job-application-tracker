@@ -43,7 +43,10 @@ export interface SpendLogEntry {
 
 // Sum estimated costs for log entries within the last 24 hours.
 // Pass an explicit `now` for deterministic tests; defaults to the current time.
-export function computeRolling24hTotal(entries: SpendLogEntry[], now: Date = new Date()): SpendTotal {
+export function computeRolling24hTotal(
+  entries: SpendLogEntry[],
+  now: Date = new Date()
+): SpendTotal {
   const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   const totalUsd = entries
     .filter((e) => e.timestamp >= cutoff)

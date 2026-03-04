@@ -58,7 +58,7 @@ describe('computeRolling24hTotal', () => {
 
   it('excludes entries older than 24 hours', () => {
     const entries = [
-      makeEntry('e1', 60 * 25, 0.10, NOW) // 25 h ago — excluded
+      makeEntry('e1', 60 * 25, 0.1, NOW) // 25 h ago — excluded
     ]
 
     const result = computeRolling24hTotal(entries, NOW)
@@ -103,7 +103,7 @@ describe('computeRolling24hTotal', () => {
     const entries = [
       makeEntry('e1', 30, 0.01, NOW), // included
       makeEntry('e2', 60 * 23, 0.05, NOW), // included
-      makeEntry('e3', 60 * 25, 0.10, NOW) // excluded
+      makeEntry('e3', 60 * 25, 0.1, NOW) // excluded
     ]
 
     const result = computeRolling24hTotal(entries, NOW)

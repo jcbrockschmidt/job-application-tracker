@@ -1,24 +1,34 @@
-// All handlers in this file are STUBS. None are implemented.
-// Each handler throws "Not implemented" so any premature call surfaces clearly
-// during development rather than failing silently.
+// IPC handler registration for the main process.
 //
-// Implementation order follows docs/plan.md:
-//   Phase 1 — settings, docs:ingest, sessions:create/get/getAll, generate:resume, export:pdf
-//   Phase 2 — sessions:update/close, applications:*, generate:coverLetter/matchReport
-//   Phase 3 — masterCV:*, spendLog:getTotal
-//   Phase 4 — generate:feedback, generate:revise
-//   Phase 5 — writingProfile:*
-//   Phase 6 — export:docx, backup:*
+// Implementation status by phase:
+//   Phase 1 (this file): settings:get/save/validateApiKey/getAvailableModels, docs:ingest,
+//     sessions:create/get/getAll, generate:resume
+//   Phase 2 (STUB): sessions:update/close, applications:*, generate:coverLetter/matchReport
+//   Phase 3 (STUB): masterCV:*, spendLog:getTotal
+//   Phase 4 (STUB): generate:feedback, generate:revise
+//   Phase 5 (STUB): writingProfile:*
+//   Phase 6 (STUB): export:docx, backup:*
 
 import { ipcMain, app } from 'electron'
 import { join, extname, basename } from 'path'
 import { readFileSync, existsSync, copyFileSync, mkdirSync } from 'fs'
 import keytar from 'keytar'
 import { nanoid } from 'nanoid'
-import { atomicWriteJson, getDataPaths, readMasterCV, writeMasterCV } from '../fs'
-import { validateApiKey, resetAnthropicClient, getAnthropicClient } from '../ai'
+import { eq, desc } from 'drizzle-orm'
+import { atomicWriteJson, getDataPaths, getSessionDir, readMasterCV, writeMasterCV } from '../fs'
+import {
+  validateApiKey,
+  resetAnthropicClient,
+  getAnthropicClient,
+  listAvailableModels
+} from '../ai'
 import { getDb } from '../db'
-import { sourceDocs, spendLog } from '../db/schema'
+import {
+  applications as applicationsTable,
+  sessions as sessionsTable,
+  sourceDocs,
+  spendLog
+} from '../db/schema'
 import { extractText } from '../ingestion'
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
@@ -27,12 +37,14 @@ import type {
   SourceDocType,
   DocumentType,
   MasterCV,
-  MasterCVExperienceEntry,
   MasterCVEducationEntry,
   MasterCVSkillCategory,
   MasterCVBullet,
   WritingProfile,
-  SourceDoc
+  SourceDoc,
+  Session,
+  ResumeJson,
+  CoverLetterJson
 } from '../../shared/types'
 
 const KEYCHAIN_SERVICE = 'job-application-kit'
@@ -107,6 +119,54 @@ function rawToMasterCV(raw: RawExtractedCV, sourceLabel: string): MasterCV {
   return cv
 }
 
+// ─── Session helpers ──────────────────────────────────────────────────────────
+
+// Sanitize a string into a filesystem-safe slug (lowercase, hyphens, max 50 chars).
+function toSlug(text: string): string {
+  return (
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 50) || 'unknown'
+  )
+}
+
+// Regex fallback for extracting company name and role title when Claude parsing fails.
+function extractCompanyRoleRegex(jd: string): { company: string; role: string } {
+  const roleMatch = jd.match(/(?:job title|position|role)[:\s]+([^\n,]{3,60})/i)
+  const companyMatch = jd.match(/(?:company|employer|organization|about us)[:\s]+([^\n,]{2,60})/i)
+  return {
+    company: companyMatch?.[1]?.trim() ?? 'Unknown Company',
+    role: roleMatch?.[1]?.trim() ?? 'Unknown Role'
+  }
+}
+
+// Read resume.json and cover-letter.json from a session directory (if they exist).
+function readSessionDocs(directoryPath: string | null): {
+  resume: ResumeJson | null
+  coverLetter: CoverLetterJson | null
+} {
+  if (!directoryPath) return { resume: null, coverLetter: null }
+
+  let resume: ResumeJson | null = null
+  let coverLetter: CoverLetterJson | null = null
+
+  const resumePath = join(directoryPath, 'resume.json')
+  if (existsSync(resumePath)) {
+    resume = JSON.parse(readFileSync(resumePath, 'utf-8')) as ResumeJson
+  }
+
+  const clPath = join(directoryPath, 'cover-letter.json')
+  if (existsSync(clPath)) {
+    coverLetter = JSON.parse(readFileSync(clPath, 'utf-8')) as CoverLetterJson
+  }
+
+  return { resume, coverLetter }
+}
+
+// ─── Settings helpers ─────────────────────────────────────────────────────────
+
 const DEFAULT_SETTINGS: Settings = {
   contactInfo: { fullName: '', phone: '', email: '', linkedin: '', github: '' },
   model: 'claude-opus-4-6',
@@ -131,6 +191,78 @@ function readSettings(): Settings {
   }
 }
 
+// ─── Process-lifetime model list cache ────────────────────────────────────────
+
+// Populated on first call to settings:getAvailableModels; cleared when the API key
+// is replaced. null means the cache is cold.
+let cachedModels: string[] | null = null
+
+// ─── Resume generation helper ─────────────────────────────────────────────────
+
+// Calls Claude to generate a tailored resume from the Master CV + job description,
+// writes resume.json to sessionDir, logs the spend, and returns the ResumeJson.
+// Used by both sessions:create (initial generation) and generate:resume (re-generation).
+async function generateResumeFromCV(
+  jobDescription: string,
+  sessionDir: string,
+  model: string,
+  apiKey: string
+): Promise<ResumeJson> {
+  const masterCV = readMasterCV()
+  const client = getAnthropicClient(apiKey)
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 8192,
+    system:
+      'You are a professional resume writer. Output valid JSON only — no markdown, no explanation.',
+    messages: [
+      {
+        role: 'user',
+        content:
+          `Create a tailored ATS-optimized resume from the Master CV below for the given job description.\n\n` +
+          `Rules:\n` +
+          `- Select the most relevant experience entries and bullets from the Master CV\n` +
+          `- Prioritize entries that match keywords, skills, and responsibilities in the job description\n` +
+          `- Refine bullet phrasing for ATS alignment — all content must exist in the Master CV, nothing invented\n` +
+          `- Include all education entries\n` +
+          `- Include the most relevant skill categories\n` +
+          `- Return JSON matching this schema exactly:\n` +
+          `  { "experience": [{ "title": string, "company": string, "startDate": string, "endDate": string, "bullets": string[] }],\n` +
+          `    "education": [{ "degree": string, "institution": string, "graduationDate": string }],\n` +
+          `    "skills": [{ "category": string, "items": string[] }] }\n\n` +
+          `Master CV:\n${JSON.stringify(masterCV, null, 2)}\n\n` +
+          `Job Description:\n${jobDescription}`
+      }
+    ]
+  })
+
+  const rawText = response.content[0].type === 'text' ? response.content[0].text : '{}'
+  const resume = JSON.parse(stripCodeFence(rawText)) as ResumeJson
+
+  // Write resume.json to session directory.
+  mkdirSync(sessionDir, { recursive: true })
+  atomicWriteJson(join(sessionDir, 'resume.json'), resume)
+
+  // Log spend.
+  const now = new Date()
+  const inputTokens = response.usage.input_tokens
+  const outputTokens = response.usage.output_tokens
+  const db = getDb()
+  db.insert(spendLog).values({
+    id: nanoid(),
+    timestamp: now,
+    model,
+    inputTokens,
+    outputTokens,
+    estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
+  })
+
+  return resume
+}
+
+// ─── IPC handler registration ─────────────────────────────────────────────────
+
 export function registerIpcHandlers(): void {
   // ─── Settings ───────────────────────────────────────────────────────────────
 
@@ -153,15 +285,18 @@ export function registerIpcHandlers(): void {
     if (isValid) {
       await keytar.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, apiKey)
       resetAnthropicClient()
+      // Clear the model cache since the new key may have different model access.
+      cachedModels = null
     }
     return isValid
   })
 
-  ipcMain.handle('settings:getAvailableModels', async () => {
-    // TODO: Read the current API key from keychain, then call listAvailableModels()
-    // from src/main/ai/index.ts. Cache the result for the process lifetime so we
-    // don't make repeated network calls. Return an array of model ID strings.
-    throw new Error('Not implemented')
+  ipcMain.handle('settings:getAvailableModels', async (): Promise<string[]> => {
+    if (cachedModels) return cachedModels
+    const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+    if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+    cachedModels = await listAvailableModels(apiKey)
+    return cachedModels
   })
 
   // ─── Applications ────────────────────────────────────────────────────────────
@@ -188,37 +323,176 @@ export function registerIpcHandlers(): void {
   })
 
   // ─── Sessions ────────────────────────────────────────────────────────────────
-  // STUB: Phase 1 (create, get, getAll) / Phase 2 (update, close)
 
-  ipcMain.handle('sessions:create', async (_event, _jobDescription: string) => {
-    // TODO:
-    // 1. Call Claude to extract company name and role title from the job description
-    //    (or use a regex heuristic as a fallback).
-    // 2. Generate a unique ID (nanoid) for the session.
-    // 3. Create the application directory: data/applications/<company>/<role>_<YYYY-MM>_<id>/
-    // 4. Insert a row into the applications table and a row into the sessions table.
-    // 5. Call the generate:resume handler logic (or a shared helper) to run Claude
-    //    and write resume.json into the session directory.
-    // 6. Return the full Session object (with resume loaded).
-    throw new Error('Not implemented')
+  ipcMain.handle('sessions:create', async (_event, jobDescription: string): Promise<Session> => {
+    const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+    if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+
+    const settings = readSettings()
+    const { model } = settings
+    const client = getAnthropicClient(apiKey)
+    const now = new Date()
+    const db = getDb()
+
+    // 1. Extract company name and role title from the JD via Claude, with regex fallback.
+    let companyName = 'Unknown Company'
+    let roleTitle = 'Unknown Role'
+    try {
+      const extractResponse = await client.messages.create({
+        model,
+        max_tokens: 256,
+        system: 'You are a structured data extractor. Output valid JSON only.',
+        messages: [
+          {
+            role: 'user',
+            content:
+              `Extract the company name and job title from this job description.\n` +
+              `Return JSON: {"company": "...", "role": "..."}\n\n` +
+              `Job description:\n${jobDescription.slice(0, 3000)}`
+          }
+        ]
+      })
+      const rawText =
+        extractResponse.content[0].type === 'text' ? extractResponse.content[0].text : '{}'
+      const extracted = JSON.parse(stripCodeFence(rawText)) as { company?: string; role?: string }
+      companyName = extracted.company?.trim() || companyName
+      roleTitle = extracted.role?.trim() || roleTitle
+
+      // Log the extraction spend.
+      db.insert(spendLog).values({
+        id: nanoid(),
+        timestamp: now,
+        model,
+        inputTokens: extractResponse.usage.input_tokens,
+        outputTokens: extractResponse.usage.output_tokens,
+        estimatedCostUsd: estimateCostUsd(
+          model,
+          extractResponse.usage.input_tokens,
+          extractResponse.usage.output_tokens
+        )
+      })
+    } catch {
+      // Regex fallback: try to extract from common patterns.
+      const fallback = extractCompanyRoleRegex(jobDescription)
+      companyName = fallback.company
+      roleTitle = fallback.role
+    }
+
+    // 2. Generate IDs and directory path.
+    const applicationId = nanoid()
+    const sessionId = nanoid()
+    const sessionDir = getSessionDir(toSlug(companyName), toSlug(roleTitle), sessionId)
+
+    // 3. Create the session directory.
+    mkdirSync(sessionDir, { recursive: true })
+
+    // 4. Insert DB rows.
+    db.insert(applicationsTable).values({
+      id: applicationId,
+      companyName,
+      roleTitle,
+      briefSummary: null,
+      dateGenerated: now.toISOString(),
+      resumeStatus: 'draft',
+      coverLetterStatus: 'none',
+      applicationStatus: 'not_applied',
+      notes: null,
+      submittedDate: null,
+      directoryPath: sessionDir,
+      resumeLastFinalizedAt: null,
+      resumeIncorporatedAt: null,
+      coverLetterLastFinalizedAt: null,
+      coverLetterIncorporatedAt: null,
+      coverLetterWritingProfileIncorporatedAt: null,
+      createdAt: now,
+      updatedAt: now
+    })
+
+    const lastSaved = now.toISOString()
+    db.insert(sessionsTable).values({
+      id: sessionId,
+      applicationId,
+      jobDescription,
+      matchReport: null,
+      lastSaved,
+      createdAt: now
+    })
+
+    // 5. Generate the resume.
+    const resume = await generateResumeFromCV(jobDescription, sessionDir, model, apiKey)
+
+    // 6. Return the assembled Session.
+    return {
+      id: sessionId,
+      applicationId,
+      companyName,
+      roleTitle,
+      jobDescription,
+      resume,
+      coverLetter: null,
+      matchReport: null,
+      lastSaved
+    }
   })
 
-  ipcMain.handle('sessions:get', async (_event, _id: string) => {
-    // TODO: Load the session row joined with its application row. If directoryPath
-    // is set, read and parse resume.json and cover-letter.json from disk (if present).
-    // Deserialize matchReport from JSON string to MatchReport object if present.
-    // Return the assembled Session object.
-    throw new Error('Not implemented')
+  ipcMain.handle('sessions:get', async (_event, id: string): Promise<Session> => {
+    const db = getDb()
+    const rows = db
+      .select()
+      .from(sessionsTable)
+      .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+      .where(eq(sessionsTable.id, id))
+      .all()
+
+    if (rows.length === 0) throw new Error(`Session not found: ${id}`)
+
+    const { sessions, applications } = rows[0]
+    const { resume, coverLetter } = readSessionDocs(applications.directoryPath)
+
+    return {
+      id: sessions.id,
+      applicationId: sessions.applicationId,
+      companyName: applications.companyName,
+      roleTitle: applications.roleTitle,
+      jobDescription: sessions.jobDescription,
+      resume,
+      coverLetter,
+      matchReport: sessions.matchReport
+        ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
+        : null,
+      lastSaved: sessions.lastSaved
+    }
   })
 
-  ipcMain.handle('sessions:getAll', async () => {
-    // TODO: Return all session rows joined with their application rows, sorted by
-    // createdAt descending. Load resume and cover letter JSON from disk for each.
-    // Used on app launch to restore the sidebar and the last active session.
-    throw new Error('Not implemented')
+  ipcMain.handle('sessions:getAll', async (): Promise<Session[]> => {
+    const db = getDb()
+    const rows = db
+      .select()
+      .from(sessionsTable)
+      .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+      .orderBy(desc(sessionsTable.createdAt))
+      .all()
+
+    return rows.map(({ sessions, applications }) => {
+      const { resume, coverLetter } = readSessionDocs(applications.directoryPath)
+      return {
+        id: sessions.id,
+        applicationId: sessions.applicationId,
+        companyName: applications.companyName,
+        roleTitle: applications.roleTitle,
+        jobDescription: sessions.jobDescription,
+        resume,
+        coverLetter,
+        matchReport: sessions.matchReport
+          ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
+          : null,
+        lastSaved: sessions.lastSaved
+      }
+    })
   })
 
   ipcMain.handle('sessions:update', async (_event, _id: string, _updates: unknown) => {
+    // STUB: Phase 2
     // TODO: Accept a partial Session. If resume changed, write resume.json to disk.
     // If coverLetter changed, write cover-letter.json. If matchReport changed,
     // serialize it to JSON and update the sessions row. Update sessions.lastSaved
@@ -227,6 +501,7 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('sessions:close', async (_event, _id: string) => {
+    // STUB: Phase 2
     // TODO: Trigger a save of the session (same logic as sessions:update with current state),
     // then update the session row to mark it as closed (e.g. set a closedAt timestamp,
     // or simply ensure it is persisted — the session stays in the DB, just not "open").
@@ -234,7 +509,6 @@ export function registerIpcHandlers(): void {
   })
 
   // ─── Source Documents ────────────────────────────────────────────────────────
-  // STUB: Phase 1
 
   ipcMain.handle(
     'docs:ingest',
@@ -331,12 +605,14 @@ export function registerIpcHandlers(): void {
   )
 
   ipcMain.handle('docs:getAll', async () => {
+    // STUB: Phase 2
     // TODO: Query the source_docs table via Drizzle. Return all rows sorted by
     // uploadedAt descending.
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('docs:delete', async (_event, _id: string) => {
+    // STUB: Phase 2
     // TODO: Delete the source_docs row and the file at its stored path.
     // Note: deleting a source doc does not modify the Master CV — ingested
     // content is already merged and is the user's to manage.
@@ -344,22 +620,49 @@ export function registerIpcHandlers(): void {
   })
 
   // ─── Generation ──────────────────────────────────────────────────────────────
-  // STUB: Phase 1 (resume) / Phase 2 (coverLetter, matchReport) / Phase 4 (feedback, revise)
 
-  ipcMain.handle('generate:resume', async (_event, _sessionId: string) => {
-    // TODO:
-    // 1. Load the session's job description and the current master-cv.json.
-    // 2. Call Claude with a prompt instructing it to select and prioritize bullets
-    //    from the Master CV that best match the JD, refine phrasing for ATS alignment,
-    //    and return a valid ResumeJson. No invented content — only Master CV material.
-    // 3. Write resume.json to the session directory.
-    // 4. Update sessions and applications rows (resumeStatus = 'draft').
-    // 5. Log the AI operation to spendLog (timestamp, model, tokens, estimated cost).
-    // 6. Return the ResumeJson.
-    throw new Error('Not implemented')
+  ipcMain.handle('generate:resume', async (_event, sessionId: string): Promise<ResumeJson> => {
+    const db = getDb()
+
+    // 1. Load the session and application from the DB.
+    const rows = db
+      .select()
+      .from(sessionsTable)
+      .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+      .where(eq(sessionsTable.id, sessionId))
+      .all()
+
+    if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
+    const { sessions, applications } = rows[0]
+
+    if (!applications.directoryPath) throw new Error(`Session ${sessionId} has no directory path`)
+
+    const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+    if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+
+    const settings = readSettings()
+
+    // 2. Generate the resume (writes resume.json and logs spend).
+    const resume = await generateResumeFromCV(
+      sessions.jobDescription,
+      applications.directoryPath,
+      settings.model,
+      apiKey
+    )
+
+    // 3. Update sessions.lastSaved and applications.resumeStatus/updatedAt.
+    const now = new Date()
+    const lastSaved = now.toISOString()
+    db.update(sessionsTable).set({ lastSaved }).where(eq(sessionsTable.id, sessionId))
+    db.update(applicationsTable)
+      .set({ resumeStatus: 'draft', updatedAt: now })
+      .where(eq(applicationsTable.id, applications.id))
+
+    return resume
   })
 
   ipcMain.handle('generate:coverLetter', async (_event, _sessionId: string) => {
+    // STUB: Phase 2
     // TODO:
     // 1. Load the session's JD, master-cv.json, and writing-profile.json (if present).
     // 2. Call Claude instructing it to write a cover letter grounded in Master CV content,
@@ -373,6 +676,7 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('generate:matchReport', async (_event, _sessionId: string) => {
+    // STUB: Phase 2
     // TODO:
     // 1. Load the session's JD and its current resume.json.
     // 2. Call Claude to evaluate alignment: identify keyword matches, strengths,
@@ -392,12 +696,12 @@ export function registerIpcHandlers(): void {
       _documentType: DocumentType,
       _prompt: string | undefined
     ) => {
+      // STUB: Phase 4
       // TODO:
       // 1. Load the session's JD and the requested document (resume or cover letter).
       // 2. Call Claude to evaluate the document against the JD. If prompt is provided,
       //    focus the evaluation on that concern (e.g. "ATS keywords", "tone").
-      // 3. Return a list of FeedbackItem objects: type, target, suggestion, justification,
-      //    and optional proposedText for suggestions with a concrete replacement.
+      // 3. Return a list of FeedbackItem objects.
       // 4. Log the AI operation to spendLog.
       throw new Error('Not implemented')
     }
@@ -406,14 +710,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     'generate:revise',
     async (_event, _sessionId: string, _section: string, _instruction: string) => {
+      // STUB: Phase 4
       // TODO:
       // 1. Load the session's JD and the current text of the targeted section/bullet.
-      //    The section parameter identifies what is being revised (e.g. a bullet ID,
-      //    an experience entry ID, or a section name like "experience").
-      // 2. Call Claude with the current text and optional instruction to produce a
-      //    revised version. Instruction may be empty (general improvement).
-      // 3. Return only the proposed replacement text — the renderer shows a diff
-      //    and the user decides whether to accept or reject before applying.
+      // 2. Call Claude with the current text and instruction to produce a revised version.
+      // 3. Return only the proposed replacement text.
       // 4. Log the AI operation to spendLog.
       throw new Error('Not implemented')
     }
@@ -430,23 +731,11 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('masterCV:save', async (_event, _cv: MasterCV) => {
     // TODO: Serialize the MasterCV to JSON and write it to master-cv.json.
-    // Use an atomic write (write to a temp file, then rename) to avoid corruption.
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('masterCV:regenerate', async (_event, _documentIds: string[] | undefined) => {
-    // TODO:
-    // 1. Gather source material: if documentIds is provided, load only those
-    //    finalized resumes and cover letters; otherwise load all unincorporated ones.
-    // 2. Load the current master-cv.json.
-    // 3. Call Claude instructing it to compare the source material against the
-    //    Master CV and produce a typed list of RegenSuggestion objects:
-    //    add-bullet, expand-bullet, add-skill, new-entry, cover-letter-insight.
-    //    The AI must be explicit and verbose — prefer surfacing too much over too little.
-    // 4. Log the AI operation to spendLog.
-    // 5. Return the suggestion list. The renderer handles the review/accept/reject UI.
-    //    Accepted suggestions are committed via masterCV:save; incorporatedAt timestamps
-    //    are updated via applications:update.
+    // TODO: Gather source material and call Claude to produce RegenSuggestion objects.
     throw new Error('Not implemented')
   })
 
@@ -454,28 +743,17 @@ export function registerIpcHandlers(): void {
   // STUB: Phase 5
 
   ipcMain.handle('writingProfile:get', async () => {
-    // TODO: Read and parse writing-profile.json from the data directory.
-    // Return null if the file doesn't exist (profile has never been generated).
+    // TODO: Read and parse writing-profile.json. Return null if not found.
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('writingProfile:save', async (_event, _profile: WritingProfile) => {
-    // TODO: Serialize the WritingProfile to JSON and write it to writing-profile.json.
-    // Use an atomic write (temp file + rename).
+    // TODO: Atomic write of writing-profile.json.
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('writingProfile:regenerate', async () => {
-    // TODO:
-    // 1. Gather all available cover letters: source docs of type 'cover_letter'
-    //    (read from source-documents/) plus finalized cover letters from all sessions
-    //    (read cover-letter.json from each session directory where coverLetterStatus = 'finalized').
-    // 2. Call Claude instructing it to distill a ~500-word writing profile: tone,
-    //    formality, sentence structure, how letters open/close, recurring phrasings.
-    // 3. Build a WritingProfile with the result, current timestamp, and letter count.
-    // 4. Write to writing-profile.json via writingProfile:save logic.
-    // 5. Log the AI operation to spendLog.
-    // 6. Return the new WritingProfile.
+    // TODO: Re-derive the writing profile from all available cover letters.
     throw new Error('Not implemented')
   })
 
@@ -492,28 +770,13 @@ export function registerIpcHandlers(): void {
   // STUB: Phase 1 (pdf) / Phase 6 (docx)
 
   ipcMain.handle('export:pdf', async (_event, _sessionId: string, _type: DocumentType) => {
-    // TODO:
-    // 1. Load the session and contact info from settings.
-    // 2. Render the document to PDF using Electron's webContents.printToPDF.
-    //    The hidden renderer window must have the document loaded at a print-ready URL.
-    // 3. Open a save dialog via dialog.showSaveDialog with a default filename:
-    //    "<Full Name> - <Company Name> - Resume.pdf" or "... - Cover Letter.pdf".
-    // 4. Write the PDF buffer to the chosen path.
-    // 5. Return the absolute file path on success.
-    // 6. On error: throw a typed error (disk-full, permissions, path-not-found)
-    //    so the renderer can show a specific message with a "Save to different location" action.
+    // TODO: Render document to PDF via Electron's webContents.printToPDF.
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('export:docx', async (_event, _sessionId: string, _type: DocumentType) => {
-    // TODO:
-    // 1. Load the session and contact info from settings.
-    // 2. Use the `docx` npm package to reproduce the document layout: same single-column
-    //    structure, fonts, heading styles, bullet formatting, and spacing as the PDF.
-    // 3. Open a save dialog with the same default filename pattern as PDF export.
-    // 4. Write the DOCX buffer to the chosen path.
-    // 5. Return the absolute file path on success.
-    // 6. Same typed error handling as export:pdf.
+    // STUB: Phase 6
+    // TODO: Use the `docx` npm package to reproduce the document layout.
     throw new Error('Not implemented')
   })
 
@@ -521,25 +784,12 @@ export function registerIpcHandlers(): void {
   // STUB: Phase 6
 
   ipcMain.handle('backup:trigger', async () => {
-    // TODO:
-    // 1. Read the backup location from settings.
-    // 2. Read (or create) a backup manifest file that records the last-backup timestamp
-    //    for each tracked file.
-    // 3. Copy all files in the data directory that have been modified since the last
-    //    backup into the backup directory, preserving the relative path structure.
-    // 4. Update the manifest with the current timestamp.
-    // 5. This handler is also called by the before-quit handler on app close.
+    // TODO: Copy modified files to the backup location.
     throw new Error('Not implemented')
   })
 
   ipcMain.handle('backup:import', async (_event, _backupPath: string) => {
-    // TODO:
-    // 1. Open a file picker (or use the provided path) to select a backup archive.
-    // 2. Show a confirmation dialog — this will overwrite current data.
-    // 3. Copy the backup files into the data directory, replacing existing files.
-    // 4. Reload the DB connection and re-run migrations if the schema changed.
-    // 5. Emit an event or return a flag signaling that the app should prompt the
-    //    user to restart for changes to take full effect.
+    // TODO: Import a backup archive.
     throw new Error('Not implemented')
   })
 }

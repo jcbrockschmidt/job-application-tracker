@@ -3,23 +3,14 @@
 // Shows an animated progress state while the AI generates the resume, then
 // navigates to the new session on completion.
 //
-// STUB: Phase 1 — structure and props defined; generation logic not yet wired.
-// STUB: Phase 7 — focus management note added; MUI Dialog handles focus trap automatically.
-// TODO:
-//   - Call window.api.sessions.create(jobDescription) on submit
-//   - Dispatch addSession(session) and setActivePage('session') on success
-//   - Show LinearProgress / status text during generation (streaming if possible)
-//   - Show inline error with Retry button on failure (network, rate limit, auth, context)
-//   - Disable Generate button when jobDescription is empty
+// STUB: Phase 7 — focus management identified below; not yet implemented.
 // TODO (Phase 7 — focus management):
-//   - MUI Dialog already provides a FocusTrap; focus is contained inside while it is open.
-//   - Add autoFocus to the job-description TextField so focus lands there immediately on open.
+//   - Add aria-labelledby="new-session-dialog-title" to Dialog and id to DialogTitle.
+//   - Add autoFocus to the job-description TextField so focus lands there on open.
 //   - On close (Cancel or success), MUI Dialog automatically returns focus to the element
-//     that was focused before the dialog opened — verify this works with the "+ New Session"
-//     button trigger in Topbar and Sidebar.
-//   - Add aria-labelledby={dialogTitleId} to the Dialog and id={dialogTitleId} to
-//     DialogTitle so screen readers announce the dialog name when it opens.
+//     that was focused before the dialog opened — verify this works with the trigger buttons.
 
+import { useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -27,8 +18,13 @@ import {
   DialogActions,
   Button,
   TextField,
-  Typography
+  Typography,
+  LinearProgress,
+  Box
 } from '@mui/material'
+import { useAppDispatch } from '../../hooks'
+import { addSession } from '../../store/slices/sessionsSlice'
+import { setActivePage } from '../../store/slices/uiSlice'
 
 interface NewSessionDialogProps {
   open: boolean
@@ -36,30 +32,34 @@ interface NewSessionDialogProps {
 }
 
 export default function NewSessionDialog({ open, onClose }: NewSessionDialogProps): JSX.Element {
-  // TODO: const [jobDescription, setJobDescription] = useState('')
-  // TODO: const [isGenerating, setIsGenerating] = useState(false)
-  // TODO: const [error, setError] = useState<string | null>(null)
-  // TODO: const dispatch = useAppDispatch()
+  const [jobDescription, setJobDescription] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const dispatch = useAppDispatch()
 
-  // TODO: async function handleGenerate() {
-  //   setIsGenerating(true)
-  //   setError(null)
-  //   try {
-  //     const session = await window.api.sessions.create(jobDescription)
-  //     dispatch(addSession(session))
-  //     dispatch(setActivePage('session'))
-  //     onClose()
-  //   } catch (err) {
-  //     setError(mapGenerationError(err))
-  //   } finally {
-  //     setIsGenerating(false)
-  //   }
-  // }
+  async function handleGenerate(): Promise<void> {
+    setIsGenerating(true)
+    setError(null)
+    try {
+      const session = await window.api.sessions.create(jobDescription)
+      dispatch(addSession(session))
+      dispatch(setActivePage('session'))
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Generation failed. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  function handleClose(): void {
+    if (!isGenerating) onClose()
+  }
 
   return (
-    // STUB: Phase 7 — add aria-labelledby="new-session-dialog-title" when wiring
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      {/* STUB: Phase 7 — add id="new-session-dialog-title" for aria-labelledby */}
+    // STUB: Phase 7 — add aria-labelledby="new-session-dialog-title"
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      {/* STUB: Phase 7 — add id="new-session-dialog-title" */}
       <DialogTitle>New Session</DialogTitle>
 
       <DialogContent>
@@ -68,8 +68,7 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
           Master CV.
         </Typography>
 
-        {/* TODO: value={jobDescription} onChange={e => setJobDescription(e.target.value)} */}
-        {/* STUB: Phase 7 — add autoFocus so focus lands here when the dialog opens */}
+        {/* STUB: Phase 7 — add autoFocus */}
         <TextField
           label="Job description"
           multiline
@@ -77,20 +76,42 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
           fullWidth
           placeholder="Paste the job description here…"
           variant="outlined"
-          // TODO (Phase 7): autoFocus
+          value={jobDescription}
+          onChange={(e) => setJobDescription(e.target.value)}
+          disabled={isGenerating}
         />
 
-        {/* TODO: show LinearProgress when isGenerating */}
-        {/* TODO: show inline error message when error is set */}
+        {isGenerating && (
+          <Box sx={{ mt: 2 }}>
+            <LinearProgress />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Generating your tailored resume…
+            </Typography>
+          </Box>
+        )}
+
+        {error && (
+          <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="error">
+              {error}
+            </Typography>
+            <Button size="small" onClick={handleGenerate} disabled={isGenerating}>
+              Retry
+            </Button>
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} color="inherit">
+        <Button onClick={handleClose} color="inherit" disabled={isGenerating}>
           Cancel
         </Button>
-
-        {/* TODO: disabled={!jobDescription.trim() || isGenerating} onClick={handleGenerate} */}
-        <Button variant="contained" disableElevation>
+        <Button
+          variant="contained"
+          disableElevation
+          disabled={!jobDescription.trim() || isGenerating}
+          onClick={handleGenerate}
+        >
           Generate
         </Button>
       </DialogActions>
