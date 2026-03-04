@@ -43,6 +43,7 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAppDispatch, useAppSelector } from '../../hooks'
 import { setActivePage } from '../../store/slices/uiSlice'
+import { setActiveSession } from '../../store/slices/sessionsSlice'
 import type { Session } from '@shared/types'
 
 const SIDEBAR_BG = '#1a2332'
@@ -119,9 +120,11 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
             <SessionItem
               key={session.id}
               session={session}
-              isActive={session.id === activeSessionId}
-              // TODO: onClick={() => { dispatch(setActiveSessionId(session.id)); dispatch(setActivePage('session')) }}
-              onSelect={() => {}}
+              isActive={activePage === 'session' && session.id === activeSessionId}
+              onSelect={() => {
+                dispatch(setActiveSession(session.id))
+                dispatch(setActivePage('session'))
+              }}
               // TODO: call window.api.sessions.close(session.id), dispatch removeSession(session.id)
               onClose={() => {}}
             />
