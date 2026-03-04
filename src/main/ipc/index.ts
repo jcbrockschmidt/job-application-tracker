@@ -20,8 +20,15 @@ import {
   validateApiKey,
   resetAnthropicClient,
   getAnthropicClient,
-  listAvailableModels
+  listAvailableModels,
+  isPlaceholderMode
 } from '../ai'
+import {
+  PLACEHOLDER_COMPANY_ROLE,
+  PLACEHOLDER_MODELS,
+  PLACEHOLDER_RAW_CV,
+  PLACEHOLDER_RESUME
+} from '../ai/placeholders'
 import { getDb } from '../db'
 import {
   applications as applicationsTable,
@@ -201,10 +208,17 @@ async function generateResumeFromCV(
   jobDescription: string,
   sessionDir: string,
   model: string,
-  apiKey: string
+  apiKey: string | null
 ): Promise<ResumeJson> {
+  mkdirSync(sessionDir, { recursive: true })
+
+  if (isPlaceholderMode()) {
+    atomicWriteJson(join(sessionDir, 'resume.json'), PLACEHOLDER_RESUME)
+    return PLACEHOLDER_RESUME
+  }
+
   const masterCV = readMasterCV()
-  const client = getAnthropicClient(apiKey)
+  const client = getAnthropicClient(apiKey!)
 
   const response = await client.messages.create({
     model,
@@ -217,7 +231,6 @@ async function generateResumeFromCV(
   const resume = toolBlock.input as ResumeJson
 
   // Write resume.json to session directory.
-  mkdirSync(sessionDir, { recursive: true })
   atomicWriteJson(join(sessionDir, 'resume.json'), resume)
 
   // Log spend.
@@ -240,6 +253,10 @@ async function generateResumeFromCV(
 // ─── IPC handler registration ─────────────────────────────────────────────────
 
 export function registerIpcHandlers(): void {
+  if (isPlaceholderMode()) {
+    console.log('[AI Placeholder] Placeholder mode active — Claude API calls are skipped.')
+  }
+
   // ─── Settings ───────────────────────────────────────────────────────────────
 
   ipcMain.handle('settings:get', async (): Promise<Settings> => {
@@ -257,6 +274,12 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('settings:validateApiKey', async (_event, apiKey: string): Promise<boolean> => {
+    if (isPlaceholderMode()) {
+      await keytar.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, apiKey)
+      resetAnthropicClient()
+      cachedModels = null
+      return true
+    }
     const isValid = await validateApiKey(apiKey)
     if (isValid) {
       await keytar.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, apiKey)
@@ -268,6 +291,7 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('settings:getAvailableModels', async (): Promise<string[]> => {
+    if (isPlaceholderMode()) return PLACEHOLDER_MODELS
     if (cachedModels) return cachedModels
     const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
     if (!apiKey) throw new Error('API key not configured — validate it in Settings')
@@ -301,50 +325,54 @@ export function registerIpcHandlers(): void {
   // ─── Sessions ────────────────────────────────────────────────────────────────
 
   ipcMain.handle('sessions:create', async (_event, jobDescription: string): Promise<Session> => {
-    const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
-    if (!apiKey) throw new Error('API key not configured — validate it in Settings')
-
     const settings = readSettings()
     const { model } = settings
-    const client = getAnthropicClient(apiKey)
     const now = new Date()
     const db = getDb()
 
     // 1. Extract company name and role title from the JD via Claude, with regex fallback.
     let companyName = 'Unknown Company'
     let roleTitle = 'Unknown Role'
-    try {
-      const extractResponse = await client.messages.create({
-        model,
-        ...extractCompanyRolePrompt(jobDescription)
-      })
-      const toolBlock = extractResponse.content.find(b => b.type === 'tool_use')
-      if (!toolBlock || toolBlock.type !== 'tool_use')
-        throw new Error('No tool_use block in extract response')
-      const extracted = toolBlock.input as { company?: string; role?: string }
-      companyName = extracted.company?.trim() || companyName
-      roleTitle = extracted.role?.trim() || roleTitle
-
-      // Log the extraction spend.
-      db.insert(spendLog)
-        .values({
-          id: nanoid(),
-          timestamp: now,
+    if (isPlaceholderMode()) {
+      companyName = PLACEHOLDER_COMPANY_ROLE.company
+      roleTitle = PLACEHOLDER_COMPANY_ROLE.role
+    } else {
+      const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+      if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+      const client = getAnthropicClient(apiKey)
+      try {
+        const extractResponse = await client.messages.create({
           model,
-          inputTokens: extractResponse.usage.input_tokens,
-          outputTokens: extractResponse.usage.output_tokens,
-          estimatedCostUsd: estimateCostUsd(
-            model,
-            extractResponse.usage.input_tokens,
-            extractResponse.usage.output_tokens
-          )
+          ...extractCompanyRolePrompt(jobDescription)
         })
-        .run()
-    } catch {
-      // Regex fallback: try to extract from common patterns.
-      const fallback = extractCompanyRoleRegex(jobDescription)
-      companyName = fallback.company
-      roleTitle = fallback.role
+        const toolBlock = extractResponse.content.find(b => b.type === 'tool_use')
+        if (!toolBlock || toolBlock.type !== 'tool_use')
+          throw new Error('No tool_use block in extract response')
+        const extracted = toolBlock.input as { company?: string; role?: string }
+        companyName = extracted.company?.trim() || companyName
+        roleTitle = extracted.role?.trim() || roleTitle
+
+        // Log the extraction spend.
+        db.insert(spendLog)
+          .values({
+            id: nanoid(),
+            timestamp: now,
+            model,
+            inputTokens: extractResponse.usage.input_tokens,
+            outputTokens: extractResponse.usage.output_tokens,
+            estimatedCostUsd: estimateCostUsd(
+              model,
+              extractResponse.usage.input_tokens,
+              extractResponse.usage.output_tokens
+            )
+          })
+          .run()
+      } catch {
+        // Regex fallback: try to extract from common patterns.
+        const fallback = extractCompanyRoleRegex(jobDescription)
+        companyName = fallback.company
+        roleTitle = fallback.role
+      }
     }
 
     // 2. Generate IDs and directory path.
@@ -530,37 +558,40 @@ export function registerIpcHandlers(): void {
       //    Cover letter ingestion records the file but defers writing-profile updates
       //    to Phase 5 (writingProfile:regenerate).
       if (type === 'resume') {
-        const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
-        if (!apiKey) throw new Error('API key not configured — validate it in Settings')
-
-        const settings = readSettings()
-        const model = settings.model
-        const client = getAnthropicClient(apiKey)
         const sourceLabel = `${originalFilename} uploaded ${formatUploadMonth(uploadedAt)}`
+        if (isPlaceholderMode()) {
+          writeMasterCV(mergeMasterCV(readMasterCV(), rawToMasterCV(PLACEHOLDER_RAW_CV, sourceLabel)))
+        } else {
+          const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+          if (!apiKey) throw new Error('API key not configured — validate it in Settings')
 
-        const response = await client.messages.create({
-          model,
-          ...extractResumePrompt(text)
-        })
+          const settings = readSettings()
+          const model = settings.model
+          const client = getAnthropicClient(apiKey)
 
-        const toolBlock = response.content.find(b => b.type === 'tool_use')
-        if (!toolBlock || toolBlock.type !== 'tool_use')
-          throw new Error('Resume extraction returned no structured output')
-        const parsed = toolBlock.input as RawExtractedCV
-        const incomingCV = rawToMasterCV(parsed, sourceLabel)
-        writeMasterCV(mergeMasterCV(readMasterCV(), incomingCV))
+          const response = await client.messages.create({
+            model,
+            ...extractResumePrompt(text)
+          })
 
-        // 4. Log spend.
-        const inputTokens = response.usage.input_tokens
-        const outputTokens = response.usage.output_tokens
-        db.insert(spendLog).values({
-          id: nanoid(),
-          timestamp: uploadedAt,
-          model,
-          inputTokens,
-          outputTokens,
-          estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
-        })
+          const toolBlock = response.content.find(b => b.type === 'tool_use')
+          if (!toolBlock || toolBlock.type !== 'tool_use')
+            throw new Error('Resume extraction returned no structured output')
+          const parsed = toolBlock.input as RawExtractedCV
+          writeMasterCV(mergeMasterCV(readMasterCV(), rawToMasterCV(parsed, sourceLabel)))
+
+          // 4. Log spend.
+          const inputTokens = response.usage.input_tokens
+          const outputTokens = response.usage.output_tokens
+          db.insert(spendLog).values({
+            id: nanoid(),
+            timestamp: uploadedAt,
+            model,
+            inputTokens,
+            outputTokens,
+            estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
+          })
+        }
       }
 
       // 5. Record source doc in the database.
@@ -617,8 +648,11 @@ export function registerIpcHandlers(): void {
 
     if (!applications.directoryPath) throw new Error(`Session ${sessionId} has no directory path`)
 
-    const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
-    if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+    let apiKey: string | null = null
+    if (!isPlaceholderMode()) {
+      apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+      if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+    }
 
     const settings = readSettings()
 
