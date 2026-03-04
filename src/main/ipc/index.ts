@@ -328,18 +328,20 @@ export function registerIpcHandlers(): void {
       roleTitle = extracted.role?.trim() || roleTitle
 
       // Log the extraction spend.
-      db.insert(spendLog).values({
-        id: nanoid(),
-        timestamp: now,
-        model,
-        inputTokens: extractResponse.usage.input_tokens,
-        outputTokens: extractResponse.usage.output_tokens,
-        estimatedCostUsd: estimateCostUsd(
+      db.insert(spendLog)
+        .values({
+          id: nanoid(),
+          timestamp: now,
           model,
-          extractResponse.usage.input_tokens,
-          extractResponse.usage.output_tokens
-        )
-      }).run()
+          inputTokens: extractResponse.usage.input_tokens,
+          outputTokens: extractResponse.usage.output_tokens,
+          estimatedCostUsd: estimateCostUsd(
+            model,
+            extractResponse.usage.input_tokens,
+            extractResponse.usage.output_tokens
+          )
+        })
+        .run()
     } catch {
       // Regex fallback: try to extract from common patterns.
       const fallback = extractCompanyRoleRegex(jobDescription)
@@ -356,36 +358,40 @@ export function registerIpcHandlers(): void {
     mkdirSync(sessionDir, { recursive: true })
 
     // 4. Insert DB rows.
-    db.insert(applicationsTable).values({
-      id: applicationId,
-      companyName,
-      roleTitle,
-      briefSummary: null,
-      dateGenerated: now.toISOString(),
-      resumeStatus: 'draft',
-      coverLetterStatus: 'none',
-      applicationStatus: 'not_applied',
-      notes: null,
-      submittedDate: null,
-      directoryPath: sessionDir,
-      resumeLastFinalizedAt: null,
-      resumeIncorporatedAt: null,
-      coverLetterLastFinalizedAt: null,
-      coverLetterIncorporatedAt: null,
-      coverLetterWritingProfileIncorporatedAt: null,
-      createdAt: now,
-      updatedAt: now
-    }).run()
+    db.insert(applicationsTable)
+      .values({
+        id: applicationId,
+        companyName,
+        roleTitle,
+        briefSummary: null,
+        dateGenerated: now.toISOString(),
+        resumeStatus: 'draft',
+        coverLetterStatus: 'none',
+        applicationStatus: 'not_applied',
+        notes: null,
+        submittedDate: null,
+        directoryPath: sessionDir,
+        resumeLastFinalizedAt: null,
+        resumeIncorporatedAt: null,
+        coverLetterLastFinalizedAt: null,
+        coverLetterIncorporatedAt: null,
+        coverLetterWritingProfileIncorporatedAt: null,
+        createdAt: now,
+        updatedAt: now
+      })
+      .run()
 
     const lastSaved = now.toISOString()
-    db.insert(sessionsTable).values({
-      id: sessionId,
-      applicationId,
-      jobDescription,
-      matchReport: null,
-      lastSaved,
-      createdAt: now
-    }).run()
+    db.insert(sessionsTable)
+      .values({
+        id: sessionId,
+        applicationId,
+        jobDescription,
+        matchReport: null,
+        lastSaved,
+        createdAt: now
+      })
+      .run()
 
     // 5. Return the assembled Session immediately — the renderer will call generate:resume
     // separately so the dialog can close and show a loading state in the sidebar/session view.

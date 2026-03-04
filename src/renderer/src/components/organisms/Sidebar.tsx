@@ -26,7 +26,16 @@
 //     already keyboard-focusable; add an :focus-visible rule (or inline sx) so it becomes
 //     visible when focused via keyboard, not just on mouse hover.
 
-import { Box, Typography, ButtonBase, Chip, Divider, IconButton, Badge, CircularProgress } from '@mui/material'
+import {
+  Box,
+  Typography,
+  ButtonBase,
+  Chip,
+  Divider,
+  IconButton,
+  Badge,
+  CircularProgress
+} from '@mui/material'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import ArticleIcon from '@mui/icons-material/Article'
 import EditNoteIcon from '@mui/icons-material/EditNote'
