@@ -56,6 +56,8 @@ function createWindow(): BrowserWindow {
   return mainWindow
 }
 
+app.setName('Job Application Kit')
+
 app.whenReady().then(() => {
   ensureDataDirectories()
   initDatabase()

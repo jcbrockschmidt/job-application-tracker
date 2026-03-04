@@ -53,6 +53,22 @@ db-migrate:
 db-studio:
     npx drizzle-kit studio
 
+# Delete all app data (DB, master CV, sessions). App recreates structure on next launch.
+[windows]
+reset-data:
+    -Remove-Item -Recurse -Force "$env:APPDATA\Job Application Kit" -ErrorAction SilentlyContinue
+    Write-Host "App data cleared."
+
+[macos]
+reset-data:
+    rm -rf "$HOME/Library/Application Support/Job Application Kit"
+    echo "App data cleared."
+
+[linux]
+reset-data:
+    rm -rf "$HOME/.config/Job Application Kit"
+    echo "App data cleared."
+
 # Package for Windows
 build-win:
     npm run build:win

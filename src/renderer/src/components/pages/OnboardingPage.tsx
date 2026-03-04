@@ -351,10 +351,11 @@ export default function OnboardingPage(): JSX.Element {
       case 1:
         return <StepContactInfo onNext={handleContactInfoNext} />
       case 2:
-        return <StepUpload docType="resume" required={true} onNext={advance} />
+        return <StepUpload key="resume" docType="resume" required={true} onNext={advance} />
       case 3:
         return (
           <StepUpload
+            key="cover_letter"
             docType="cover_letter"
             required={false}
             onNext={handleFinish}
