@@ -30,12 +30,7 @@ import {
   spendLog
 } from '../db/schema'
 import { extractText } from '../ingestion'
-import {
-  stripCodeFence,
-  extractCompanyRolePrompt,
-  extractResumePrompt,
-  tailorResumePrompt
-} from '../ai/prompts'
+import { extractCompanyRolePrompt, extractResumePrompt, tailorResumePrompt } from '../ai/prompts'
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
 import type {
@@ -216,8 +211,10 @@ async function generateResumeFromCV(
     ...tailorResumePrompt(masterCV, jobDescription)
   })
 
-  const rawText = response.content[0].type === 'text' ? response.content[0].text : '{}'
-  const resume = JSON.parse(stripCodeFence(rawText)) as ResumeJson
+  const toolBlock = response.content.find(b => b.type === 'tool_use')
+  if (!toolBlock || toolBlock.type !== 'tool_use')
+    throw new Error('Resume generation returned no structured output')
+  const resume = toolBlock.input as ResumeJson
 
   // Write resume.json to session directory.
   mkdirSync(sessionDir, { recursive: true })
@@ -321,9 +318,10 @@ export function registerIpcHandlers(): void {
         model,
         ...extractCompanyRolePrompt(jobDescription)
       })
-      const rawText =
-        extractResponse.content[0].type === 'text' ? extractResponse.content[0].text : '{}'
-      const extracted = JSON.parse(stripCodeFence(rawText)) as { company?: string; role?: string }
+      const toolBlock = extractResponse.content.find(b => b.type === 'tool_use')
+      if (!toolBlock || toolBlock.type !== 'tool_use')
+        throw new Error('No tool_use block in extract response')
+      const extracted = toolBlock.input as { company?: string; role?: string }
       companyName = extracted.company?.trim() || companyName
       roleTitle = extracted.role?.trim() || roleTitle
 
@@ -545,8 +543,10 @@ export function registerIpcHandlers(): void {
           ...extractResumePrompt(text)
         })
 
-        const rawText = response.content[0].type === 'text' ? response.content[0].text : '{}'
-        const parsed = JSON.parse(stripCodeFence(rawText)) as RawExtractedCV
+        const toolBlock = response.content.find(b => b.type === 'tool_use')
+        if (!toolBlock || toolBlock.type !== 'tool_use')
+          throw new Error('Resume extraction returned no structured output')
+        const parsed = toolBlock.input as RawExtractedCV
         const incomingCV = rawToMasterCV(parsed, sourceLabel)
         writeMasterCV(mergeMasterCV(readMasterCV(), incomingCV))
 

@@ -484,6 +484,7 @@ Directory structure:
 ### AI / LLM
 - **Provider:** Anthropic Claude (cloud API)
 - **SDK:** Anthropic TypeScript SDK (`@anthropic-ai/sdk`), called from the Electron main process
+- **Structured output:** All AI calls that return structured data use the tool_use API with `tool_choice: { type: "tool" }` to guarantee well-formed JSON responses. The response is extracted directly from the `tool_use` block's `input` field — no text parsing or code-fence stripping required.
 - **API key** is configured by the user in app settings and stored securely in the OS keychain
 - **Model selection** is user-configurable in settings. Available Claude models are fetched from the Anthropic API at runtime; the user selects from this list and the selected model is used for all AI operations.
 - **Token usage** is displayed after each AI operation in the right side of the session tab bar and in a dedicated info bar on the Master CV page, showing the model name, input and output token counts, and an estimated cost based on the selected model's pricing. Cost is labeled as an estimate since pricing may change.
