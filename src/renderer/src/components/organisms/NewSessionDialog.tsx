@@ -1,7 +1,8 @@
 // Modal dialog for creating a new session.
 // User pastes a job description, hits Generate, and the app calls sessions:create.
-// Shows an animated progress state while the AI generates the resume, then
-// navigates to the new session on completion.
+// sessions:create returns quickly (job detail extraction + DB insert) so the dialog
+// can close immediately; resume generation then continues in the background via
+// generate:resume, which updates the session in Redux when it completes.
 //
 // STUB: Phase 7 — focus management identified below; not yet implemented.
 // TODO (Phase 7 — focus management):
@@ -23,7 +24,7 @@ import {
   Box
 } from '@mui/material'
 import { useAppDispatch } from '../../hooks'
-import { addSession } from '../../store/slices/sessionsSlice'
+import { addSession, updateSession, removeSession } from '../../store/slices/sessionsSlice'
 import { setActivePage } from '../../store/slices/uiSlice'
 
 interface NewSessionDialogProps {
@@ -33,27 +34,44 @@ interface NewSessionDialogProps {
 
 export default function NewSessionDialog({ open, onClose }: NewSessionDialogProps): JSX.Element {
   const [jobDescription, setJobDescription] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const dispatch = useAppDispatch()
 
   async function handleGenerate(): Promise<void> {
-    setIsGenerating(true)
+    setIsCreating(true)
     setError(null)
+    let sessionId: string | null = null
+
     try {
+      // Phase 1: extract job details + insert DB rows. Returns quickly with isGenerating: true.
       const session = await window.api.sessions.create(jobDescription)
+      sessionId = session.id
       dispatch(addSession(session))
       dispatch(setActivePage('session'))
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed. Please try again.')
-    } finally {
-      setIsGenerating(false)
+      setError(err instanceof Error ? err.message : 'Session creation failed. Please try again.')
+      setIsCreating(false)
+      return
+    }
+    setIsCreating(false)
+
+    // Phase 2: generate the resume in the background (dialog is already closed).
+    // On success, update the session in Redux. On failure, remove it and navigate away.
+    // TODO (Phase 6): surface a proper error notification on generation failure.
+    try {
+      const resume = await window.api.generate.resume(sessionId)
+      dispatch(updateSession({ id: sessionId, updates: { resume, isGenerating: false } }))
+    } catch {
+      // Remove the session from the store — it will be cleaned from the DB on next restart.
+      dispatch(removeSession(sessionId))
+      dispatch(setActivePage('masterList'))
     }
   }
 
   function handleClose(): void {
-    if (!isGenerating) onClose()
+    if (!isCreating) onClose()
   }
 
   return (
@@ -78,14 +96,14 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
           variant="outlined"
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
-          disabled={isGenerating}
+          disabled={isCreating}
         />
 
-        {isGenerating && (
+        {isCreating && (
           <Box sx={{ mt: 2 }}>
             <LinearProgress />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Generating your tailored resume…
+              Analyzing job description…
             </Typography>
           </Box>
         )}
@@ -95,7 +113,7 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
             <Typography variant="body2" color="error">
               {error}
             </Typography>
-            <Button size="small" onClick={handleGenerate} disabled={isGenerating}>
+            <Button size="small" onClick={handleGenerate} disabled={isCreating}>
               Retry
             </Button>
           </Box>
@@ -103,13 +121,13 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={handleClose} color="inherit" disabled={isGenerating}>
+        <Button onClick={handleClose} color="inherit" disabled={isCreating}>
           Cancel
         </Button>
         <Button
           variant="contained"
           disableElevation
-          disabled={!jobDescription.trim() || isGenerating}
+          disabled={!jobDescription.trim() || isCreating}
           onClick={handleGenerate}
         >
           Generate

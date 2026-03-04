@@ -26,7 +26,7 @@
 //     already keyboard-focusable; add an :focus-visible rule (or inline sx) so it becomes
 //     visible when focused via keyboard, not just on mouse hover.
 
-import { Box, Typography, ButtonBase, Chip, Divider, IconButton, Badge } from '@mui/material'
+import { Box, Typography, ButtonBase, Chip, Divider, IconButton, Badge, CircularProgress } from '@mui/material'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import ArticleIcon from '@mui/icons-material/Article'
 import EditNoteIcon from '@mui/icons-material/EditNote'
@@ -39,7 +39,11 @@ import type { Session } from '@shared/types'
 const SIDEBAR_BG = '#1a2332'
 const SIDEBAR_TEXT = '#8fa3b5'
 
-export default function Sidebar(): JSX.Element {
+interface SidebarProps {
+  onNewSession: () => void
+}
+
+export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
   const sessions = useAppSelector((state) => state.sessions.sessions)
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
   // STUB: Phase 5
@@ -117,9 +121,9 @@ export default function Sidebar(): JSX.Element {
       </Box>
 
       {/* "+ New Session" button */}
-      {/* TODO: onClick opens NewSessionDialog */}
       <Box sx={{ px: 1, pb: 0.5 }}>
         <ButtonBase
+          onClick={onNewSession}
           sx={{
             width: '100%',
             bgcolor: 'rgba(255,255,255,0.07)',
@@ -230,21 +234,29 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, width: '100%', mt: 0.25 }}>
           <Typography noWrap sx={{ fontSize: 11, color: SIDEBAR_TEXT, opacity: 0.7, flex: 1 }}>
-            {session.roleTitle || 'Unknown Role'}
+            {session.isGenerating ? 'Generating…' : session.roleTitle || 'Unknown Role'}
           </Typography>
-          {/* TODO: show Draft/Final badge based on application.resumeStatus */}
-          <Chip
-            label="Draft"
-            size="small"
-            sx={{
-              height: 14,
-              fontSize: 9,
-              fontWeight: 700,
-              bgcolor: 'rgba(255,255,255,0.12)',
-              color: SIDEBAR_TEXT,
-              '& .MuiChip-label': { px: 0.75 }
-            }}
-          />
+          {session.isGenerating ? (
+            <CircularProgress
+              size={10}
+              thickness={5}
+              sx={{ color: SIDEBAR_TEXT, opacity: 0.7, flexShrink: 0 }}
+            />
+          ) : (
+            // TODO: show Draft/Final badge based on application.resumeStatus
+            <Chip
+              label="Draft"
+              size="small"
+              sx={{
+                height: 14,
+                fontSize: 9,
+                fontWeight: 700,
+                bgcolor: 'rgba(255,255,255,0.12)',
+                color: SIDEBAR_TEXT,
+                '& .MuiChip-label': { px: 0.75 }
+              }}
+            />
+          )}
         </Box>
       </ButtonBase>
 

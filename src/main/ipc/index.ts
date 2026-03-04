@@ -11,7 +11,7 @@
 
 import { ipcMain, app } from 'electron'
 import { join, extname, basename } from 'path'
-import { readFileSync, existsSync, copyFileSync, mkdirSync } from 'fs'
+import { readFileSync, existsSync, copyFileSync, mkdirSync, rmSync } from 'fs'
 import keytar from 'keytar'
 import { nanoid } from 'nanoid'
 import { eq, desc } from 'drizzle-orm'
@@ -370,7 +370,7 @@ export function registerIpcHandlers(): void {
           extractResponse.usage.input_tokens,
           extractResponse.usage.output_tokens
         )
-      })
+      }).run()
     } catch {
       // Regex fallback: try to extract from common patterns.
       const fallback = extractCompanyRoleRegex(jobDescription)
@@ -406,7 +406,7 @@ export function registerIpcHandlers(): void {
       coverLetterWritingProfileIncorporatedAt: null,
       createdAt: now,
       updatedAt: now
-    })
+    }).run()
 
     const lastSaved = now.toISOString()
     db.insert(sessionsTable).values({
@@ -416,22 +416,23 @@ export function registerIpcHandlers(): void {
       matchReport: null,
       lastSaved,
       createdAt: now
-    })
+    }).run()
 
-    // 5. Generate the resume.
-    const resume = await generateResumeFromCV(jobDescription, sessionDir, model, apiKey)
-
-    // 6. Return the assembled Session.
+    // 5. Return the assembled Session immediately — the renderer will call generate:resume
+    // separately so the dialog can close and show a loading state in the sidebar/session view.
+    // isGenerating is set to true so the renderer knows generation is still pending.
     return {
       id: sessionId,
       applicationId,
       companyName,
       roleTitle,
       jobDescription,
-      resume,
+      resume: null,
       coverLetter: null,
       matchReport: null,
-      lastSaved
+      lastSaved,
+      isGenerating: true,
+      generationError: null
     }
   })
 
@@ -460,7 +461,9 @@ export function registerIpcHandlers(): void {
       matchReport: sessions.matchReport
         ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
         : null,
-      lastSaved: sessions.lastSaved
+      lastSaved: sessions.lastSaved,
+      isGenerating: false,
+      generationError: null
     }
   })
 
@@ -473,9 +476,27 @@ export function registerIpcHandlers(): void {
       .orderBy(desc(sessionsTable.createdAt))
       .all()
 
-    return rows.map(({ sessions, applications }) => {
+    const result: Session[] = []
+
+    for (const { sessions, applications } of rows) {
       const { resume, coverLetter } = readSessionDocs(applications.directoryPath)
-      return {
+
+      // Sessions with no resume.json were abandoned mid-first-generation (e.g. app was
+      // closed before generation completed). Clean them up from the DB and filesystem.
+      if (!resume) {
+        db.delete(sessionsTable).where(eq(sessionsTable.id, sessions.id)).run()
+        db.delete(applicationsTable).where(eq(applicationsTable.id, applications.id)).run()
+        if (applications.directoryPath) {
+          try {
+            rmSync(applications.directoryPath, { recursive: true, force: true })
+          } catch {
+            // Best-effort cleanup — ignore filesystem errors
+          }
+        }
+        continue
+      }
+
+      result.push({
         id: sessions.id,
         applicationId: sessions.applicationId,
         companyName: applications.companyName,
@@ -486,9 +507,13 @@ export function registerIpcHandlers(): void {
         matchReport: sessions.matchReport
           ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
           : null,
-        lastSaved: sessions.lastSaved
-      }
-    })
+        lastSaved: sessions.lastSaved,
+        isGenerating: false,
+        generationError: null
+      })
+    }
+
+    return result
   })
 
   ipcMain.handle('sessions:update', async (_event, _id: string, _updates: unknown) => {

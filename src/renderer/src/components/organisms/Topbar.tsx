@@ -1,8 +1,5 @@
 // Top bar: app brand, "+ New Session" button, settings icon.
 // Spans the full window width above the sidebar and main area.
-//
-// STUB: Phase 1.4 — "+ New Session" button not yet wired to NewSessionDialog.
-// TODO: Wire "+ New Session" button to open NewSessionDialog
 
 import { AppBar, Toolbar, Typography, Button, IconButton } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
@@ -11,7 +8,11 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import { useAppDispatch, useAppSelector } from '../../hooks'
 import { setActivePage, setSidebarOpen } from '../../store/slices/uiSlice'
 
-export default function Topbar(): JSX.Element {
+interface TopbarProps {
+  onNewSession: () => void
+}
+
+export default function Topbar({ onNewSession }: TopbarProps): JSX.Element {
   const dispatch = useAppDispatch()
   const isSidebarOpen = useAppSelector((state) => state.ui.isSidebarOpen)
 
@@ -31,13 +32,13 @@ export default function Topbar(): JSX.Element {
           Job Application Kit
         </Typography>
 
-        {/* TODO: Phase 1.4 — onClick opens NewSessionDialog */}
         <Button
           variant="outlined"
           color="inherit"
           size="small"
           startIcon={<AddIcon />}
           sx={{ borderColor: 'rgba(255,255,255,0.4)', fontSize: 13 }}
+          onClick={onNewSession}
         >
           New Session
         </Button>

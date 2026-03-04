@@ -41,7 +41,9 @@ const SESSION_DRAFT: Session = {
   resume: null,
   coverLetter: null,
   matchReport: null,
-  lastSaved: '2026-03-01T09:00:00Z'
+  lastSaved: '2026-03-01T09:00:00Z',
+  isGenerating: false,
+  generationError: null
 }
 
 const SESSION_FINAL: Session = {
@@ -53,7 +55,23 @@ const SESSION_FINAL: Session = {
   resume: null,
   coverLetter: null,
   matchReport: null,
-  lastSaved: '2026-02-28T15:30:00Z'
+  lastSaved: '2026-02-28T15:30:00Z',
+  isGenerating: false,
+  generationError: null
+}
+
+const SESSION_GENERATING: Session = {
+  id: 'sess_generating',
+  applicationId: 'app_generating',
+  companyName: 'Big Tech Co',
+  roleTitle: 'Unknown Role',
+  jobDescription: 'A job description being analyzed...',
+  resume: null,
+  coverLetter: null,
+  matchReport: null,
+  lastSaved: '2026-03-03T10:00:00Z',
+  isGenerating: true,
+  generationError: null
 }
 
 // ── Store factory ─────────────────────────────────────────────────────────────
@@ -131,4 +149,12 @@ export const SingleSessionFinal: Story = {
  */
 export const MultipleSessions: Story = {
   decorators: [withStore([SESSION_DRAFT, SESSION_FINAL], SESSION_DRAFT.id)]
+}
+
+/**
+ * Session currently generating its first resume.
+ * Shows spinner and "Generating…" in place of role title and Draft/Final badge.
+ */
+export const SessionGenerating: Story = {
+  decorators: [withStore([SESSION_GENERATING], SESSION_GENERATING.id)]
 }

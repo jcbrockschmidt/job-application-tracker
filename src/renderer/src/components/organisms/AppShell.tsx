@@ -15,10 +15,12 @@
 //     use FocusTrap internally — verify focus returns to the trigger element on close by
 //     checking that onClose restores focus to the button that opened the dialog.
 
+import { useState } from 'react'
 import { Box } from '@mui/material'
 import Topbar from './Topbar'
 import Sidebar from './Sidebar'
 import Statusbar from './Statusbar'
+import NewSessionDialog from './NewSessionDialog'
 import { useAppSelector } from '../../hooks'
 
 interface AppShellProps {
@@ -27,6 +29,7 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps): JSX.Element {
   const isSidebarOpen = useAppSelector((state) => state.ui.isSidebarOpen)
+  const [newSessionOpen, setNewSessionOpen] = useState(false)
 
   return (
     <Box
@@ -44,12 +47,14 @@ export default function AppShell({ children }: AppShellProps): JSX.Element {
       }}
     >
       <Box sx={{ gridArea: 'topbar' }}>
-        <Topbar />
+        <Topbar onNewSession={() => setNewSessionOpen(true)} />
       </Box>
 
       <Box sx={{ gridArea: 'sidebar', overflow: 'hidden' }}>
-        <Sidebar />
+        <Sidebar onNewSession={() => setNewSessionOpen(true)} />
       </Box>
+
+      <NewSessionDialog open={newSessionOpen} onClose={() => setNewSessionOpen(false)} />
 
       <Box sx={{ gridArea: 'main', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {children}

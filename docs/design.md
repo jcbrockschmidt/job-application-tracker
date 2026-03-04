@@ -122,9 +122,11 @@ The writing profile is accessible as a top-level view from the sidebar. The view
 
 ### Sessions
 - Multiple sessions can be open simultaneously, each representing a job application for a specific role.
-- A **New Session** button creates a session, prompting the user to paste a job description. Submitting it triggers document generation and opens the new session.
-- Sessions are listed in a persistent **sidebar** on the left of the main window. Each sidebar entry shows the company name, job title, date, and a status badge (Draft / Final). The active session is highlighted; clicking any entry opens that session.
+- A **New Session** button creates a session, prompting the user to paste a job description. Submitting it analyzes the job description (company/role extraction), immediately opens the new session in a **loading state**, and generates the resume in the background. The dialog closes as soon as the session is created — the user is not blocked waiting for generation to finish.
+- Sessions are listed in a persistent **sidebar** on the left of the main window. Each sidebar entry shows the company name, job title, and a status badge (Draft / Final). While a session's resume is being generated for the first time, the sidebar entry shows a spinner and "Generating…" in place of the role title and status badge. The active session is highlighted; clicking any entry opens that session.
 - Each session contains a resume and an optional cover letter.
+- While a session's first resume is being generated, the **session view** shows a full-screen loading state (spinner + company/role name) instead of the normal tab layout. Once generation completes, the view transitions to the standard layout automatically.
+- **If the app is closed before a session's first generation completes**, that session is discarded on next launch — it will not appear in the sidebar or Application Master List. This prevents incomplete sessions from cluttering the UI.
 - The **session view** is structured as follows:
   - **Session header bar** — displays the company name, job title, and an **Application Status chip** (e.g. "Not Applied"), with **Finalize** and **Export** action buttons on the right.
   - **Tab bar** — four tabs organize session content: **Resume**, **Cover Letter**, **Match Report**, and **Description**. Token usage for the last AI operation is shown on the right side of the tab bar (model name, input and output token counts, estimated cost). When the rolling 24-hour estimated spend exceeds the configured limit, an orange badge showing the current vs. limit amounts appears to the left of the token usage, and an amber warning bar is shown below the tab bar across all tabs.
@@ -141,7 +143,7 @@ The writing profile is accessible as a top-level view from the sidebar. The view
 - A persistent **status bar** runs across the bottom of the window, showing a save-state indicator ("All changes saved"), the current context (active view or session name), and a last-saved timestamp.
 
 ### Application Master List
-- All sessions — both in-progress and finalized — appear in a single master list.
+- All sessions — both in-progress and finalized — appear in a single master list. Sessions whose first resume is still generating show a "Generating" indicator in the Resume Status column.
 - Each entry includes:
   - **Company name**
   - **Role title**

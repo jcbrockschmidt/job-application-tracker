@@ -242,6 +242,10 @@ export interface Session {
   // Null until the user explicitly generates a match report.
   matchReport: MatchReport | null
   lastSaved: string
+  // Transient renderer-only fields — always false/null when loaded from disk.
+  // Set by the renderer during the first-generation flow; never persisted to DB or disk.
+  isGenerating: boolean
+  generationError: string | null
 }
 
 // ─── IPC API Surface (exposed via contextBridge) ──────────────────────────────

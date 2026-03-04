@@ -32,7 +32,7 @@
 //     push old value onto useUndoRedo stack, apply new text, dispatch updateSession.
 
 import { useState } from 'react'
-import { Box, Button, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Typography } from '@mui/material'
 import SessionHeader from '../organisms/SessionHeader'
 import SessionTabs, { type SessionTab } from '../organisms/SessionTabs'
 import SidePanels from '../organisms/SidePanels'
@@ -79,6 +79,31 @@ export default function SessionPage(): JSX.Element {
     return (
       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Typography color="text.secondary">No active session.</Typography>
+      </Box>
+    )
+  }
+
+  if (session.isGenerating) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2.5
+        }}
+      >
+        <CircularProgress size={36} />
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography fontWeight={600} sx={{ mb: 0.5 }}>
+            Generating resume…
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {session.companyName} — {session.roleTitle}
+          </Typography>
+        </Box>
       </Box>
     )
   }
