@@ -43,6 +43,7 @@ const { mockMessagesCreate, mockExtractText, mockValues, mockInsert } = vi.hoist
 })
 
 vi.mock('../../../main/ai', () => ({
+  isPlaceholderMode: vi.fn().mockReturnValue(false),
   getAnthropicClient: vi.fn().mockReturnValue({
     messages: { create: mockMessagesCreate }
   }),

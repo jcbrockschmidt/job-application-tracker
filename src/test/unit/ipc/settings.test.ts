@@ -43,6 +43,7 @@ vi.mock('pdf-parse', () => ({ default: vi.fn() }))
 vi.mock('mammoth', () => ({ default: { extractRawText: vi.fn() } }))
 
 vi.mock('../../../main/ai', () => ({
+  isPlaceholderMode: vi.fn().mockReturnValue(false),
   validateApiKey: vi.fn(),
   resetAnthropicClient: vi.fn()
 }))

@@ -226,9 +226,16 @@ async function generateResumeFromCV(
   })
 
   const toolBlock = response.content.find(b => b.type === 'tool_use')
-  if (!toolBlock || toolBlock.type !== 'tool_use')
-    throw new Error('Resume generation returned no structured output')
-  const resume = toolBlock.input as ResumeJson
+  let resume: ResumeJson
+  if (toolBlock && toolBlock.type === 'tool_use') {
+    resume = toolBlock.input as ResumeJson
+  } else {
+    const textBlock = response.content.find(b => b.type === 'text')
+    if (!textBlock || textBlock.type !== 'text')
+      throw new Error('Resume generation returned no structured output')
+    const raw = textBlock.text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+    resume = JSON.parse(raw) as ResumeJson
+  }
 
   // Write resume.json to session directory.
   atomicWriteJson(join(sessionDir, 'resume.json'), resume)
@@ -333,11 +340,12 @@ export function registerIpcHandlers(): void {
     // 1. Extract company name and role title from the JD via Claude, with regex fallback.
     let companyName = 'Unknown Company'
     let roleTitle = 'Unknown Role'
+    let apiKey: string | null = null
     if (isPlaceholderMode()) {
       companyName = PLACEHOLDER_COMPANY_ROLE.company
       roleTitle = PLACEHOLDER_COMPANY_ROLE.role
     } else {
-      const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+      apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
       if (!apiKey) throw new Error('API key not configured — validate it in Settings')
       const client = getAnthropicClient(apiKey)
       try {
@@ -346,9 +354,16 @@ export function registerIpcHandlers(): void {
           ...extractCompanyRolePrompt(jobDescription)
         })
         const toolBlock = extractResponse.content.find(b => b.type === 'tool_use')
-        if (!toolBlock || toolBlock.type !== 'tool_use')
-          throw new Error('No tool_use block in extract response')
-        const extracted = toolBlock.input as { company?: string; role?: string }
+        let extracted: { company?: string; role?: string }
+        if (toolBlock && toolBlock.type === 'tool_use') {
+          extracted = toolBlock.input as { company?: string; role?: string }
+        } else {
+          const textBlock = extractResponse.content.find(b => b.type === 'text')
+          if (!textBlock || textBlock.type !== 'text')
+            throw new Error('No tool_use block in extract response')
+          const raw = textBlock.text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+          extracted = JSON.parse(raw) as { company?: string; role?: string }
+        }
         companyName = extracted.company?.trim() || companyName
         roleTitle = extracted.role?.trim() || roleTitle
 
@@ -419,20 +434,21 @@ export function registerIpcHandlers(): void {
       })
       .run()
 
-    // 5. Return the assembled Session immediately — the renderer will call generate:resume
-    // separately so the dialog can close and show a loading state in the sidebar/session view.
-    // isGenerating is set to true so the renderer knows generation is still pending.
+    // 5. Generate the resume.
+    const resume = await generateResumeFromCV(jobDescription, sessionDir, model, apiKey)
+
+    // 6. Return the assembled Session.
     return {
       id: sessionId,
       applicationId,
       companyName,
       roleTitle,
       jobDescription,
-      resume: null,
+      resume,
       coverLetter: null,
       matchReport: null,
       lastSaved,
-      isGenerating: true,
+      isGenerating: false,
       generationError: null
     }
   })
@@ -575,9 +591,16 @@ export function registerIpcHandlers(): void {
           })
 
           const toolBlock = response.content.find(b => b.type === 'tool_use')
-          if (!toolBlock || toolBlock.type !== 'tool_use')
-            throw new Error('Resume extraction returned no structured output')
-          const parsed = toolBlock.input as RawExtractedCV
+          let parsed: RawExtractedCV
+          if (toolBlock && toolBlock.type === 'tool_use') {
+            parsed = toolBlock.input as RawExtractedCV
+          } else {
+            const textBlock = response.content.find(b => b.type === 'text')
+            if (!textBlock || textBlock.type !== 'text')
+              throw new Error('Resume extraction returned no structured output')
+            const raw = textBlock.text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+            parsed = JSON.parse(raw) as RawExtractedCV
+          }
           writeMasterCV(mergeMasterCV(readMasterCV(), rawToMasterCV(parsed, sourceLabel)))
 
           // 4. Log spend.

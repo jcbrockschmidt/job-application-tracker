@@ -48,7 +48,8 @@ const {
   mockInsert,
   mockUpdateWhere,
   mockSet,
-  mockUpdate
+  mockUpdate,
+  mockDelete
 } = vi.hoisted(() => {
   const mockMessagesCreate = vi.fn()
   const mockListAvailableModels = vi.fn()
@@ -67,11 +68,14 @@ const {
   const mockSelect = vi.fn().mockReturnValue({ from: mockFrom })
 
   // DB mutation mocks.
-  const mockValues = vi.fn()
+  const mockRun = vi.fn()
+  const mockValues = vi.fn().mockReturnValue({ run: mockRun })
   const mockInsert = vi.fn().mockReturnValue({ values: mockValues })
-  const mockUpdateWhere = vi.fn()
+  const mockUpdateWhere = vi.fn().mockReturnValue({ run: mockRun })
   const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere })
   const mockUpdate = vi.fn().mockReturnValue({ set: mockSet })
+  const mockDeleteWhere = vi.fn().mockReturnValue({ run: mockRun })
+  const mockDelete = vi.fn().mockReturnValue({ where: mockDeleteWhere })
 
   return {
     mockMessagesCreate,
@@ -86,11 +90,13 @@ const {
     mockInsert,
     mockUpdateWhere,
     mockSet,
-    mockUpdate
+    mockUpdate,
+    mockDelete
   }
 })
 
 vi.mock('../../../main/ai', () => ({
+  isPlaceholderMode: vi.fn().mockReturnValue(false),
   getAnthropicClient: vi.fn().mockReturnValue({
     messages: { create: mockMessagesCreate }
   }),
@@ -103,7 +109,8 @@ vi.mock('../../../main/db', () => ({
   getDb: () => ({
     insert: mockInsert,
     select: mockSelect,
-    update: mockUpdate
+    update: mockUpdate,
+    delete: mockDelete
   })
 }))
 
@@ -138,11 +145,12 @@ function rebuildDbChain(): void {
   mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, all: mockAll })
   mockFrom.mockReturnValue({ innerJoin: mockInnerJoin })
   mockSelect.mockReturnValue({ from: mockFrom })
-  mockValues.mockReturnValue(undefined)
+  mockValues.mockReturnValue({ run: vi.fn() })
   mockInsert.mockReturnValue({ values: mockValues })
-  mockUpdateWhere.mockReturnValue(undefined)
+  mockUpdateWhere.mockReturnValue({ run: vi.fn() })
   mockSet.mockReturnValue({ where: mockUpdateWhere })
   mockUpdate.mockReturnValue({ set: mockSet })
+  mockDelete.mockReturnValue({ where: vi.fn().mockReturnValue({ run: vi.fn() }) })
 }
 
 beforeEach(() => {
@@ -512,8 +520,15 @@ describe('sessions:getAll', () => {
   })
 
   it('returns all sessions assembled from DB rows', async () => {
-    const row1 = makeMockDbRow({ sessionId: 'sess-1', companyName: 'Alpha Corp' })
-    const row2 = makeMockDbRow({ sessionId: 'sess-2', companyName: 'Beta Inc' })
+    const dir1 = join(tempDir, 'data', 'applications', 'alpha', 'eng_sess-1')
+    const dir2 = join(tempDir, 'data', 'applications', 'beta', 'dev_sess-2')
+    mkdirSync(dir1, { recursive: true })
+    mkdirSync(dir2, { recursive: true })
+    const emptyResume: ResumeJson = { experience: [], education: [], skills: [] }
+    writeFileSync(join(dir1, 'resume.json'), JSON.stringify(emptyResume))
+    writeFileSync(join(dir2, 'resume.json'), JSON.stringify(emptyResume))
+    const row1 = makeMockDbRow({ sessionId: 'sess-1', companyName: 'Alpha Corp', directoryPath: dir1 })
+    const row2 = makeMockDbRow({ sessionId: 'sess-2', companyName: 'Beta Inc', directoryPath: dir2 })
     mockAll.mockReturnValue([row1, row2])
 
     const sessions = await callHandler<Session[]>('sessions:getAll')
@@ -549,12 +564,15 @@ describe('sessions:getAll', () => {
     expect(sessions[0].resume?.experience[0].company).toBe('Alpha')
   })
 
-  it('returns null resume for sessions whose directory has no resume.json', async () => {
-    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: null })])
+  it('cleans up and excludes sessions whose directory has no resume.json', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'eng_abandoned')
+    mkdirSync(sessionDir, { recursive: true })
+    // No resume.json created — simulates abandoned mid-generation session.
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
 
     const sessions = await callHandler<Session[]>('sessions:getAll')
 
-    expect(sessions[0].resume).toBeNull()
+    expect(sessions).toHaveLength(0)
   })
 })
 
