@@ -23,7 +23,7 @@ preview:
 
 # Run unit tests
 test:
-    npx vitest
+    npx vitest run
 
 # Run tests in watch mode
 test-watch:
