@@ -35,11 +35,14 @@
 //   - Wire SpendingWarningBanner: pass spendTotal.totalUsd and settings.spendingLimit.
 //   - Wire SpendingLimitDialog before writingProfile:regenerate calls.
 
+import { useState, useEffect } from 'react'
 import { Box, Button, Divider, Typography } from '@mui/material'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import EditIcon from '@mui/icons-material/Edit'
 import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
-import type { WritingProfile } from '@shared/types'
+import UsageCounter from '../molecules/UsageCounter'
+import { useAppSelector } from '../../hooks'
+import type { WritingProfile, SpendTotal, LastAiOp } from '@shared/types'
 
 export default function WritingProfilePage(): JSX.Element {
   // TODO: const [profile, setProfile] = useState<WritingProfile | null>(null)
@@ -47,58 +50,23 @@ export default function WritingProfilePage(): JSX.Element {
   // TODO: const [isRegenerating, setIsRegenerating] = useState(false)
   // TODO: const [regenError, setRegenError] = useState<string | null>(null)
   // TODO: const [unincorporatedCoverLetters, setUnincorporatedCoverLetters] = useState<UnincorporatedCoverLetter[]>([])
-  // TODO: const [spendTotal, setSpendTotal] = useState<SpendTotal | null>(null)
-  // TODO: const lastAiOp = useAppSelector(state => state.ui.lastAiOp)
-  // TODO: const settings = useAppSelector(state => state.settings)
+  const [spendTotal, setSpendTotal] = useState<SpendTotal | null>(null)
+  const lastAiOp = useAppSelector((state) => state.ui.lastAiOp)
+  const settings = useAppSelector((state) => state.settings)
   // TODO: const dispatch = useAppDispatch()
 
-  // TODO: useEffect(() => {
-  //   Promise.all([
-  //     window.api.writingProfile.get(),
-  //     window.api.spendLog.getTotal(),
-  //     window.api.docs.getAll(),
-  //     window.api.applications.getAll()
-  //   ]).then(([prof, spend, docs, apps]) => {
-  //     setProfile(prof)
-  //     setSpendTotal(spend)
-  //     const unincorpDocs = docs.filter(d =>
-  //       d.type === 'cover_letter' && d.writingProfileIncorporatedAt === null
-  //     )
-  //     const unincorpSessions = apps.filter(a =>
-  //       a.coverLetterStatus === 'finalized' &&
-  //       (a.coverLetterWritingProfileIncorporatedAt === null ||
-  //         (a.coverLetterLastFinalizedAt !== null &&
-  //          a.coverLetterLastFinalizedAt > a.coverLetterWritingProfileIncorporatedAt))
-  //     )
-  //     setUnincorporatedCoverLetters([
-  //       ...unincorpDocs.map(d => ({ id: d.id, name: d.filename, sourceType: 'doc' as const })),
-  //       ...unincorpSessions.map(a => ({
-  //         id: a.id, name: `${a.companyName} — ${a.roleTitle}`, sourceType: 'session' as const
-  //       }))
-  //     ])
-  //   }).finally(() => setIsLoading(false))
-  // }, [])
+  useEffect(() => {
+    window.api.spendLog.getTotal().then(setSpendTotal)
+    // TODO: Promise.all([...]).then(...)
+  }, [])
 
   // TODO: async function handleRegenerate() {
-  //   if (settings.spendingLimit > 0) {
-  //     const { totalUsd } = await window.api.spendLog.getTotal()
-  //     if (totalUsd > settings.spendingLimit) { setShowSpendDialog(true); return }
-  //   }
-  //   setIsRegenerating(true)
-  //   setRegenError(null)
-  //   try {
-  //     const result = await window.api.writingProfile.regenerate()
-  //     setProfile(result)
-  //     // TODO: dispatch(setLastAiOp({ model, inputTokens, outputTokens, estimatedCostUsd }))
-  //     // TODO: mark all unincorporated cover letters as incorporated (see header TODOs above)
-  //     // TODO: clear unincorporatedCoverLetters list
-  //     await window.api.spendLog.getTotal().then(setSpendTotal)
-  //   } catch (err) {
-  //     setRegenError(String(err))
-  //   } finally {
-  //     setIsRegenerating(false)
-  //   }
+  //   ...
+  //   await window.api.spendLog.getTotal().then(setSpendTotal)
+  //   ...
   // }
+
+  const spendUsd = spendTotal?.totalUsd ?? 0
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -135,12 +103,10 @@ export default function WritingProfilePage(): JSX.Element {
       </Box>
 
       {/* AI usage info bar — STUB: Phase 5 */}
-      <AiUsageBar />
+      <AiUsageBar lastAiOp={lastAiOp} spendUsd={spendUsd} limitUsd={settings.spendingLimit} />
 
       {/* Spending-limit warning banner — STUB: Phase 4 */}
-      {/* Shown when 24h rolling spend exceeds the configured limit (limit > 0). */}
-      {/* TODO: replace placeholder 0 values with spendTotal.totalUsd and settings.spendingLimit */}
-      <SpendingWarningBanner spendUsd={0} limitUsd={0} />
+      <SpendingWarningBanner spendUsd={spendUsd} limitUsd={settings.spendingLimit} />
 
       {/* SpendingLimitDialog — STUB: Phase 4 */}
       {/* TODO: render before writingProfile:regenerate calls */}
@@ -190,17 +156,15 @@ export default function WritingProfilePage(): JSX.Element {
 
 // ─── AI Usage Info Bar ────────────────────────────────────────────────────────
 
-// STUB: Phase 5 — renders placeholder text; not yet connected to real data.
-// Same pattern as AiUsageBar in MasterCVPage.
-// TODO:
-//   - Read lastAiOp from uiSlice (state.ui.lastAiOp) for per-operation token counts and cost.
-//   - Read spendTotal from local component state (fetched via window.api.spendLog.getTotal).
-//   - Read settings.spendingLimit from Redux.
-//   - When lastAiOp is null, show "No AI operation yet".
-//   - When spendingLimit > 0, show "24h: $X.XX / $Y.YY"; turn spend text orange when over limit.
-function AiUsageBar(): JSX.Element {
-  // TODO: const lastAiOp = useAppSelector(state => state.ui.lastAiOp)
-  // TODO: const spendingLimit = useAppSelector(state => state.settings.spendingLimit)
+function AiUsageBar({
+  lastAiOp,
+  spendUsd,
+  limitUsd
+}: {
+  lastAiOp: LastAiOp | null
+  spendUsd: number
+  limitUsd: number
+}): JSX.Element {
   return (
     <Box
       sx={{
@@ -210,22 +174,10 @@ function AiUsageBar(): JSX.Element {
         py: 0.75,
         display: 'flex',
         alignItems: 'center',
-        gap: 3,
         flexShrink: 0
       }}
     >
-      {/* TODO: when lastAiOp is set, render: "{model} · {inputTokens}k in · {outputTokens} out · ~${estimatedCostUsd.toFixed(3)}" */}
-      <Typography sx={{ fontSize: 11.5, color: '#9eaab5' }}>
-        {/* e.g. "claude-sonnet-4-6  ·  Last run: 12.4k in · 1.1k out · ~$0.04" */}
-        No AI operation yet
-      </Typography>
-      <Box sx={{ flex: 1 }} />
-      {/* TODO: render "24h: ${spendTotal.totalUsd.toFixed(2)} / ${spendingLimit.toFixed(2)}" when spendingLimit > 0 */}
-      {/* TODO: color="error" when spendTotal.totalUsd > spendingLimit */}
-      <Typography sx={{ fontSize: 11.5, color: '#9eaab5' }}>
-        {/* e.g. "24h: $0.04 / $5.00" */}
-        24h spend: —
-      </Typography>
+      <UsageCounter lastAiOp={lastAiOp} spendUsd={spendUsd} limitUsd={limitUsd} />
     </Box>
   )
 }

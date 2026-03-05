@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Button, CircularProgress, Typography, TextField } from '@mui/material'
 import SessionHeader from '../organisms/SessionHeader'
 import SessionTabs, { type SessionTab } from '../organisms/SessionTabs'
@@ -11,10 +11,11 @@ import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
 import { useAppSelector, useAppDispatch } from '../../hooks'
 import { updateSession } from '../../store/slices/sessionsSlice'
 import { setSaveState } from '../../store/slices/uiSlice'
-import type { Session, ContactInfo, ResumeJson } from '@shared/types'
+import type { Session, ContactInfo, ResumeJson, SpendTotal } from '@shared/types'
 
 export default function SessionPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<SessionTab>('resume')
+  const [spendTotal, setSpendTotal] = useState<SpendTotal | null>(null)
   const dispatch = useAppDispatch()
 
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
@@ -22,6 +23,11 @@ export default function SessionPage(): JSX.Element {
     state.sessions.sessions.find((s) => s.id === activeSessionId)
   )
   const contact = useAppSelector((state) => state.settings.contactInfo)
+  const settings = useAppSelector((state) => state.settings)
+
+  useEffect(() => {
+    window.api.spendLog.getTotal().then(setSpendTotal)
+  }, [])
 
   const handleUpdateResume = async (updates: Partial<ResumeJson>): Promise<void> => {
     if (!session || !session.resume) return
@@ -71,13 +77,20 @@ export default function SessionPage(): JSX.Element {
     )
   }
 
+  const spendUsd = spendTotal?.totalUsd ?? 0
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       <SessionHeader session={session} />
-      <SessionTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <SessionTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        spendUsd={spendUsd}
+        limitUsd={settings.spendingLimit}
+      />
 
       {/* Spending-limit warning banner — STUB: Phase 4 */}
-      <SpendingWarningBanner spendUsd={0} limitUsd={0} />
+      <SpendingWarningBanner spendUsd={spendUsd} limitUsd={settings.spendingLimit} />
 
       <Box
         sx={{

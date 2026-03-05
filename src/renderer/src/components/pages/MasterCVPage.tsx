@@ -24,58 +24,41 @@
 //   - Wire SpendingWarningBanner: pass spendTotal.totalUsd and settings.spendingLimit.
 //   - Wire SpendingLimitDialog before masterCV:regenerate calls.
 
+import { useState, useEffect } from 'react'
 import { Box, Button, Chip, Divider, IconButton, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
-import type { MasterCVExperienceEntry, MasterCVBullet } from '@shared/types'
+import UsageCounter from '../molecules/UsageCounter'
+import { useAppSelector } from '../../hooks'
+import type { MasterCVExperienceEntry, MasterCVBullet, SpendTotal, LastAiOp } from '@shared/types'
 
 export default function MasterCVPage(): JSX.Element {
   // TODO: const [masterCV, setMasterCV] = useState<MasterCV>({ experience: [], education: [], skills: [] })
   // TODO: const [isLoading, setIsLoading] = useState(true)
-  // TODO: const [spendTotal, setSpendTotal] = useState<SpendTotal | null>(null)
+  const [spendTotal, setSpendTotal] = useState<SpendTotal | null>(null)
   // TODO: const [unincorporatedDocs, setUnincorporatedDocs] = useState<UnincorporatedDoc[]>([])
   // TODO: const [isRegenerating, setIsRegenerating] = useState(false)
   // TODO: const [suggestions, setSuggestions] = useState<RegenSuggestion[]>([])
   // TODO: const [regenError, setRegenError] = useState<string | null>(null)
-  // TODO: const lastAiOp = useAppSelector(state => state.ui.lastAiOp)
-  // TODO: const settings = useAppSelector(state => state.settings)
+  const lastAiOp = useAppSelector((state) => state.ui.lastAiOp)
+  const settings = useAppSelector((state) => state.settings)
   // TODO: const dispatch = useAppDispatch()
 
-  // TODO: useEffect(() => {
-  //   Promise.all([
-  //     window.api.masterCV.get(),
-  //     window.api.spendLog.getTotal(),
-  //     window.api.applications.getAll()
-  //   ]).then(([cv, spend, apps]) => {
-  //     setMasterCV(cv)
-  //     setSpendTotal(spend)
-  //     const unincorp = apps.filter(a =>
-  //       (a.resumeLastFinalizedAt &&
-  //         (!a.resumeIncorporatedAt || a.resumeLastFinalizedAt > a.resumeIncorporatedAt)) ||
-  //       (a.coverLetterLastFinalizedAt &&
-  //         (!a.coverLetterIncorporatedAt || a.coverLetterLastFinalizedAt > a.coverLetterIncorporatedAt))
-  //     )
-  //     setUnincorporatedDocs(unincorp)
-  //   }).finally(() => setIsLoading(false))
-  // }, [])
+  useEffect(() => {
+    window.api.spendLog.getTotal().then(setSpendTotal)
+    // TODO: Promise.all([...]).then(...)
+  }, [])
 
   // TODO: async function handleRegenerate(documentIds?: string[]) {
-  //   setIsRegenerating(true)
-  //   setRegenError(null)
-  //   try {
-  //     const result = await window.api.masterCV.regenerate(documentIds)
-  //     setSuggestions(result)
-  //     // TODO: dispatch(setLastAiOp({ model, inputTokens, outputTokens, estimatedCostUsd }))
-  //     await window.api.spendLog.getTotal().then(setSpendTotal)
-  //   } catch (err) {
-  //     setRegenError(String(err))
-  //   } finally {
-  //     setIsRegenerating(false)
-  //   }
+  //   ...
+  //   await window.api.spendLog.getTotal().then(setSpendTotal)
+  //   ...
   // }
+
+  const spendUsd = spendTotal?.totalUsd ?? 0
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -112,12 +95,11 @@ export default function MasterCVPage(): JSX.Element {
       </Box>
 
       {/* AI usage info bar — STUB: Phase 3 */}
-      <AiUsageBar />
+      <AiUsageBar lastAiOp={lastAiOp} spendUsd={spendUsd} limitUsd={settings.spendingLimit} />
 
       {/* Spending-limit warning banner — STUB: Phase 4 */}
       {/* Shown when 24h rolling spend exceeds the configured limit (limit > 0). */}
-      {/* TODO: replace placeholder 0 values with spendTotal.totalUsd and settings.spendingLimit */}
-      <SpendingWarningBanner spendUsd={0} limitUsd={0} />
+      <SpendingWarningBanner spendUsd={spendUsd} limitUsd={settings.spendingLimit} />
 
       {/* SpendingLimitDialog — STUB: Phase 4 */}
       {/* TODO: render before masterCV:regenerate calls */}
@@ -179,16 +161,15 @@ export default function MasterCVPage(): JSX.Element {
 
 // ─── AI Usage Info Bar ────────────────────────────────────────────────────────
 
-// STUB: Phase 3 — renders placeholder text; not yet connected to real data.
-// TODO:
-//   - Read lastAiOp from uiSlice (state.ui.lastAiOp) for per-operation token counts and cost.
-//   - Read spendTotal from local component state (fetched via window.api.spendLog.getTotal).
-//   - Read settings.spendingLimit from Redux.
-//   - When lastAiOp is null, show "No AI operation yet".
-//   - When spendingLimit > 0, show "24h: $X.XX / $Y.YY"; turn the spend text orange when over limit.
-function AiUsageBar(): JSX.Element {
-  // TODO: const lastAiOp = useAppSelector(state => state.ui.lastAiOp)
-  // TODO: const spendingLimit = useAppSelector(state => state.settings.spendingLimit)
+function AiUsageBar({
+  lastAiOp,
+  spendUsd,
+  limitUsd
+}: {
+  lastAiOp: LastAiOp | null
+  spendUsd: number
+  limitUsd: number
+}): JSX.Element {
   return (
     <Box
       sx={{
@@ -198,22 +179,10 @@ function AiUsageBar(): JSX.Element {
         py: 0.75,
         display: 'flex',
         alignItems: 'center',
-        gap: 3,
         flexShrink: 0
       }}
     >
-      {/* TODO: when lastAiOp is set, render: "{lastAiOp.model} · {lastAiOp.inputTokens}k in · {lastAiOp.outputTokens} out · ~${lastAiOp.estimatedCostUsd.toFixed(3)}" */}
-      <Typography sx={{ fontSize: 11.5, color: '#9eaab5' }}>
-        {/* e.g. "claude-sonnet-4-6  ·  Last run: 8.1k in · 2.4k out · ~$0.06" */}
-        No AI operation yet
-      </Typography>
-      <Box sx={{ flex: 1 }} />
-      {/* TODO: render "24h: ${spendTotal.totalUsd.toFixed(2)} / ${spendingLimit.toFixed(2)}" when spendingLimit > 0 */}
-      {/* TODO: color="error" when spendTotal.totalUsd > spendingLimit */}
-      <Typography sx={{ fontSize: 11.5, color: '#9eaab5' }}>
-        {/* e.g. "24h: $0.14 / $5.00" */}
-        24h spend: —
-      </Typography>
+      <UsageCounter lastAiOp={lastAiOp} spendUsd={spendUsd} limitUsd={limitUsd} />
     </Box>
   )
 }
