@@ -1,18 +1,9 @@
-// STUB: Phase 2 — restore sessions on launch not yet wired.
-// TODO (Phase 2 restore sessions):
-//   useEffect(() => {
-//     window.api.sessions.getAll().then(sessions => {
-//       dispatch(setSessions(sessions))
-//       if (sessions.length > 0) {
-//         dispatch(setActiveSessionId(sessions[0].id))
-//         dispatch(setActivePage('session'))
-//       }
-//     })
-//   }, [])
-
 import { useEffect } from 'react'
+import { Box, CircularProgress } from '@mui/material'
 import { useAppDispatch, useAppSelector } from './hooks'
-import { hydrate } from './store/slices/settingsSlice'
+import { hydrate as hydrateSettings } from './store/slices/settingsSlice'
+import { hydrate as hydrateSessions, setActiveSession } from './store/slices/sessionsSlice'
+import { setActivePage } from './store/slices/uiSlice'
 import AppShell from './components/organisms/AppShell'
 import OnboardingPage from './components/pages/OnboardingPage'
 import SessionPage from './components/pages/SessionPage'
@@ -26,12 +17,36 @@ export default function App(): JSX.Element {
   const dispatch = useAppDispatch()
   const activePage = useAppSelector((state) => state.ui.activePage)
   const onboardingComplete = useAppSelector((state) => state.settings.onboardingComplete)
+  const initialized = useAppSelector((state) => state.settings.initialized)
 
   useEffect(() => {
     window.api.settings.get().then((settings) => {
-      dispatch(hydrate(settings))
+      dispatch(hydrateSettings(settings))
+    })
+    window.api.sessions.getAll().then((sessions) => {
+      if (sessions.length > 0) {
+        dispatch(hydrateSessions({ sessions, activeSessionId: sessions[0].id }))
+        dispatch(setActivePage('session'))
+      }
     })
   }, [dispatch])
+
+  if (!initialized) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          height: '100vh',
+          width: '100vw',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default'
+        }}
+      >
+        <CircularProgress size={48} thickness={4} />
+      </Box>
+    )
+  }
 
   return (
     <>

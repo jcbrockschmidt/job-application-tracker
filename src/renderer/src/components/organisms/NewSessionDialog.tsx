@@ -25,7 +25,7 @@ import {
 } from '@mui/material'
 import { useAppDispatch } from '../../hooks'
 import { addSession, updateSession, removeSession } from '../../store/slices/sessionsSlice'
-import { setActivePage } from '../../store/slices/uiSlice'
+import { setActivePage, setLastAiOp } from '../../store/slices/uiSlice'
 
 interface NewSessionDialogProps {
   open: boolean
@@ -63,6 +63,8 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
     try {
       const resume = await window.api.generate.resume(sessionId)
       dispatch(updateSession({ id: sessionId, updates: { resume, isGenerating: false } }))
+      const lastOp = await window.api.spendLog.getLastOp()
+      dispatch(setLastAiOp(lastOp))
     } catch {
       // Remove the session from the store — it will be cleaned from the DB on next restart.
       dispatch(removeSession(sessionId))

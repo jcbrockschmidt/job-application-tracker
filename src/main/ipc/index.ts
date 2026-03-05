@@ -225,15 +225,18 @@ async function generateResumeFromCV(
     ...tailorResumePrompt(masterCV, jobDescription)
   })
 
-  const toolBlock = response.content.find(b => b.type === 'tool_use')
+  const toolBlock = response.content.find((b) => b.type === 'tool_use')
   let resume: ResumeJson
   if (toolBlock && toolBlock.type === 'tool_use') {
     resume = toolBlock.input as ResumeJson
   } else {
-    const textBlock = response.content.find(b => b.type === 'text')
+    const textBlock = response.content.find((b) => b.type === 'text')
     if (!textBlock || textBlock.type !== 'text')
       throw new Error('Resume generation returned no structured output')
-    const raw = textBlock.text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+    const raw = textBlock.text
+      .replace(/^```(?:json)?\n?/, '')
+      .replace(/\n?```$/, '')
+      .trim()
     resume = JSON.parse(raw) as ResumeJson
   }
 
@@ -353,15 +356,18 @@ export function registerIpcHandlers(): void {
           model,
           ...extractCompanyRolePrompt(jobDescription)
         })
-        const toolBlock = extractResponse.content.find(b => b.type === 'tool_use')
+        const toolBlock = extractResponse.content.find((b) => b.type === 'tool_use')
         let extracted: { company?: string; role?: string }
         if (toolBlock && toolBlock.type === 'tool_use') {
           extracted = toolBlock.input as { company?: string; role?: string }
         } else {
-          const textBlock = extractResponse.content.find(b => b.type === 'text')
+          const textBlock = extractResponse.content.find((b) => b.type === 'text')
           if (!textBlock || textBlock.type !== 'text')
             throw new Error('No tool_use block in extract response')
-          const raw = textBlock.text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+          const raw = textBlock.text
+            .replace(/^```(?:json)?\n?/, '')
+            .replace(/\n?```$/, '')
+            .trim()
           extracted = JSON.parse(raw) as { company?: string; role?: string }
         }
         companyName = extracted.company?.trim() || companyName
@@ -576,7 +582,9 @@ export function registerIpcHandlers(): void {
       if (type === 'resume') {
         const sourceLabel = `${originalFilename} uploaded ${formatUploadMonth(uploadedAt)}`
         if (isPlaceholderMode()) {
-          writeMasterCV(mergeMasterCV(readMasterCV(), rawToMasterCV(PLACEHOLDER_RAW_CV, sourceLabel)))
+          writeMasterCV(
+            mergeMasterCV(readMasterCV(), rawToMasterCV(PLACEHOLDER_RAW_CV, sourceLabel))
+          )
         } else {
           const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
           if (!apiKey) throw new Error('API key not configured — validate it in Settings')
@@ -590,15 +598,18 @@ export function registerIpcHandlers(): void {
             ...extractResumePrompt(text)
           })
 
-          const toolBlock = response.content.find(b => b.type === 'tool_use')
+          const toolBlock = response.content.find((b) => b.type === 'tool_use')
           let parsed: RawExtractedCV
           if (toolBlock && toolBlock.type === 'tool_use') {
             parsed = toolBlock.input as RawExtractedCV
           } else {
-            const textBlock = response.content.find(b => b.type === 'text')
+            const textBlock = response.content.find((b) => b.type === 'text')
             if (!textBlock || textBlock.type !== 'text')
               throw new Error('Resume extraction returned no structured output')
-            const raw = textBlock.text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+            const raw = textBlock.text
+              .replace(/^```(?:json)?\n?/, '')
+              .replace(/\n?```$/, '')
+              .trim()
             parsed = JSON.parse(raw) as RawExtractedCV
           }
           writeMasterCV(mergeMasterCV(readMasterCV(), rawToMasterCV(parsed, sourceLabel)))
@@ -796,11 +807,26 @@ export function registerIpcHandlers(): void {
 
   // ─── Spend Log ───────────────────────────────────────────────────────────────
   // STUB: Phase 3
-
   ipcMain.handle('spendLog:getTotal', async () => {
+    // STUB: Phase 3
     // TODO: Query the spend_log table for rows where timestamp >= (now - 24 hours).
     // Sum estimatedCostUsd. Return a SpendTotal object with totalUsd and periodHours: 24.
     throw new Error('Not implemented')
+  })
+
+  ipcMain.handle('spendLog:getLastOp', async () => {
+    const db = getDb()
+    const latest = db.select().from(spendLog).orderBy(desc(spendLog.timestamp)).limit(1).all()
+
+    if (latest.length === 0) return null
+
+    const op = latest[0]
+    return {
+      model: op.model,
+      inputTokens: op.inputTokens,
+      outputTokens: op.outputTokens,
+      estimatedCostUsd: op.estimatedCostUsd
+    }
   })
 
   // ─── Export ──────────────────────────────────────────────────────────────────

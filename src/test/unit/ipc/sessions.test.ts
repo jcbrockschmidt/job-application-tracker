@@ -527,8 +527,16 @@ describe('sessions:getAll', () => {
     const emptyResume: ResumeJson = { experience: [], education: [], skills: [] }
     writeFileSync(join(dir1, 'resume.json'), JSON.stringify(emptyResume))
     writeFileSync(join(dir2, 'resume.json'), JSON.stringify(emptyResume))
-    const row1 = makeMockDbRow({ sessionId: 'sess-1', companyName: 'Alpha Corp', directoryPath: dir1 })
-    const row2 = makeMockDbRow({ sessionId: 'sess-2', companyName: 'Beta Inc', directoryPath: dir2 })
+    const row1 = makeMockDbRow({
+      sessionId: 'sess-1',
+      companyName: 'Alpha Corp',
+      directoryPath: dir1
+    })
+    const row2 = makeMockDbRow({
+      sessionId: 'sess-2',
+      companyName: 'Beta Inc',
+      directoryPath: dir2
+    })
     mockAll.mockReturnValue([row1, row2])
 
     const sessions = await callHandler<Session[]>('sessions:getAll')

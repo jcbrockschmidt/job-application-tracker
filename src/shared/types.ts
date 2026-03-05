@@ -229,6 +229,13 @@ export interface SpendTotal {
   periodHours: 24
 }
 
+export interface LastAiOp {
+  model: string
+  inputTokens: number
+  outputTokens: number
+  estimatedCostUsd: number
+}
+
 // ─── Session ──────────────────────────────────────────────────────────────────
 
 export interface Session {
@@ -319,6 +326,8 @@ export interface WindowAPI {
   spendLog: {
     // Returns the sum of estimated costs for AI operations in the last 24 hours.
     getTotal: () => Promise<SpendTotal>
+    // Returns the most recent AI operation logged.
+    getLastOp: () => Promise<LastAiOp | null>
   }
 
   backup: {

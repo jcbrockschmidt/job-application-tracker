@@ -45,6 +45,11 @@ describe('initial state', () => {
     expect(store.getState().settings.onboardingComplete).toBe(false)
   })
 
+  it('is not initialized by default', () => {
+    const store = makeStore()
+    expect(store.getState().settings.initialized).toBe(false)
+  })
+
   it('starts with all contact fields empty', () => {
     const { contactInfo } = makeStore().getState().settings
     expect(contactInfo.fullName).toBe('')
@@ -229,7 +234,7 @@ describe('hydrate', () => {
       onboardingComplete: true
     }
     store.dispatch(hydrate(loaded))
-    expect(store.getState().settings).toEqual(loaded)
+    expect(store.getState().settings).toEqual({ ...loaded, initialized: true })
   })
 
   it('does not show the onboarding overlay when onboardingComplete: true is hydrated', () => {

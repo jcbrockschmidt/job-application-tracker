@@ -1,49 +1,54 @@
 // Renders a ResumeJson as the fixed single-column resume template.
 // Matches the visual design in docs/resume-template-preview.html and docs/mockup.html.
-//
-// STUB: Phase 1 — section structure and styling are scaffolded; hover toolbars
-// and inline editing are not yet implemented.
-// STUB: Phase 4 — hover toolbar shapes (BulletHoverToolbar, EntryReviseChip,
-// SectionReviseChip) rendered; InlineRevisionPanel expansion not yet wired.
-// STUB: Phase 7 — accessibility hooks identified below; not yet implemented.
-// TODO (Phase 1):
-//   - Inline bullet editing: clicking Edit in BulletHoverToolbar turns the bullet
-//     into an in-place text input; Save commits (push to undo stack); Escape cancels.
-// TODO (Phase 4):
-//   - Pass sessionId as a prop so hover toolbar components can open InlineRevisionPanel
-//     with the right session context and call generate:revise.
-//   - BulletHoverToolbar "Revise with AI": expand InlineRevisionPanel beneath the bullet.
-//     Use bullet index as scope until a stable per-bullet ID is added to ResumeJson.
-//   - EntryReviseChip: expand InlineRevisionPanel beneath the entry
-//     (scope = entry index or company+title key).
-//   - SectionReviseChip: expand InlineRevisionPanel beneath the section heading
-//     (scope = 'experience' | 'skills').
-//   - Gate all generate:revise calls through SpendingLimitDialog when over limit.
-//   - Push old text onto the undo stack (useUndoRedo) before applying accepted revisions.
-// TODO (Phase 7 — keyboard navigation):
-//   - BulletItem: show BulletHoverToolbar when the item receives keyboard focus (onFocus),
-//     not only on mouse hover. Hide on blur (onBlur) unless focus has moved into the
-//     toolbar itself — use relatedTarget to detect this.
-//   - EntryReviseChip / SectionReviseChip: same focus-based visibility — the chip must be
-//     keyboard-reachable even when the mouse has never hovered the entry/section.
-// TODO (Phase 7 — color contrast):
-//   - Audit custom color values '#1e3a5f' (section heading), '#6b7280' (secondary text),
-//     '#9eaab5', and '#8fa3b5' (sidebar text) against their backgrounds. Each must meet
-//     WCAG AA: 4.5:1 for normal text, 3:1 for large/bold text. Fix failures.
 
 import { useState } from 'react'
-import { Box, Button, IconButton, Typography } from '@mui/material'
+import { Box, Button, IconButton, Typography, TextField } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
+import CheckIcon from '@mui/icons-material/Check'
+import CloseIcon from '@mui/icons-material/Close'
 import type { ResumeJson, ContactInfo } from '@shared/types'
 
 interface ResumePaperProps {
   resume: ResumeJson
   contact: ContactInfo
-  // TODO (Phase 4): add sessionId: string so hover toolbars can call generate:revise
+  onUpdateResume?: (updates: Partial<ResumeJson>) => void
 }
 
-export default function ResumePaper({ resume, contact }: ResumePaperProps): JSX.Element {
+export default function ResumePaper({
+  resume,
+  contact,
+  onUpdateResume
+}: ResumePaperProps): JSX.Element {
+  const handleBulletSave = (
+    section: 'experience' | 'skills',
+    index: number,
+    bulletIndex: number,
+    newText: string
+  ): void => {
+    if (!onUpdateResume) return
+
+    if (section === 'experience') {
+      const newExperience = [...resume.experience]
+      const entry = { ...newExperience[index] }
+      entry.bullets = [...entry.bullets]
+      entry.bullets[bulletIndex] = newText
+      newExperience[index] = entry
+      onUpdateResume({ experience: newExperience })
+    }
+    // ... skills editing stubbed
+  }
+
+  const handleHeaderSave = (
+    index: number,
+    updates: Partial<ResumeJson['experience'][number]>
+  ): void => {
+    if (!onUpdateResume) return
+    const newExperience = [...resume.experience]
+    newExperience[index] = { ...newExperience[index], ...updates }
+    onUpdateResume({ experience: newExperience })
+  }
+
   return (
     <Box
       sx={{
@@ -62,39 +67,14 @@ export default function ResumePaper({ resume, contact }: ResumePaperProps): JSX.
 
       {/* Experience */}
       {resume.experience.length > 0 && (
-        // STUB: Phase 4 — SectionReviseChip shown on heading hover (see ResumeSection)
         <ResumeSection title="Experience" sectionScope="experience">
           {resume.experience.map((entry, i) => (
-            <Box key={i} sx={{ mb: 1.625, position: 'relative' }}>
-              {/* STUB: Phase 4 — EntryReviseChip floats over the top-right corner on entry hover */}
-              <EntryReviseChip entryLabel={`${entry.title} · ${entry.company}`} />
-
-              <Box
-                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
-              >
-                <Typography sx={{ fontSize: '10.5pt', fontWeight: 600, color: '#111827' }}>
-                  {entry.title} · {entry.company}
-                </Typography>
-                <Typography sx={{ fontSize: '9.5pt', color: '#6b7280', ml: 1.5, flexShrink: 0 }}>
-                  {entry.startDate} – {entry.endDate}
-                </Typography>
-              </Box>
-              <Box component="ul" sx={{ listStyle: 'none', mt: 0.5, pl: 1.75, mb: 0 }}>
-                {entry.bullets.map((bullet, j) => (
-                  // STUB: Phase 4 — BulletHoverToolbar shown on bullet hover
-                  <BulletItem key={j} bullet={bullet} />
-                ))}
-              </Box>
-
-              {/* InlineRevisionPanel for entry-level revisions — STUB: Phase 4 */}
-              {/* TODO: render when entryReviseOpen === i */}
-              {/* <InlineRevisionPanel
-                    scope={`entry:${i}`}
-                    currentText={entry.bullets.join('\n')}
-                    onAccept={(newText) => { ... apply parsed newText to resume.experience[i] ... }}
-                    onClose={() => setEntryReviseOpen(null)}
-                  /> */}
-            </Box>
+            <ExperienceEntry
+              key={i}
+              entry={entry}
+              onBulletSave={(bulletIdx, text) => handleBulletSave('experience', i, bulletIdx, text)}
+              onHeaderSave={(updates) => handleHeaderSave(i, updates)}
+            />
           ))}
         </ResumeSection>
       )}
@@ -125,12 +105,35 @@ export default function ResumePaper({ resume, contact }: ResumePaperProps): JSX.
 
       {/* Skills */}
       {resume.skills.length > 0 && (
-        // STUB: Phase 4 — SectionReviseChip shown on heading hover (see ResumeSection)
         <ResumeSection title="Skills" sectionScope="skills">
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.375 }}>
+          <Box
+            component="ul"
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.375,
+              listStyle: 'none',
+              p: 0,
+              m: 0
+            }}
+          >
             {resume.skills.map((cat, i) => (
-              // STUB: Phase 4 — BulletHoverToolbar shown on hover for each skill row
-              <BulletItem key={i} bullet={`${cat.category}: ${cat.items.join(', ')}`} />
+              <BulletItem
+                key={i}
+                noBullet
+                bullet={`${cat.category}: ${cat.items.join(', ')}`}
+                onSave={() => {
+                  /* TODO: Skills editing */
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{ fontSize: '10.5pt', fontWeight: 600, color: '#111827' }}
+                >
+                  {cat.category} :
+                </Box>{' '}
+                {cat.items.join(', ')}
+              </BulletItem>
             ))}
           </Box>
         </ResumeSection>
@@ -139,39 +142,157 @@ export default function ResumePaper({ resume, contact }: ResumePaperProps): JSX.
   )
 }
 
-// ─── Phase 4 stub: Bullet Item ────────────────────────────────────────────────
+// ─── Experience Entry ──────────────────────────────────────────────────────────
 
-// Renders a single bullet (or skill row) with a dark popup hover toolbar.
-//
-// STUB: Phase 4 — hover state wired; toolbar buttons are not yet connected to
-// InlineRevisionPanel or the inline edit TextField.
-// STUB: Phase 7 — keyboard focus stub added; toolbar must show on focus too.
-// TODO (Phase 1):
-//   - Edit button: replace the bullet Typography with a controlled TextField (single line);
-//     on Save, push old text to undo stack then call a parent-supplied onBulletSave callback;
-//     on Escape / Cancel, restore the original text.
-// TODO (Phase 4):
-//   - "Revise with AI" button: set reviseOpen = true to expand InlineRevisionPanel
-//     beneath this bullet. Needs sessionId threaded from ResumePaperProps.
-//   - InlineRevisionPanel onAccept: push old text to undo stack, call onBulletSave, close.
-// TODO (Phase 7):
-//   - Add onFocus / onBlur handlers so the toolbar is keyboard-accessible.
-//     On blur, only hide if relatedTarget is outside both the bullet and the toolbar.
+function ExperienceEntry({
+  entry,
+  onBulletSave,
+  onHeaderSave
+}: {
+  entry: ResumeJson['experience'][number]
+  onBulletSave: (bulletIdx: number, text: string) => void
+  onHeaderSave: (updates: Partial<ResumeJson['experience'][number]>) => void
+}): JSX.Element {
+  const [entryHovered, setEntryHovered] = useState(false)
+  const [isEditingHeader, setIsEditingHeader] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(entry.title)
+  const [companyDraft, setCompanyDraft] = useState(entry.company)
 
-function BulletItem({ bullet }: { bullet: string }): JSX.Element {
+  const handleHeaderSave = (): void => {
+    onHeaderSave({ title: titleDraft, company: companyDraft })
+    setIsEditingHeader(false)
+  }
+
+  const handleHeaderCancel = (): void => {
+    setTitleDraft(entry.title)
+    setCompanyDraft(entry.company)
+    setIsEditingHeader(false)
+  }
+
+  return (
+    <Box
+      onMouseEnter={() => setEntryHovered(true)}
+      onMouseLeave={() => setEntryHovered(false)}
+      sx={{
+        mb: 1.625,
+        position: 'relative',
+        borderRadius: '4px',
+        bgcolor: entryHovered ? '#f5f7fa' : 'transparent',
+        transition: 'background-color 0.1s',
+        mx: -1.5,
+        px: 1.5,
+        py: 1,
+        mt: -1
+      }}
+    >
+      <EntryReviseChip entryLabel={`${entry.title} · ${entry.company}`} visible={entryHovered} />
+
+      {isEditingHeader ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              size="small"
+              label="Title"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleHeaderSave()
+                if (e.key === 'Escape') handleHeaderCancel()
+              }}
+              slotProps={{ input: { sx: { fontSize: '10.5pt', fontWeight: 700 } } }}
+              sx={{ flex: 2 }}
+            />
+            <TextField
+              size="small"
+              label="Company"
+              value={companyDraft}
+              onChange={(e) => setCompanyDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleHeaderSave()
+                if (e.key === 'Escape') handleHeaderCancel()
+              }}
+              slotProps={{ input: { sx: { fontSize: '10.5pt', fontWeight: 700 } } }}
+              sx={{ flex: 3 }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <IconButton size="small" onClick={handleHeaderCancel}>
+              <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton size="small" onClick={handleHeaderSave} sx={{ color: '#4caf50' }}>
+              <CheckIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      ) : (
+        <Box
+          onClick={() => setIsEditingHeader(true)}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            cursor: 'pointer',
+            borderRadius: '2px',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' }
+          }}
+        >
+          <Typography sx={{ fontSize: '10.5pt', fontWeight: 600, color: '#111827' }}>
+            {entry.title} · {entry.company}
+          </Typography>
+          <Typography sx={{ fontSize: '9.5pt', color: '#6b7280', ml: 1.5, flexShrink: 0 }}>
+            {entry.startDate} – {entry.endDate}
+          </Typography>
+        </Box>
+      )}
+
+      <Box component="ul" sx={{ listStyle: 'none', mt: 0.5, pl: 1.75, mb: 0 }}>
+        {entry.bullets.map((bullet, j) => (
+          <BulletItem key={j} bullet={bullet} onSave={(text) => onBulletSave(j, text)} />
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
+// ─── Bullet Item ─────────────────────────────────────────────────────────────
+
+function BulletItem({
+  bullet,
+  onSave,
+  noBullet = false,
+  children
+}: {
+  bullet: string
+  onSave: (text: string) => void
+  noBullet?: boolean
+  children?: React.ReactNode
+}): JSX.Element {
   const [hovered, setHovered] = useState(false)
-  // TODO (Phase 7): const [focused, setFocused] = useState(false)
-  // TODO: const [isEditing, setIsEditing] = useState(false)
-  // TODO: const [draft, setDraft] = useState(bullet)
-  // TODO: const [reviseOpen, setReviseOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState(bullet)
+
+  const handleEdit = (): void => {
+    setDraft(bullet)
+    setIsEditing(true)
+    setHovered(false)
+  }
+
+  const handleSave = (): void => {
+    onSave(draft)
+    setIsEditing(false)
+  }
+
+  const handleCancel = (): void => {
+    setDraft(bullet)
+    setIsEditing(false)
+  }
 
   return (
     <Box
       component="li"
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => !isEditing && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      // TODO (Phase 7): onFocus={() => setFocused(true)}
-      // TODO (Phase 7): onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false) }}
       sx={{
         fontSize: '9.5pt',
         color: '#374151',
@@ -179,39 +300,63 @@ function BulletItem({ bullet }: { bullet: string }): JSX.Element {
         mb: 0.25,
         position: 'relative',
         borderRadius: '3px',
-        '&::before': { content: '"•"', position: 'absolute', left: -14, color: '#374151' },
+        '&::before': {
+          content: isEditing || noBullet ? 'none' : '"•"',
+          position: 'absolute',
+          left: -14,
+          color: '#374151'
+        },
         bgcolor: hovered ? '#f5f7fa' : 'transparent',
         transition: 'background-color 0.1s'
       }}
     >
-      {/* TODO (Phase 1): when isEditing, render TextField instead */}
-      {bullet}
-
-      {/* Dark popup toolbar — STUB: Phase 4 */}
-      {/* TODO (Phase 7): visible={hovered || focused} */}
-      <BulletHoverToolbar visible={hovered} />
-
-      {/* InlineRevisionPanel — STUB: Phase 4 */}
-      {/* TODO: render when reviseOpen === true */}
-      {/* <InlineRevisionPanel
-            scope={`bullet:${index}`}
-            currentText={bullet}
-            onAccept={(newText) => { onBulletSave(index, newText); setReviseOpen(false) }}
-            onClose={() => setReviseOpen(false)}
-          /> */}
+      {isEditing ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5, mb: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave()
+              if (e.key === 'Escape') handleCancel()
+            }}
+            slotProps={{ input: { sx: { fontSize: '9.5pt', py: 0.5 } } }}
+          />
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <IconButton size="small" onClick={handleCancel} sx={{ p: 0.25 }}>
+              <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton size="small" onClick={handleSave} sx={{ p: 0.25, color: '#4caf50' }}>
+              <CheckIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      ) : (
+        <Box
+          onClick={handleEdit}
+          sx={{
+            cursor: 'pointer',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+            borderRadius: '2px'
+          }}
+        >
+          {children || bullet}
+          <BulletHoverToolbar visible={hovered} onEdit={handleEdit} />
+        </Box>
+      )}
     </Box>
   )
 }
 
-// Dark popup toolbar shown above a bullet on hover (or on keyboard focus — Phase 7).
-// Contains an Edit icon button and a "Revise with AI" button.
-//
-// STUB: Phase 4 — rendered; buttons have no onClick handlers yet.
-// STUB: Phase 7 — aria-label added to Edit button; toolbar visibility must also
-//   respond to keyboard focus (see BulletItem TODO above).
-// TODO: accept onEdit and onRevise callbacks from BulletItem and wire them.
-
-function BulletHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
+function BulletHoverToolbar({
+  visible,
+  onEdit
+}: {
+  visible: boolean
+  onEdit: () => void
+}): JSX.Element {
   return (
     <Box
       sx={{
@@ -232,16 +377,14 @@ function BulletHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
         transition: 'opacity 0.12s'
       }}
     >
-      {/* TODO: onClick={() => onEdit()} */}
-      {/* STUB: Phase 7 — aria-label added; icon-only buttons must always have an accessible name */}
       <IconButton
         size="small"
         aria-label="Edit bullet"
+        onClick={onEdit}
         sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}
       >
         <EditIcon sx={{ fontSize: 13 }} />
       </IconButton>
-      {/* TODO: onClick={() => onRevise()} */}
       <Button
         size="small"
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
@@ -261,32 +404,25 @@ function BulletHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
   )
 }
 
-// ─── Phase 4 stub: Entry Revise Chip ─────────────────────────────────────────
-
-// Floating "Revise with AI" chip shown over the top-right corner of an experience
-// entry on hover. Does not displace the date line.
-//
-// STUB: Phase 4 — chip rendered; click not yet wired to InlineRevisionPanel.
-// TODO: accept an onRevise callback from the parent and call it on click.
-
-function EntryReviseChip({ entryLabel }: { entryLabel: string }): JSX.Element {
-  const [hovered, setHovered] = useState(false)
-
+function EntryReviseChip({
+  entryLabel,
+  visible
+}: {
+  entryLabel: string
+  visible: boolean
+}): JSX.Element {
   return (
     <Box
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       sx={{
         position: 'absolute',
-        top: 0,
-        right: 0,
+        top: 8,
+        right: 8,
         zIndex: 5,
-        opacity: hovered ? 1 : 0,
+        opacity: visible ? 1 : 0,
         transition: 'opacity 0.12s',
-        pointerEvents: hovered ? 'auto' : 'none'
+        pointerEvents: visible ? 'auto' : 'none'
       }}
     >
-      {/* TODO: onClick → set entryReviseOpen for this entry in the parent */}
       <Button
         size="small"
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
@@ -329,9 +465,6 @@ function ResumeHeader({ contact }: { contact: ContactInfo }): JSX.Element {
 
 interface ResumeSectionProps {
   title: string
-  // When provided, a "Revise section with AI" chip is shown on heading hover.
-  // Only Experience and Skills pass this; Education does not.
-  // TODO (Phase 4): wire SectionReviseChip click to InlineRevisionPanel with this scope.
   sectionScope?: string
   children: React.ReactNode
 }
@@ -341,17 +474,22 @@ function ResumeSection({ title, sectionScope, children }: ResumeSectionProps): J
 
   return (
     <Box sx={{ mt: 2 }}>
-      {/* Section heading row — shows SectionReviseChip on hover for Experience and Skills */}
       <Box
         onMouseEnter={() => setHeadingHovered(true)}
         onMouseLeave={() => setHeadingHovered(false)}
-        sx={{ position: 'relative', display: 'flex', alignItems: 'center', mb: 1.25 }}
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          mb: 1.25,
+          minHeight: 32 // Ensure container is tall enough for the absolute chip
+        }}
       >
         <Box
           sx={{
             flex: 1,
             fontSize: '10.5pt',
-            fontWeight: 700,
+            fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
             color: '#1e3a5f',
@@ -363,29 +501,13 @@ function ResumeSection({ title, sectionScope, children }: ResumeSectionProps): J
           {title}
         </Box>
 
-        {/* "Revise section with AI" chip — STUB: Phase 4 */}
-        {/* TODO: onClick → open InlineRevisionPanel with scope={sectionScope} */}
         {sectionScope && <SectionReviseChip visible={headingHovered} sectionScope={sectionScope} />}
       </Box>
-
-      {/* InlineRevisionPanel for section-level revisions — STUB: Phase 4 */}
-      {/* TODO: render when sectionReviseOpen === sectionScope */}
-      {/* <InlineRevisionPanel
-            scope={sectionScope}
-            currentText={[all bullets in section joined as a string]}
-            onAccept={(newText) => { ... parse and apply to resume section ... }}
-            onClose={() => setSectionReviseOpen(null)}
-          /> */}
 
       {children}
     </Box>
   )
 }
-
-// "Revise section with AI" chip shown on Experience and Skills heading hover.
-//
-// STUB: Phase 4 — chip rendered; click not yet wired.
-// TODO: accept an onRevise callback and call it on click.
 
 function SectionReviseChip({
   visible,
@@ -405,7 +527,6 @@ function SectionReviseChip({
         pointerEvents: visible ? 'auto' : 'none'
       }}
     >
-      {/* TODO: onClick → open InlineRevisionPanel for this section */}
       <Button
         size="small"
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}

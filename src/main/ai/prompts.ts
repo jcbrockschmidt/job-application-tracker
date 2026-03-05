@@ -134,8 +134,7 @@ export function tailorResumePrompt(masterCV: MasterCV, jobDescription: string): 
     tools: [
       {
         name: 'tailor_resume',
-        description:
-          'Produce a tailored resume from the Master CV for the given job description.',
+        description: 'Produce a tailored resume from the Master CV for the given job description.',
         input_schema: RESUME_TOOL_SCHEMA
       }
     ],
@@ -144,8 +143,7 @@ export function tailorResumePrompt(masterCV: MasterCV, jobDescription: string): 
       {
         role: 'user',
         content:
-          `Master CV:\n${JSON.stringify(masterCV)}\n\n` +
-          `Job Description:\n${jobDescription}`
+          `Master CV:\n${JSON.stringify(masterCV)}\n\n` + `Job Description:\n${jobDescription}`
       }
     ]
   }

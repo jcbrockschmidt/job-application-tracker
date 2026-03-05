@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import type { LastAiOp } from '@shared/types'
 
 // STUB: Phase 5 — 'writingProfile' added.
 export type Page =
@@ -9,30 +10,21 @@ export type Page =
   | 'masterCV'
   | 'writingProfile'
 
-// STUB: Phase 3 — token usage recorded after an AI call completes.
-// Dispatched by SessionPage / MasterCVPage after each generate:* or masterCV:regenerate IPC call.
-// The generate:* IPC handlers must return token counts alongside the document for this to work;
-// or a separate IPC channel can return the last spend log entry.
-// TODO: decide whether to embed token info in generate:* return types or use a separate channel.
-export interface LastAiOp {
-  model: string
-  inputTokens: number
-  outputTokens: number
-  // Estimated cost in USD based on published model pricing.
-  estimatedCostUsd: number
-}
+export type SaveState = 'saved' | 'saving' | 'error'
 
 export interface UIState {
   activePage: Page
   isSidebarOpen: boolean
   // STUB: Phase 3 — null until the first AI call completes in the current session.
   lastAiOp: LastAiOp | null
+  saveState: SaveState
 }
 
 const initialState: UIState = {
-  activePage: 'onboarding',
+  activePage: 'masterList',
   isSidebarOpen: true,
-  lastAiOp: null
+  lastAiOp: null,
+  saveState: 'saved'
 }
 
 const uiSlice = createSlice({
@@ -48,10 +40,13 @@ const uiSlice = createSlice({
     // STUB: Phase 3 — dispatch after each successful AI call to update the token usage display.
     setLastAiOp(state, action: PayloadAction<LastAiOp | null>) {
       state.lastAiOp = action.payload
+    },
+    setSaveState(state, action: PayloadAction<SaveState>) {
+      state.saveState = action.payload
     }
   }
 })
 
-export const { setActivePage, setSidebarOpen, setLastAiOp } = uiSlice.actions
+export const { setActivePage, setSidebarOpen, setLastAiOp, setSaveState } = uiSlice.actions
 
 export default uiSlice.reducer

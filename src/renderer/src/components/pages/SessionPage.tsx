@@ -1,38 +1,5 @@
-// Session view: the main workspace for a single job application.
-// Layout: session header bar / tab bar / spending-limit warning bar /
-//         (document area + side panels).
-// The document area renders one of four tab views; side panels are always visible.
-//
-// STUB: Phase 1 — Resume tab fully rendered; layout complete.
-// STUB: Phase 2 — Cover Letter, Match Report, Description tabs stubbed below;
-//   auto-save not yet wired.
-// STUB: Phase 4 — FeedbackPromptBar placed above Resume and Cover Letter papers;
-//   SpendingWarningBanner placed below the tab bar; SpendingLimitDialog wired
-//   before AI generation calls. Data fetching and actual AI calls not yet wired.
-// STUB: Phase 7 — ARIA live region stub added below; not yet implemented.
-// TODO (Phase 7 — ARIA live regions):
-//   - Add a visually hidden <Box> with aria-live="polite" aria-atomic="true" below the
-//     tab bar. Update its text content during AI generation ("Generating resume…",
-//     "Resume generation complete", "Generation failed — see error below") so screen
-//     readers announce progress without requiring the user to inspect the page.
-//   - Example: const [liveMessage, setLiveMessage] = useState('')
-//     Then render:  <Box role="status" aria-live="polite" sx={visuallyHidden}>{liveMessage}</Box>
-//     Set liveMessage before and after each generate:* IPC call.
-// TODO (Phase 2):
-//   - Auto-save: debounce session changes and call
-//     window.api.sessions.update(session.id, { resume, coverLetter, matchReport })
-//     ~2s after the last edit; update status bar "Saving…" → "All changes saved"
-// TODO (Phase 4):
-//   - Fetch 24h spend total on mount and after each AI call:
-//     window.api.spendLog.getTotal().then(t => setSpendUsd(t.totalUsd))
-//   - Read spendingLimit from settingsSlice.
-//   - Gate every AI call (generate:coverLetter, generate:matchReport, etc.) through
-//     SpendingLimitDialog when spendUsd > spendingLimit > 0.
-//   - FeedbackPromptBar onApplyChange: resolve the target in resume/coverLetter JSON,
-//     push old value onto useUndoRedo stack, apply new text, dispatch updateSession.
-
 import { useState } from 'react'
-import { Box, Button, CircularProgress, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Typography, TextField } from '@mui/material'
 import SessionHeader from '../organisms/SessionHeader'
 import SessionTabs, { type SessionTab } from '../organisms/SessionTabs'
 import SidePanels from '../organisms/SidePanels'
@@ -41,39 +8,35 @@ import CoverLetterPaper from '../organisms/CoverLetterPaper'
 import MatchReportView from '../organisms/MatchReportView'
 import FeedbackPromptBar from '../molecules/FeedbackPromptBar'
 import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
-import { useAppSelector } from '../../hooks'
-import type { Session, ContactInfo } from '@shared/types'
+import { useAppSelector, useAppDispatch } from '../../hooks'
+import { updateSession } from '../../store/slices/sessionsSlice'
+import { setSaveState } from '../../store/slices/uiSlice'
+import type { Session, ContactInfo, ResumeJson } from '@shared/types'
 
 export default function SessionPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<SessionTab>('resume')
-
-  // TODO (Phase 2 auto-save): debounce changes and call sessions:update
-  // const dispatch = useAppDispatch()
-  // useEffect(() => {
-  //   if (!session) return
-  //   const timer = setTimeout(async () => {
-  //     await window.api.sessions.update(session.id, {
-  //       resume: session.resume ?? undefined,
-  //       coverLetter: session.coverLetter ?? undefined,
-  //       matchReport: session.matchReport ?? undefined,
-  //     })
-  //     dispatch(setLastSaved(new Date().toISOString()))
-  //   }, 2000)
-  //   return () => clearTimeout(timer)
-  // }, [session?.resume, session?.coverLetter, session?.matchReport])
-
-  // TODO (Phase 4): fetch 24h spend total on mount and after every AI call
-  // const [spendUsd, setSpendUsd] = useState(0)
-  // useEffect(() => {
-  //   window.api.spendLog.getTotal().then(t => setSpendUsd(t.totalUsd))
-  // }, [])
+  const dispatch = useAppDispatch()
 
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
   const session = useAppSelector((state) =>
     state.sessions.sessions.find((s) => s.id === activeSessionId)
   )
   const contact = useAppSelector((state) => state.settings.contactInfo)
-  // TODO (Phase 4): const spendingLimit = useAppSelector(state => state.settings.spendingLimit)
+
+  const handleUpdateResume = async (updates: Partial<ResumeJson>): Promise<void> => {
+    if (!session || !session.resume) return
+    const newResume = { ...session.resume, ...updates }
+    try {
+      dispatch(setSaveState('saving'))
+      const lastSaved = new Date().toISOString()
+      await window.api.sessions.update(session.id, { resume: newResume, lastSaved })
+      dispatch(updateSession({ id: session.id, updates: { resume: newResume, lastSaved } }))
+      dispatch(setSaveState('saved'))
+    } catch (err) {
+      console.error('Failed to save resume:', err)
+      dispatch(setSaveState('error'))
+    }
+  }
 
   if (!session) {
     return (
@@ -114,36 +77,8 @@ export default function SessionPage(): JSX.Element {
       <SessionTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Spending-limit warning banner — STUB: Phase 4 */}
-      {/* Shown when 24h rolling spend exceeds the configured limit (limit > 0). */}
-      {/* TODO: replace placeholder 0 values with spendUsd and spendingLimit state */}
       <SpendingWarningBanner spendUsd={0} limitUsd={0} />
 
-      {/* ARIA live region for AI generation status — STUB: Phase 7 */}
-      {/* Visually hidden; screen readers announce generation progress and completion. */}
-      {/* TODO (Phase 7): const [liveMessage, setLiveMessage] = useState('') */}
-      {/* TODO (Phase 7): set liveMessage to "Generating…", "Complete", or error text
-          around each generate:* IPC call; clear it after a short delay on success. */}
-      {/* <Box
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden',
-                  clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
-          >
-            {liveMessage}
-          </Box> */}
-
-      {/* SpendingLimitDialog — STUB: Phase 4 */}
-      {/* TODO: render before every AI generation call in this page */}
-      {/* <SpendingLimitDialog
-            open={showSpendDialog}
-            spendUsd={spendUsd}
-            limitUsd={spendingLimit}
-            onCancel={() => setShowSpendDialog(false)}
-            onGenerateAnyway={() => { setShowSpendDialog(false); pendingGenerate?.() }}
-          /> */}
-
-      {/* Document area + side panels */}
       <Box
         sx={{
           flex: 1,
@@ -162,41 +97,32 @@ export default function SessionPage(): JSX.Element {
         >
           {activeTab === 'resume' && (
             <>
-              {/* FeedbackPromptBar — STUB: Phase 4 */}
-              {/* Shown above the paper once a resume exists. */}
-              {/* TODO: wire onApplyChange to resolve target in resume JSON, push undo, apply */}
               {session.resume && (
                 <FeedbackPromptBar
                   sessionId={session.id}
                   documentType="resume"
                   onApplyChange={(_target, _newText) => {
-                    // TODO (Phase 4): look up target in session.resume, push old text to undo
-                    // stack, apply newText, dispatch updateSession
+                    // STUB: Phase 4
                   }}
                 />
               )}
               {session.resume ? (
-                <ResumePaper resume={session.resume} contact={contact} />
+                <ResumePaper
+                  resume={session.resume}
+                  contact={contact}
+                  onUpdateResume={handleUpdateResume}
+                />
               ) : (
                 <TabPlaceholder>Resume not yet generated.</TabPlaceholder>
               )}
             </>
           )}
 
-          {activeTab === 'coverLetter' && (
-            // STUB: Phase 2 — empty state or paper; feedback bar above (Phase 4)
-            <CoverLetterTab session={session} contact={contact} />
-          )}
+          {activeTab === 'coverLetter' && <CoverLetterTab session={session} contact={contact} />}
 
-          {activeTab === 'matchReport' && (
-            // STUB: Phase 2 — empty state or report view
-            <MatchReportTab session={session} />
-          )}
+          {activeTab === 'matchReport' && <MatchReportTab session={session} />}
 
-          {activeTab === 'description' && (
-            // STUB: Phase 2 — JD display with inline edit
-            <DescriptionTab session={session} />
-          )}
+          {activeTab === 'description' && <DescriptionTab session={session} />}
         </Box>
 
         {/* Side panels */}
@@ -208,16 +134,6 @@ export default function SessionPage(): JSX.Element {
 
 // ─── Phase 2 tab stubs ────────────────────────────────────────────────────────
 
-// STUB: Phase 2 — shows Generate button in empty state; renders CoverLetterPaper once generated.
-// STUB: Phase 4 — FeedbackPromptBar placed above the paper.
-// TODO (Phase 2):
-//   - call window.api.generate.coverLetter(session.id) on Generate click
-//   - dispatch updateSession({ coverLetter }) on success
-//   - show LinearProgress while generating; show inline error with Retry on failure
-//   - gate the Generate call through SpendingLimitDialog when over limit (Phase 4)
-// TODO (Phase 4):
-//   - FeedbackPromptBar onApplyChange: resolve target in session.coverLetter.paragraphs,
-//     push old text to undo stack, apply newText, dispatch updateSession
 function CoverLetterTab({
   session,
   contact
@@ -225,21 +141,14 @@ function CoverLetterTab({
   session: Session
   contact: ContactInfo
 }): JSX.Element {
-  // TODO: const [isGenerating, setIsGenerating] = useState(false)
-  // TODO: const [error, setError] = useState<string | null>(null)
-  // TODO: const dispatch = useAppDispatch()
-
   if (session.coverLetter) {
     return (
       <>
-        {/* FeedbackPromptBar — STUB: Phase 4 */}
-        {/* TODO: wire onApplyChange to resolve target in coverLetter.paragraphs, push undo, apply */}
         <FeedbackPromptBar
           sessionId={session.id}
           documentType="coverLetter"
           onApplyChange={(_target, _newText) => {
-            // TODO (Phase 4): look up target in session.coverLetter, push old text to undo
-            // stack, apply newText, dispatch updateSession
+            // STUB: Phase 4
           }}
         />
         <CoverLetterPaper coverLetter={session.coverLetter} contact={contact} />
@@ -250,7 +159,6 @@ function CoverLetterTab({
   return (
     <TabEmptyState
       message="No cover letter yet."
-      // TODO: disabled={isGenerating}, onClick={handleGenerate}
       action={
         <Button variant="contained" disableElevation size="small">
           Generate Cover Letter
@@ -260,15 +168,7 @@ function CoverLetterTab({
   )
 }
 
-// STUB: Phase 2 — shows Generate button in empty state; renders MatchReportView once generated.
-// TODO:
-//   - call window.api.generate.matchReport(session.id) on Generate click
-//   - dispatch updateSession({ matchReport }) on success
-//   - show LinearProgress while generating; show inline error with Retry on failure
 function MatchReportTab({ session }: { session: Session }): JSX.Element {
-  // TODO: const [isGenerating, setIsGenerating] = useState(false)
-  // TODO: const [error, setError] = useState<string | null>(null)
-
   if (session.matchReport) {
     return <MatchReportView report={session.matchReport} sessionId={session.id} />
   }
@@ -276,7 +176,6 @@ function MatchReportTab({ session }: { session: Session }): JSX.Element {
   return (
     <TabEmptyState
       message="No match report yet."
-      // TODO: disabled={isGenerating}, onClick={handleGenerate}
       action={
         <Button variant="contained" disableElevation size="small">
           Generate Match Report
@@ -286,16 +185,24 @@ function MatchReportTab({ session }: { session: Session }): JSX.Element {
   )
 }
 
-// STUB: Phase 2 — shows JD text; Edit button not yet wired.
-// TODO:
-//   - clicking Edit shows a resizable textarea (replace Typography with TextField multiline)
-//   - Save calls window.api.sessions.update(session.id, { jobDescription: draft })
-//     then dispatches updateSession; Cancel restores original text
-//   - show note below editor: "Editing the job description does not automatically
-//     regenerate documents."
 function DescriptionTab({ session }: { session: Session }): JSX.Element {
-  // TODO: const [isEditing, setIsEditing] = useState(false)
-  // TODO: const [draft, setDraft] = useState(session.jobDescription)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState(session.jobDescription)
+  const dispatch = useAppDispatch()
+
+  const handleSave = async (): Promise<void> => {
+    try {
+      dispatch(setSaveState('saving'))
+      const lastSaved = new Date().toISOString()
+      await window.api.sessions.update(session.id, { jobDescription: draft, lastSaved })
+      dispatch(updateSession({ id: session.id, updates: { jobDescription: draft, lastSaved } }))
+      dispatch(setSaveState('saved'))
+      setIsEditing(false)
+    } catch (err) {
+      console.error('Failed to save JD:', err)
+      dispatch(setSaveState('error'))
+    }
+  }
 
   return (
     <Box
@@ -313,18 +220,57 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
         <Typography fontWeight={700} sx={{ fontSize: 13, flex: 1, color: '#111827' }}>
           Job Description
         </Typography>
-        {/* TODO: onClick={() => setIsEditing(true)} */}
-        <Button size="small" variant="outlined" sx={{ fontSize: 12 }}>
-          Edit
-        </Button>
+        {!isEditing && (
+          <Button
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: 12 }}
+            onClick={() => setIsEditing(true)}
+          >
+            Edit
+          </Button>
+        )}
       </Box>
 
-      {/* TODO: when isEditing, render TextField multiline + Save / Cancel + note */}
-      <Typography
-        sx={{ fontSize: '9.5pt', color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}
-      >
-        {session.jobDescription || '—'}
-      </Typography>
+      {isEditing ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            multiline
+            fullWidth
+            minRows={10}
+            maxRows={30}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            variant="outlined"
+            size="small"
+            autoFocus
+            slotProps={{ input: { sx: { fontSize: '10pt', lineHeight: 1.6 } } }}
+          />
+          <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+            Note: Editing the job description does not automatically regenerate documents.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <Button size="small" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleSave}
+              disabled={draft === session.jobDescription}
+              sx={{ bgcolor: '#1e293b', '&:hover': { bgcolor: '#0f172a' } }}
+            >
+              Save Changes
+            </Button>
+          </Box>
+        </Box>
+      ) : (
+        <Typography
+          sx={{ fontSize: '9.5pt', color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}
+        >
+          {session.jobDescription || '—'}
+        </Typography>
+      )}
     </Box>
   )
 }

@@ -1,20 +1,48 @@
 // Status bar: thin bar pinned to the bottom of the window.
 // Shows save-state indicator, active context, and last-saved timestamp.
-//
-// STUB: Phase 1 — renders static placeholder text.
-// TODO:
-//   - Read save state from a uiSlice field (e.g. saveState: 'saved' | 'saving' | 'error')
-//   - Read last-saved timestamp from the active session in sessionsSlice
-//   - Show the active session name or page name as the current context
-//   - Update saveState to 'saving' when sessions:update is in-flight, 'saved' on success
 
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Tooltip } from '@mui/material'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
+import { useAppSelector } from '../../hooks'
 
 export default function Statusbar(): JSX.Element {
-  // TODO: const saveState = useAppSelector(state => state.ui.saveState)
-  // TODO: const lastSaved = useAppSelector(state => ...)
-  // TODO: const context = useAppSelector(state => ...)
+  const saveState = useAppSelector((state) => state.ui.saveState)
+  const activePage = useAppSelector((state) => state.ui.activePage)
+  const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
+  const session = useAppSelector((state) =>
+    state.sessions.sessions.find((s) => s.id === activeSessionId)
+  )
+
+  let saveLabel = 'All changes saved'
+  let saveColor = '#4caf50' // Green
+  if (saveState === 'saving') {
+    saveLabel = 'Saving…'
+    saveColor = '#ffb74d' // Amber
+  } else if (saveState === 'error') {
+    saveLabel = 'Error saving'
+    saveColor = '#f44336' // Red
+  }
+
+  // Determine active context text
+  let contextText = '—'
+  if (activePage === 'session' && session) {
+    contextText = `${session.companyName} · ${session.roleTitle}`
+  } else if (activePage === 'onboarding') {
+    contextText = 'Onboarding'
+  } else if (activePage === 'masterList') {
+    contextText = 'Application List'
+  } else if (activePage === 'settings') {
+    contextText = 'Settings'
+  } else if (activePage === 'masterCV') {
+    contextText = 'Master CV'
+  } else if (activePage === 'writingProfile') {
+    contextText = 'Writing Profile'
+  }
+
+  // Format last saved time
+  const lastSavedText = session?.lastSaved
+    ? `Saved at ${new Date(session.lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+    : '—'
 
   return (
     <Box
@@ -30,28 +58,46 @@ export default function Statusbar(): JSX.Element {
     >
       {/* Save-state indicator */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <FiberManualRecordIcon sx={{ fontSize: 8, color: '#4caf50' }} />
-        {/* TODO: show "Saving…" when save is in flight */}
-        <StatusText>All changes saved</StatusText>
+        <FiberManualRecordIcon
+          sx={{
+            fontSize: 8,
+            color: saveColor,
+            animation: saveState === 'saving' ? 'pulse 1.5s infinite ease-in-out' : 'none',
+            '@keyframes pulse': {
+              '0%': { opacity: 1 },
+              '50%': { opacity: 0.4 },
+              '100%': { opacity: 1 }
+            }
+          }}
+        />
+        <StatusText>{saveLabel}</StatusText>
       </Box>
 
       <StatusSep />
 
       {/* Active context */}
-      {/* TODO: show active session company + role, or page name */}
-      <StatusText>—</StatusText>
+      <Tooltip title="Current Context" arrow>
+        <Box
+          sx={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        >
+          <StatusText>{contextText}</StatusText>
+        </Box>
+      </Tooltip>
 
       <Box sx={{ flex: 1 }} />
 
       {/* Last-saved timestamp */}
-      {/* TODO: show human-readable relative time, e.g. "Saved just now" */}
-      <StatusText>—</StatusText>
+      <StatusText>{lastSavedText}</StatusText>
     </Box>
   )
 }
 
 function StatusText({ children }: { children: React.ReactNode }): JSX.Element {
-  return <Typography sx={{ fontSize: 11.5, color: '#5f6b7c' }}>{children}</Typography>
+  return (
+    <Typography sx={{ fontSize: 11.5, color: '#5f6b7c', whiteSpace: 'nowrap' }}>
+      {children}
+    </Typography>
+  )
 }
 
 function StatusSep(): JSX.Element {

@@ -1,7 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { ContactInfo, Settings, Theme } from '@shared/types'
 
-export type SettingsState = Settings
+export interface SettingsState extends Settings {
+  initialized: boolean
+}
 
 const initialState: SettingsState = {
   contactInfo: {
@@ -15,7 +17,8 @@ const initialState: SettingsState = {
   theme: 'system',
   backupLocation: '',
   spendingLimit: 0,
-  onboardingComplete: false
+  onboardingComplete: false,
+  initialized: false
 }
 
 const settingsSlice = createSlice({
@@ -40,8 +43,8 @@ const settingsSlice = createSlice({
     setOnboardingComplete(state, action: PayloadAction<boolean>) {
       state.onboardingComplete = action.payload
     },
-    hydrate(_state, action: PayloadAction<SettingsState>) {
-      return action.payload
+    hydrate(_state, action: PayloadAction<Settings>) {
+      return { ...action.payload, initialized: true }
     }
   }
 })

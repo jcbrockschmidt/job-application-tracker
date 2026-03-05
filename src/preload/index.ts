@@ -66,7 +66,8 @@ const api: WindowAPI = {
   },
 
   spendLog: {
-    getTotal: () => ipcRenderer.invoke('spendLog:getTotal')
+    getTotal: () => ipcRenderer.invoke('spendLog:getTotal'),
+    getLastOp: () => ipcRenderer.invoke('spendLog:getLastOp')
   },
 
   backup: {

@@ -1,19 +1,14 @@
 // Right-hand side panels shown in the session view alongside every tab.
 // Contains two stacked panels: Match Rating (condensed) and Job Description.
-//
-// STUB: Phase 1 — JD panel renders the job description text.
-// STUB: Phase 2 — MatchRatingCard renders condensed rating + key points;
-//   JD inline editing not yet wired.
-// TODO:
-//   - JD panel: clicking Edit shows a resizable textarea; Save calls
-//     window.api.sessions.update(session.id, { jobDescription }) then dispatches;
-//     show note "Editing the JD does not automatically regenerate documents."
-//   - Show "Saved" notice after JD is saved
 
-import { Box, Chip, Typography, Paper, IconButton } from '@mui/material'
+import { useState } from 'react'
+import { Box, Chip, Typography, Paper, IconButton, TextField, Button } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import { useAppDispatch } from '../../hooks'
+import { updateSession } from '../../store/slices/sessionsSlice'
+import { setSaveState } from '../../store/slices/uiSlice'
 import type { Session, MatchReport, MatchRating } from '@shared/types'
 
 interface SidePanelsProps {
@@ -21,8 +16,33 @@ interface SidePanelsProps {
 }
 
 export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
-  // TODO: const [isEditingJd, setIsEditingJd] = useState(false)
-  // TODO: const [jdDraft, setJdDraft] = useState(session.jobDescription)
+  const [isEditingJd, setIsEditingJd] = useState(false)
+  const [jdDraft, setJdDraft] = useState(session.jobDescription)
+  const dispatch = useAppDispatch()
+
+  const handleEditClick = (): void => {
+    setJdDraft(session.jobDescription)
+    setIsEditingJd(true)
+  }
+
+  const handleSaveJd = async (): Promise<void> => {
+    try {
+      dispatch(setSaveState('saving'))
+      const lastSaved = new Date().toISOString()
+      await window.api.sessions.update(session.id, { jobDescription: jdDraft, lastSaved })
+      dispatch(updateSession({ id: session.id, updates: { jobDescription: jdDraft, lastSaved } }))
+      dispatch(setSaveState('saved'))
+      setIsEditingJd(false)
+    } catch (err) {
+      console.error('Failed to save JD:', err)
+      dispatch(setSaveState('error'))
+    }
+  }
+
+  const handleCancelJd = (): void => {
+    setIsEditingJd(false)
+    setJdDraft(session.jobDescription)
+  }
 
   return (
     <Box
@@ -42,7 +62,6 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
             Generate a Match Report to see alignment.
           </Typography>
         ) : (
-          // STUB: Phase 2 — renders condensed rating + first 2–3 points
           <MatchRatingCard report={session.matchReport} />
         )}
       </Panel>
@@ -51,25 +70,59 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
       <Panel
         title="Job Description"
         action={
-          // TODO: onClick={() => setIsEditingJd(true)}
-          <IconButton size="small" aria-label="Edit job description">
-            <EditIcon sx={{ fontSize: 14 }} />
-          </IconButton>
+          !isEditingJd && (
+            <IconButton size="small" aria-label="Edit job description" onClick={handleEditClick}>
+              <EditIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          )
         }
       >
-        {/* TODO: when isEditingJd, render TextField multiline + Save / Cancel + note */}
-        <Typography
-          sx={{
-            fontSize: 12,
-            color: 'text.secondary',
-            lineHeight: 1.65,
-            maxHeight: 300,
-            overflowY: 'auto',
-            whiteSpace: 'pre-wrap'
-          }}
-        >
-          {session.jobDescription || '—'}
-        </Typography>
+        {isEditingJd ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <TextField
+              multiline
+              fullWidth
+              minRows={5}
+              maxRows={15}
+              value={jdDraft}
+              onChange={(e) => setJdDraft(e.target.value)}
+              variant="outlined"
+              size="small"
+              autoFocus
+              slotProps={{ input: { sx: { fontSize: 12, lineHeight: 1.5 } } }}
+            />
+            <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+              Note: Editing the JD does not automatically regenerate documents.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button size="small" onClick={handleCancelJd} sx={{ fontSize: 11 }}>
+                Cancel
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleSaveJd}
+                disabled={jdDraft === session.jobDescription}
+                sx={{ fontSize: 11, bgcolor: '#1e293b', '&:hover': { bgcolor: '#0f172a' } }}
+              >
+                Save
+              </Button>
+            </Box>
+          </Box>
+        ) : (
+          <Typography
+            sx={{
+              fontSize: 12,
+              color: 'text.secondary',
+              lineHeight: 1.65,
+              maxHeight: 300,
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap'
+            }}
+          >
+            {session.jobDescription || '—'}
+          </Typography>
+        )}
       </Panel>
     </Box>
   )
@@ -84,9 +137,6 @@ const RATING_COLORS: Record<MatchRating, { bg: string; text: string }> = {
   Weak: { bg: '#fee2e2', text: '#b91c1c' }
 }
 
-// STUB: Phase 2 — condensed match report: rating badge + up to 3 key points.
-// Shows strengths first; falls back to gaps if strengths are exhausted.
-// TODO: determine the right truncation heuristic once designs are finalized
 function MatchRatingCard({ report }: { report: MatchReport }): JSX.Element {
   const { bg, text } = RATING_COLORS[report.rating]
   const keyPoints = [...report.strengths, ...report.gaps].slice(0, 3)
