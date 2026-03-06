@@ -102,7 +102,7 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
                 variant="contained"
                 onClick={handleSaveJd}
                 disabled={jdDraft === session.jobDescription}
-                sx={{ fontSize: 11, bgcolor: '#1e293b', '&:hover': { bgcolor: '#0f172a' } }}
+                sx={{ fontSize: 11 }}
               >
                 Save
               </Button>
@@ -129,15 +129,15 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
 
-const RATING_COLORS: Record<MatchRating, { bg: string; text: string }> = {
-  Strong: { bg: '#dcfce7', text: '#15803d' },
-  Good: { bg: '#dbeafe', text: '#1d4ed8' },
-  Fair: { bg: '#fef9c3', text: '#a16207' },
-  Weak: { bg: '#fee2e2', text: '#b91c1c' }
+const RATING_COLORS: Record<MatchRating, { bg: string; text: string; darkBg: string; darkText: string }> = {
+  Strong: { bg: '#dcfce7', text: '#15803d', darkBg: '#064e3b', darkText: '#4ade80' },
+  Good: { bg: '#dbeafe', text: '#1d4ed8', darkBg: '#1e3a8a', darkText: '#60a5fa' },
+  Fair: { bg: '#fef9c3', text: '#a16207', darkBg: '#713f12', darkText: '#facc15' },
+  Weak: { bg: '#fee2e2', text: '#b91c1c', darkBg: '#7f1d1d', darkText: '#f87171' }
 }
 
 function MatchRatingCard({ report }: { report: MatchReport }): JSX.Element {
-  const { bg, text } = RATING_COLORS[report.rating]
+  const ratingColor = RATING_COLORS[report.rating]
   const keyPoints = [...report.strengths, ...report.gaps].slice(0, 3)
 
   return (
@@ -145,7 +145,15 @@ function MatchRatingCard({ report }: { report: MatchReport }): JSX.Element {
       <Chip
         label={report.rating}
         size="small"
-        sx={{ bgcolor: bg, color: text, fontWeight: 700, alignSelf: 'flex-start', fontSize: 12 }}
+        sx={{
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark' ? ratingColor.darkBg : ratingColor.bg,
+          color: (theme) =>
+            theme.palette.mode === 'dark' ? ratingColor.darkText : ratingColor.text,
+          fontWeight: 700,
+          alignSelf: 'flex-start',
+          fontSize: 12
+        }}
       />
       {keyPoints.map((point, i) => {
         const isStrength = i < report.strengths.length
@@ -153,10 +161,22 @@ function MatchRatingCard({ report }: { report: MatchReport }): JSX.Element {
           <Box key={i} sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
             {isStrength ? (
               <CheckCircleOutlineIcon
-                sx={{ fontSize: 13, color: '#16a34a', mt: 0.2, flexShrink: 0 }}
+                sx={{
+                  fontSize: 13,
+                  color: (theme) => (theme.palette.mode === 'dark' ? '#4ade80' : '#16a34a'),
+                  mt: 0.2,
+                  flexShrink: 0
+                }}
               />
             ) : (
-              <WarningAmberIcon sx={{ fontSize: 13, color: '#d97706', mt: 0.2, flexShrink: 0 }} />
+              <WarningAmberIcon
+                sx={{
+                  fontSize: 13,
+                  color: (theme) => (theme.palette.mode === 'dark' ? '#fbbf24' : '#d97706'),
+                  mt: 0.2,
+                  flexShrink: 0
+                }}
+              />
             )}
             <Typography sx={{ fontSize: 11.5, color: 'text.secondary', lineHeight: 1.5 }}>
               {point}
@@ -181,7 +201,8 @@ function Panel({ title, action, children }: PanelProps): JSX.Element {
         sx={{
           px: 2,
           py: 1.375,
-          borderBottom: '1px solid #e0e0e0',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           display: 'flex',
           alignItems: 'center'
         }}
