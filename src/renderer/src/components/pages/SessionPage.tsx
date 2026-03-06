@@ -220,7 +220,7 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
   return (
     <Box
       sx={{
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         width: 720,
         minWidth: 720,
         px: 6,
@@ -230,7 +230,7 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
-        <Typography fontWeight={700} sx={{ fontSize: 13, flex: 1, color: '#111827' }}>
+        <Typography fontWeight={700} sx={{ fontSize: 13, flex: 1, color: 'text.primary' }}>
           Job Description
         </Typography>
         {!isEditing && (
@@ -259,7 +259,7 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
             autoFocus
             slotProps={{ input: { sx: { fontSize: '10pt', lineHeight: 1.6 } } }}
           />
-          <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', fontStyle: 'italic' }}>
             Note: Editing the job description does not automatically regenerate documents.
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
@@ -271,7 +271,7 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
               variant="contained"
               onClick={handleSave}
               disabled={draft === session.jobDescription}
-              sx={{ bgcolor: '#1e293b', '&:hover': { bgcolor: '#0f172a' } }}
+              sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
             >
               Save Changes
             </Button>
@@ -279,7 +279,7 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
         </Box>
       ) : (
         <Typography
-          sx={{ fontSize: '9.5pt', color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}
+          sx={{ fontSize: '9.5pt', color: 'text.primary', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}
         >
           {session.jobDescription || '—'}
         </Typography>
@@ -294,7 +294,7 @@ function TabPlaceholder({ children }: { children: React.ReactNode }): JSX.Elemen
   return (
     <Box
       sx={{
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         width: 720,
         minWidth: 720,
         p: 8,
@@ -320,7 +320,7 @@ function TabEmptyState({
   return (
     <Box
       sx={{
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         width: 720,
         minWidth: 720,
         p: 10,

@@ -69,8 +69,9 @@ export default function MasterListPage(): JSX.Element {
       {/* Header bar */}
       <Box
         sx={{
-          bgcolor: 'white',
-          borderBottom: '1px solid #e0e0e0',
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           px: 3,
           display: 'flex',
           alignItems: 'center',
@@ -104,8 +105,9 @@ export default function MasterListPage(): JSX.Element {
       {/* TODO: activeFilter state drives selected chip and filtered rows */}
       <Box
         sx={{
-          bgcolor: 'white',
-          borderBottom: '1px solid #e0e0e0',
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           px: 3,
           py: 1,
           display: 'flex',
@@ -129,10 +131,13 @@ export default function MasterListPage(): JSX.Element {
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Box
           component="table"
-          sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, color: '#374151' }}
+          sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, color: 'text.primary' }}
         >
           {/* Column headers */}
-          <Box component="thead" sx={{ bgcolor: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
+          <Box
+            component="thead"
+            sx={{ bgcolor: 'background.default', position: 'sticky', top: 0, zIndex: 1 }}
+          >
             <Box component="tr">
               {COLUMNS.map(({ key, label }) => (
                 <Box
@@ -145,7 +150,8 @@ export default function MasterListPage(): JSX.Element {
                     fontWeight: 600,
                     fontSize: 12,
                     color: 'text.secondary',
-                    borderBottom: '1px solid #e0e0e0',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
                     whiteSpace: 'nowrap'
                   }}
                 >

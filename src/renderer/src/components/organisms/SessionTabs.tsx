@@ -37,8 +37,9 @@ export default function SessionTabs({
   return (
     <Box
       sx={{
-        bgcolor: 'white',
-        borderBottom: '1px solid #e0e0e0',
+        bgcolor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
         display: 'flex',
         alignItems: 'center',
         px: 3,

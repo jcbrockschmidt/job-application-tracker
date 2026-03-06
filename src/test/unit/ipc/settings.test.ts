@@ -33,7 +33,8 @@ vi.mock('electron', () => ({
 
 vi.mock('keytar', () => ({
   default: {
-    setPassword: vi.fn().mockResolvedValue(undefined)
+    setPassword: vi.fn().mockResolvedValue(undefined),
+    getPassword: vi.fn().mockResolvedValue(null)
   }
 }))
 
@@ -45,12 +46,13 @@ vi.mock('mammoth', () => ({ default: { extractRawText: vi.fn() } }))
 vi.mock('../../../main/ai', () => ({
   isPlaceholderMode: vi.fn().mockReturnValue(false),
   validateApiKey: vi.fn(),
-  resetAnthropicClient: vi.fn()
+  resetAnthropicClient: vi.fn(),
+  listAvailableModels: vi.fn()
 }))
 
 import { registerIpcHandlers } from '../../../main/ipc/index'
 import keytar from 'keytar'
-import { validateApiKey, resetAnthropicClient } from '../../../main/ai'
+import { validateApiKey, resetAnthropicClient, listAvailableModels } from '../../../main/ai'
 
 // Register all handlers once. The handler functions close over app.getPath which
 // reads tempDir at call time, so they work correctly with per-test temp dirs.
@@ -58,8 +60,13 @@ beforeAll(() => {
   registerIpcHandlers()
 })
 
-beforeEach(() => {
+beforeEach(async () => {
   tempDir = mkdtempSync(join(tmpdir(), 'job-app-settings-test-'))
+  vi.clearAllMocks()
+
+  // Reset the module-level cachedModels by triggering a successful validation
+  vi.mocked(validateApiKey).mockResolvedValue(true)
+  await settingsValidateApiKey('reset-key')
   vi.clearAllMocks()
 })
 
@@ -76,6 +83,9 @@ const settingsSave = (updates: Partial<Settings>): Promise<void> =>
 
 const settingsValidateApiKey = (apiKey: string): Promise<boolean> =>
   capturedHandlers['settings:validateApiKey'](null, apiKey) as Promise<boolean>
+
+const settingsGetAvailableModels = (): Promise<string[]> =>
+  capturedHandlers['settings:getAvailableModels'](null) as Promise<string[]>
 
 const DEFAULT_SETTINGS: Settings = {
   contactInfo: { fullName: '', phone: '', email: '', linkedin: '', github: '' },
@@ -203,5 +213,60 @@ describe('settings:validateApiKey', () => {
     expect(result).toBe(false)
     expect(keytar.setPassword).not.toHaveBeenCalled()
     expect(resetAnthropicClient).not.toHaveBeenCalled()
+  })
+})
+
+// ── settings:getAvailableModels ───────────────────────────────────────────────
+
+describe('settings:getAvailableModels', () => {
+  it('throws when no API key is configured', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue(null)
+    await expect(settingsGetAvailableModels()).rejects.toThrow('API key not configured')
+  })
+
+  it('calls listAvailableModels and returns the list when a key exists', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue('sk-test-key')
+    const models = ['model-1', 'model-2']
+    vi.mocked(listAvailableModels).mockResolvedValue(models)
+
+    const result = await settingsGetAvailableModels()
+
+    expect(result).toEqual(models)
+    expect(listAvailableModels).toHaveBeenCalledWith('sk-test-key')
+  })
+
+  it('caches the models list across calls', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue('sk-test-key')
+    const models = ['model-1']
+    vi.mocked(listAvailableModels).mockResolvedValue(models)
+
+    // First call populates cache
+    await settingsGetAvailableModels()
+    // Second call should use cache
+    const result = await settingsGetAvailableModels()
+
+    expect(result).toEqual(models)
+    expect(listAvailableModels).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears the cache when a new API key is validated', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue('sk-key-1')
+    vi.mocked(listAvailableModels).mockResolvedValue(['model-1'])
+
+    // Populate cache
+    await settingsGetAvailableModels()
+    expect(listAvailableModels).toHaveBeenCalledTimes(1)
+
+    // Validate new key
+    vi.mocked(validateApiKey).mockResolvedValue(true)
+    await settingsValidateApiKey('sk-key-2')
+
+    // Next call to getAvailableModels should call listAvailableModels again
+    vi.mocked(keytar.getPassword).mockResolvedValue('sk-key-2')
+    vi.mocked(listAvailableModels).mockResolvedValue(['model-2'])
+    const result = await settingsGetAvailableModels()
+
+    expect(result).toEqual(['model-2'])
+    expect(listAvailableModels).toHaveBeenCalledTimes(2)
   })
 })

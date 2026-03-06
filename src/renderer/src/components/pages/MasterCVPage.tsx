@@ -65,8 +65,9 @@ export default function MasterCVPage(): JSX.Element {
       {/* Page header */}
       <Box
         sx={{
-          bgcolor: 'white',
-          borderBottom: '1px solid #e0e0e0',
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           px: 3,
           display: 'flex',
           alignItems: 'center',
@@ -173,8 +174,9 @@ function AiUsageBar({
   return (
     <Box
       sx={{
-        bgcolor: '#f9fafb',
-        borderBottom: '1px solid #e8ecf0',
+        bgcolor: 'background.default',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
         px: 3,
         py: 0.75,
         display: 'flex',
@@ -209,22 +211,24 @@ function UnincorporatedDocsBanner(): JSX.Element {
   return (
     <Box
       sx={{
-        bgcolor: '#fffbeb',
-        border: '1px solid #fcd34d',
+        bgcolor: 'warning.light',
+        border: '1px solid',
+        borderColor: 'warning.main',
         borderRadius: 2,
         px: 2.5,
         py: 2,
         display: 'flex',
         alignItems: 'flex-start',
         gap: 2,
-        flexShrink: 0
+        flexShrink: 0,
+        opacity: 0.9
       }}
     >
       <Box sx={{ flex: 1 }}>
-        <Typography fontWeight={600} sx={{ fontSize: 13, color: '#92400e', mb: 0.75 }}>
+        <Typography fontWeight={600} sx={{ fontSize: 13, color: 'warning.dark', mb: 0.75 }}>
           Unincorporated documents
         </Typography>
-        <Typography sx={{ fontSize: 12, color: '#78350f', mb: 1.25 }}>
+        <Typography sx={{ fontSize: 12, color: 'warning.dark', mb: 1.25 }}>
           The following finalized documents have not yet been incorporated into the Master CV:
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
@@ -325,7 +329,8 @@ function ExperienceSection(): JSX.Element {
       <Box
         sx={{
           mt: 1.5,
-          border: '1.5px dashed #d1d5db',
+          border: '1.5px dashed',
+          borderColor: 'divider',
           borderRadius: 2,
           px: 2,
           py: 1.25,
@@ -334,10 +339,10 @@ function ExperienceSection(): JSX.Element {
           justifyContent: 'center',
           gap: 0.75,
           cursor: 'pointer',
-          color: '#9ca3af',
+          color: 'text.secondary',
           fontSize: 12.5,
           userSelect: 'none',
-          '&:hover': { bgcolor: '#f9fafb', borderColor: '#9ca3af', color: '#6b7280' }
+          '&:hover': { bgcolor: 'action.hover', color: 'text.primary' }
         }}
       >
         <AddIcon sx={{ fontSize: 15 }} />
@@ -367,8 +372,9 @@ function ExperienceEntryCard({ entry }: { entry: MasterCVExperienceEntry }): JSX
   return (
     <Box
       sx={{
-        bgcolor: 'white',
-        border: '1px solid #e5e7eb',
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 2,
         px: 2.5,
         py: 2
@@ -378,25 +384,31 @@ function ExperienceEntryCard({ entry }: { entry: MasterCVExperienceEntry }): JSX
       <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.25 }}>
         <Box sx={{ flex: 1 }}>
           {/* TODO: when isEditingEntry, replace with TextFields for title / company / startDate / endDate */}
-          <Typography fontWeight={700} sx={{ fontSize: 13.5, color: '#111827' }}>
+          <Typography fontWeight={700} sx={{ fontSize: 13.5, color: 'text.primary' }}>
             {entry.title}
             <Typography
               component="span"
-              sx={{ fontWeight: 400, color: '#6b7280', ml: 0.75, fontSize: 13 }}
+              sx={{ fontWeight: 400, color: 'text.secondary', ml: 0.75, fontSize: 13 }}
             >
               · {entry.company}
             </Typography>
           </Typography>
-          <Typography sx={{ fontSize: 11.5, color: '#9ca3af', mt: 0.25 }}>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.25 }}>
             {entry.startDate} – {entry.endDate}
           </Typography>
         </Box>
         {/* TODO: onClick={() => setIsEditingEntry(true)} */}
-        <IconButton size="small" sx={{ color: '#9ca3af', '&:hover': { color: '#374151' } }}>
+        <IconButton
+          size="small"
+          sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+        >
           <EditIcon sx={{ fontSize: 15 }} />
         </IconButton>
         {/* TODO: onClick → confirmation dialog, then remove entry and call save */}
-        <IconButton size="small" sx={{ color: '#9ca3af', '&:hover': { color: '#dc2626' } }}>
+        <IconButton
+          size="small"
+          sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+        >
           <DeleteIcon sx={{ fontSize: 15 }} />
         </IconButton>
       </Box>
@@ -444,12 +456,12 @@ function BulletRow({ bullet }: { bullet: MasterCVBullet }): JSX.Element {
   // TODO: const [draft, setDraft] = useState(bullet.text)
 
   const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
-    manual: { bg: '#e0e7ff', text: '#3730a3' },
-    ingested: { bg: '#d1fae5', text: '#065f46' },
-    finalized: { bg: '#dbeafe', text: '#1e40af' },
-    regenerated: { bg: '#fce7f3', text: '#9d174d' }
+    manual: { bg: 'action.hover', text: 'primary.main' },
+    ingested: { bg: 'action.hover', text: 'success.main' },
+    finalized: { bg: 'action.hover', text: 'info.main' },
+    regenerated: { bg: 'action.hover', text: 'secondary.main' }
   }
-  const colors = SOURCE_COLORS[bullet.source] ?? { bg: '#f3f4f6', text: '#374151' }
+  const colors = SOURCE_COLORS[bullet.source] ?? { bg: 'action.hover', text: 'text.primary' }
 
   return (
     <Box
@@ -461,19 +473,19 @@ function BulletRow({ bullet }: { bullet: MasterCVBullet }): JSX.Element {
         px: 0.5,
         borderRadius: 1,
         cursor: 'pointer',
-        '&:hover': { bgcolor: '#f9fafb' },
+        '&:hover': { bgcolor: 'action.hover' },
         '&:hover .bullet-delete': { opacity: 1 }
       }}
     >
       <Typography
-        sx={{ mt: 0.15, color: '#374151', fontSize: 12.5, lineHeight: 1.1, flexShrink: 0 }}
+        sx={{ mt: 0.15, color: 'text.primary', fontSize: 12.5, lineHeight: 1.1, flexShrink: 0 }}
       >
         •
       </Typography>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {/* TODO: when isEditing, render TextField multiline with value={draft} */}
         {/* TODO: onKeyDown: Enter → save (update bullet.text, call masterCV:save), Escape → cancel */}
-        <Typography sx={{ fontSize: 12.5, color: '#374151', lineHeight: 1.6 }}>
+        <Typography sx={{ fontSize: 12.5, color: 'text.primary', lineHeight: 1.6 }}>
           {bullet.text}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
@@ -490,7 +502,7 @@ function BulletRow({ bullet }: { bullet: MasterCVBullet }): JSX.Element {
             }}
           />
           {bullet.usedIn.length > 0 && (
-            <Typography sx={{ fontSize: 10.5, color: '#9ca3af' }}>
+            <Typography sx={{ fontSize: 10.5, color: 'text.secondary' }}>
               Used in {bullet.usedIn.length} {bullet.usedIn.length === 1 ? 'session' : 'sessions'}
             </Typography>
           )}
@@ -504,9 +516,9 @@ function BulletRow({ bullet }: { bullet: MasterCVBullet }): JSX.Element {
         sx={{
           opacity: 0,
           transition: 'opacity 0.15s',
-          color: '#9ca3af',
+          color: 'text.secondary',
           p: 0.25,
-          '&:hover': { color: '#dc2626' }
+          '&:hover': { color: 'error.main' }
         }}
       >
         <DeleteIcon sx={{ fontSize: 13 }} />
@@ -572,7 +584,13 @@ function EducationSection(): JSX.Element {
     <Box>
       <SectionHeading title="Education" />
       <Box
-        sx={{ bgcolor: 'white', border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}
+        sx={{
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden'
+        }}
       >
         {/* TODO: masterCV.education.map(e => <EducationRow key={e.id} entry={e} onSave={...} onDelete={...} />) */}
         <EducationRow
@@ -586,15 +604,16 @@ function EducationSection(): JSX.Element {
           sx={{
             px: 2.5,
             py: 1,
-            borderTop: '1px solid #f3f4f6',
+            borderTop: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             alignItems: 'center',
             gap: 0.5,
-            color: '#9ca3af',
+            color: 'text.secondary',
             fontSize: 12,
             cursor: 'pointer',
             userSelect: 'none',
-            '&:hover': { bgcolor: '#f9fafb', color: '#6b7280' }
+            '&:hover': { bgcolor: 'action.hover', color: 'text.primary' }
           }}
         >
           <AddIcon sx={{ fontSize: 14 }} />
@@ -631,16 +650,16 @@ function EducationRow({
         py: 1.5,
         display: 'flex',
         alignItems: 'center',
-        '&:hover': { bgcolor: '#f9fafb' },
+        '&:hover': { bgcolor: 'action.hover' },
         '&:hover .edu-actions': { opacity: 1 }
       }}
     >
       <Box sx={{ flex: 1 }}>
         {/* TODO: when isEditing, render TextFields instead of Typography */}
-        <Typography fontWeight={600} sx={{ fontSize: 13, color: '#111827' }}>
+        <Typography fontWeight={600} sx={{ fontSize: 13, color: 'text.primary' }}>
           {degree}
         </Typography>
-        <Typography sx={{ fontSize: 12, color: '#6b7280' }}>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
           {institution} · {graduationDate}
         </Typography>
       </Box>
@@ -649,11 +668,17 @@ function EducationRow({
         sx={{ display: 'flex', opacity: 0, transition: 'opacity 0.15s' }}
       >
         {/* TODO: onClick={() => setIsEditing(true)} */}
-        <IconButton size="small" sx={{ color: '#9ca3af', '&:hover': { color: '#374151' } }}>
+        <IconButton
+          size="small"
+          sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+        >
           <EditIcon sx={{ fontSize: 14 }} />
         </IconButton>
         {/* TODO: onClick → remove entry and call masterCV:save */}
-        <IconButton size="small" sx={{ color: '#9ca3af', '&:hover': { color: '#dc2626' } }}>
+        <IconButton
+          size="small"
+          sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+        >
           <DeleteIcon sx={{ fontSize: 14 }} />
         </IconButton>
       </Box>
@@ -680,7 +705,13 @@ function SkillsSection(): JSX.Element {
     <Box>
       <SectionHeading title="Skills" />
       <Box
-        sx={{ bgcolor: 'white', border: '1px solid #e5e7eb', borderRadius: 2, overflow: 'hidden' }}
+        sx={{
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden'
+        }}
       >
         {/* TODO: masterCV.skills.map(cat => <SkillCategoryRow key={cat.id} cat={cat} onSave={...} onDelete={...} />) */}
         <SkillCategoryRow
@@ -697,15 +728,16 @@ function SkillsSection(): JSX.Element {
           sx={{
             px: 2.5,
             py: 1,
-            borderTop: '1px solid #f3f4f6',
+            borderTop: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             alignItems: 'center',
             gap: 0.5,
-            color: '#9ca3af',
+            color: 'text.secondary',
             fontSize: 12,
             cursor: 'pointer',
             userSelect: 'none',
-            '&:hover': { bgcolor: '#f9fafb', color: '#6b7280' }
+            '&:hover': { bgcolor: 'action.hover', color: 'text.primary' }
           }}
         >
           <AddIcon sx={{ fontSize: 14 }} />
@@ -734,11 +766,12 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
       sx={{
         px: 2.5,
         py: 1.5,
-        borderBottom: '1px solid #f3f4f6',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 2,
-        '&:hover': { bgcolor: '#f9fafb' },
+        '&:hover': { bgcolor: 'action.hover' },
         '&:hover .cat-delete': { opacity: 1 }
       }}
     >
@@ -749,7 +782,7 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
         fontWeight={600}
         sx={{
           fontSize: 12.5,
-          color: '#374151',
+          color: 'text.primary',
           minWidth: 150,
           pt: 0.35,
           cursor: 'pointer',
@@ -787,7 +820,7 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
             fontSize: 11.5,
             height: 22,
             cursor: 'pointer',
-            color: '#9ca3af',
+            color: 'text.secondary',
             borderStyle: 'dashed'
           }}
         />
@@ -801,9 +834,9 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
         sx={{
           opacity: 0,
           transition: 'opacity 0.15s',
-          color: '#9ca3af',
+          color: 'text.secondary',
           p: 0.25,
-          '&:hover': { color: '#dc2626' },
+          '&:hover': { color: 'error.main' },
           flexShrink: 0
         }}
       >
@@ -818,7 +851,7 @@ function SkillCategoryRow({ category, items }: { category: string; items: string
 function SectionHeading({ title }: { title: string }): JSX.Element {
   return (
     <Box sx={{ mb: 1.25 }}>
-      <Typography fontWeight={700} sx={{ fontSize: 14, color: '#111827', mb: 0.5 }}>
+      <Typography fontWeight={700} sx={{ fontSize: 14, color: 'text.primary', mb: 0.5 }}>
         {title}
       </Typography>
       <Divider />

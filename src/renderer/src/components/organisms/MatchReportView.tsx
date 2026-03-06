@@ -36,7 +36,7 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
       {/* Header card: rating badge + Regenerate */}
       <Box
         sx={{
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '2px',
           boxShadow: '0 2px 12px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.04)',
           px: 4,
@@ -48,10 +48,10 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
       >
         <RatingBadge rating={report.rating} />
         <Box sx={{ flex: 1 }}>
-          <Typography fontWeight={600} sx={{ fontSize: 15, color: '#111827' }}>
+          <Typography fontWeight={600} sx={{ fontSize: 15, color: 'text.primary' }}>
             {report.rating} Match
           </Typography>
-          <Typography sx={{ fontSize: 12, color: '#6b7280' }}>
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
             Generated {new Date(report.generatedAt).toLocaleString()}
           </Typography>
         </Box>
@@ -64,7 +64,7 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
       {/* Two-column body: Strengths / Gaps */}
       <Box
         sx={{
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '2px',
           boxShadow: '0 2px 12px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.04)',
           overflow: 'hidden'
@@ -79,7 +79,7 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
                 fontSize: 11,
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
-                color: '#374151',
+                color: 'text.primary',
                 mb: 2
               }}
             >
@@ -88,9 +88,9 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
             {report.strengths.map((item, i) => (
               <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1.25, alignItems: 'flex-start' }}>
                 <CheckCircleOutlineIcon
-                  sx={{ fontSize: 15, color: '#16a34a', mt: 0.25, flexShrink: 0 }}
+                  sx={{ fontSize: 15, color: 'success.main', mt: 0.25, flexShrink: 0 }}
                 />
-                <Typography sx={{ fontSize: '9.5pt', color: '#374151', lineHeight: 1.5 }}>
+                <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', lineHeight: 1.5 }}>
                   {item}
                 </Typography>
               </Box>
@@ -108,7 +108,7 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
                 fontSize: 11,
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
-                color: '#374151',
+                color: 'text.primary',
                 mb: 2
               }}
             >
@@ -117,9 +117,9 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
             {report.gaps.map((item, i) => (
               <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1.25, alignItems: 'flex-start' }}>
                 <WarningAmberIcon
-                  sx={{ fontSize: 15, color: '#d97706', mt: 0.25, flexShrink: 0 }}
+                  sx={{ fontSize: 15, color: 'warning.main', mt: 0.25, flexShrink: 0 }}
                 />
-                <Typography sx={{ fontSize: '9.5pt', color: '#374151', lineHeight: 1.5 }}>
+                <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', lineHeight: 1.5 }}>
                   {item}
                 </Typography>
               </Box>

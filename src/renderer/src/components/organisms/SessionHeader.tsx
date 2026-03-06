@@ -40,8 +40,9 @@ export default function SessionHeader({ session }: SessionHeaderProps): JSX.Elem
   return (
     <Box
       sx={{
-        bgcolor: 'white',
-        borderBottom: '1px solid #e0e0e0',
+        bgcolor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
         px: 3,
         display: 'flex',
         alignItems: 'center',

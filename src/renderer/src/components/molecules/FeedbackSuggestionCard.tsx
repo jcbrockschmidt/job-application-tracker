@@ -47,9 +47,10 @@ export default function FeedbackSuggestionCard({
   return (
     <Box
       sx={{
-        border: '1px solid #e5e7eb',
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 2,
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         p: 2,
         display: 'flex',
         flexDirection: 'column',
@@ -70,12 +71,12 @@ export default function FeedbackSuggestionCard({
             '& .MuiChip-label': { px: 0.875 }
           }}
         />
-        <Typography sx={{ fontSize: 12, color: '#6b7280' }}>{item.target}</Typography>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{item.target}</Typography>
       </Box>
 
       {/* Suggestion text */}
       {/* TODO: when isEditing, render TextField pre-filled with editDraft; Enter/Save applies */}
-      <Typography sx={{ fontSize: 12.5, color: '#111827', lineHeight: 1.6 }}>
+      <Typography sx={{ fontSize: 12.5, color: 'text.primary', lineHeight: 1.6 }}>
         {item.suggestion}
       </Typography>
 
@@ -87,15 +88,17 @@ export default function FeedbackSuggestionCard({
           {/* TODO: replace placeholder with the actual current text of item.target, looked up from document state */}
           <Box
             sx={{
-              bgcolor: '#fef2f2',
-              border: '1px solid #fecaca',
+              bgcolor: 'error.light',
+              border: '1px solid',
+              borderColor: 'error.main',
               borderRadius: 1,
               px: 1.25,
               py: 0.75,
               fontSize: 11.5,
-              color: '#7f1d1d',
+              color: 'error.contrastText',
               textDecoration: 'line-through',
-              lineHeight: 1.55
+              lineHeight: 1.55,
+              opacity: 0.8
             }}
           >
             [Current text of &ldquo;{item.target}&rdquo; — wire to document state in Phase 4]
@@ -104,14 +107,16 @@ export default function FeedbackSuggestionCard({
           {/* After row */}
           <Box
             sx={{
-              bgcolor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
+              bgcolor: 'success.light',
+              border: '1px solid',
+              borderColor: 'success.main',
               borderRadius: 1,
               px: 1.25,
               py: 0.75,
               fontSize: 11.5,
-              color: '#14532d',
-              lineHeight: 1.55
+              color: 'success.contrastText',
+              lineHeight: 1.55,
+              opacity: 0.8
             }}
           >
             {item.proposedText}
@@ -126,7 +131,7 @@ export default function FeedbackSuggestionCard({
           onClick={() => setShowJustification((v) => !v)}
           sx={{
             fontSize: 11.5,
-            color: '#6b7280',
+            color: 'text.secondary',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -137,7 +142,7 @@ export default function FeedbackSuggestionCard({
           {showJustification ? 'Hide justification' : 'Why?'}
         </Typography>
         <Collapse in={showJustification}>
-          <Typography sx={{ fontSize: 11.5, color: '#6b7280', mt: 0.5, lineHeight: 1.6 }}>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5, lineHeight: 1.6 }}>
             {item.justification}
           </Typography>
         </Collapse>
@@ -162,7 +167,7 @@ export default function FeedbackSuggestionCard({
         <Button
           size="small"
           onClick={() => onDismiss(item.id)}
-          sx={{ fontSize: 11.5, color: '#6b7280' }}
+          sx={{ fontSize: 11.5, color: 'text.secondary' }}
         >
           Dismiss
         </Button>

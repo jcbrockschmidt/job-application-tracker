@@ -81,8 +81,9 @@ export default function FeedbackPromptBar(
       {/* Prompt input + Get Feedback button */}
       <Box
         sx={{
-          bgcolor: 'white',
-          border: '1px solid #e5e7eb',
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
           borderRadius: 2,
           px: 2.5,
           py: 2,
@@ -127,12 +128,12 @@ export default function FeedbackPromptBar(
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {/* Section header: remaining count + Dismiss All */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography fontWeight={600} sx={{ fontSize: 12.5, color: '#374151', flex: 1 }}>
+            <Typography fontWeight={600} sx={{ fontSize: 12.5, color: 'text.primary', flex: 1 }}>
               {/* TODO: "{remaining} of {total} remaining" using state */}
               Feedback ({remaining} of {total} remaining)
             </Typography>
             {/* TODO: onClick={() => setSuggestions([])} */}
-            <Button size="small" sx={{ fontSize: 11.5, color: '#6b7280' }}>
+            <Button size="small" sx={{ fontSize: 11.5, color: 'text.secondary' }}>
               Dismiss All
             </Button>
           </Box>

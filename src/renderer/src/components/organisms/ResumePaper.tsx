@@ -52,7 +52,7 @@ export default function ResumePaper({
   return (
     <Box
       sx={{
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         width: 720,
         minWidth: 720,
         px: 8,
@@ -92,10 +92,12 @@ export default function ResumePaper({
                 fontSize: '10.5pt'
               }}
             >
-              <Typography sx={{ fontSize: '10.5pt', fontWeight: 600, color: '#111827' }}>
+              <Typography sx={{ fontSize: '10.5pt', fontWeight: 600, color: 'text.primary' }}>
                 {entry.degree} · {entry.institution}
               </Typography>
-              <Typography sx={{ fontSize: '9.5pt', color: '#6b7280', ml: 1.5, flexShrink: 0 }}>
+              <Typography
+                sx={{ fontSize: '9.5pt', color: 'text.secondary', ml: 1.5, flexShrink: 0 }}
+              >
                 {entry.graduationDate}
               </Typography>
             </Box>
@@ -128,7 +130,7 @@ export default function ResumePaper({
               >
                 <Box
                   component="span"
-                  sx={{ fontSize: '10.5pt', fontWeight: 600, color: '#111827' }}
+                  sx={{ fontSize: '10.5pt', fontWeight: 600, color: 'text.primary' }}
                 >
                   {cat.category} :
                 </Box>{' '}
@@ -177,7 +179,7 @@ function ExperienceEntry({
         mb: 1.625,
         position: 'relative',
         borderRadius: '4px',
-        bgcolor: entryHovered ? '#f5f7fa' : 'transparent',
+        bgcolor: entryHovered ? 'action.hover' : 'transparent',
         transition: 'background-color 0.1s',
         mx: -1.5,
         px: 1.5,
@@ -220,7 +222,7 @@ function ExperienceEntry({
             <IconButton size="small" onClick={handleHeaderCancel}>
               <CloseIcon sx={{ fontSize: 16 }} />
             </IconButton>
-            <IconButton size="small" onClick={handleHeaderSave} sx={{ color: '#4caf50' }}>
+            <IconButton size="small" onClick={handleHeaderSave} sx={{ color: 'success.main' }}>
               <CheckIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
@@ -234,13 +236,13 @@ function ExperienceEntry({
             alignItems: 'baseline',
             cursor: 'pointer',
             borderRadius: '2px',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' }
+            '&:hover': { bgcolor: 'action.selected' }
           }}
         >
-          <Typography sx={{ fontSize: '10.5pt', fontWeight: 600, color: '#111827' }}>
+          <Typography sx={{ fontSize: '10.5pt', fontWeight: 600, color: 'text.primary' }}>
             {entry.title} · {entry.company}
           </Typography>
-          <Typography sx={{ fontSize: '9.5pt', color: '#6b7280', ml: 1.5, flexShrink: 0 }}>
+          <Typography sx={{ fontSize: '9.5pt', color: 'text.secondary', ml: 1.5, flexShrink: 0 }}>
             {entry.startDate} – {entry.endDate}
           </Typography>
         </Box>
@@ -295,7 +297,7 @@ function BulletItem({
       onMouseLeave={() => setHovered(false)}
       sx={{
         fontSize: '9.5pt',
-        color: '#374151',
+        color: 'text.primary',
         lineHeight: 1.5,
         mb: 0.25,
         position: 'relative',
@@ -304,9 +306,9 @@ function BulletItem({
           content: isEditing || noBullet ? 'none' : '"•"',
           position: 'absolute',
           left: -14,
-          color: '#374151'
+          color: 'text.primary'
         },
-        bgcolor: hovered ? '#f5f7fa' : 'transparent',
+        bgcolor: hovered ? 'action.hover' : 'transparent',
         transition: 'background-color 0.1s'
       }}
     >
@@ -328,7 +330,7 @@ function BulletItem({
             <IconButton size="small" onClick={handleCancel} sx={{ p: 0.25 }}>
               <CloseIcon sx={{ fontSize: 16 }} />
             </IconButton>
-            <IconButton size="small" onClick={handleSave} sx={{ p: 0.25, color: '#4caf50' }}>
+            <IconButton size="small" onClick={handleSave} sx={{ p: 0.25, color: 'success.main' }}>
               <CheckIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
@@ -338,7 +340,7 @@ function BulletItem({
           onClick={handleEdit}
           sx={{
             cursor: 'pointer',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+            '&:hover': { bgcolor: 'action.selected' },
             borderRadius: '2px'
           }}
         >
@@ -366,7 +368,7 @@ function BulletHoverToolbar({
         display: 'flex',
         alignItems: 'center',
         gap: 0.25,
-        bgcolor: '#1e293b',
+        bgcolor: 'grey.900',
         borderRadius: 1,
         px: 0.5,
         py: 0.375,
@@ -381,7 +383,7 @@ function BulletHoverToolbar({
         size="small"
         aria-label="Edit bullet"
         onClick={onEdit}
-        sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}
+        sx={{ color: 'grey.300', p: 0.375, '&:hover': { color: '#fff' } }}
       >
         <EditIcon sx={{ fontSize: 13 }} />
       </IconButton>
@@ -389,7 +391,7 @@ function BulletHoverToolbar({
         size="small"
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
         sx={{
-          color: '#e2e8f0',
+          color: 'grey.300',
           fontSize: 11,
           px: 0.75,
           py: 0.25,
@@ -428,15 +430,15 @@ function EntryReviseChip({
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
         aria-label={`Revise ${entryLabel} with AI`}
         sx={{
-          bgcolor: '#1e293b',
-          color: '#e2e8f0',
+          bgcolor: 'grey.900',
+          color: 'grey.300',
           fontSize: 11,
           px: 1,
           py: 0.25,
           borderRadius: 1,
           textTransform: 'none',
           boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-          '&:hover': { bgcolor: '#0f172a', color: '#fff' }
+          '&:hover': { bgcolor: '#000', color: '#fff' }
         }}
       >
         Revise with AI
@@ -450,15 +452,17 @@ function EntryReviseChip({
 function ResumeHeader({ contact }: { contact: ContactInfo }): JSX.Element {
   return (
     <>
-      <Typography sx={{ fontSize: '22pt', fontWeight: 600, color: '#111827', mb: 0.625 }}>
+      <Typography sx={{ fontSize: '22pt', fontWeight: 600, color: 'text.primary', mb: 0.625 }}>
         {contact.fullName || 'Your Name'}
       </Typography>
-      <Typography sx={{ fontSize: '9.5pt', color: '#374151', letterSpacing: '0.01em', mb: 0.25 }}>
+      <Typography
+        sx={{ fontSize: '9.5pt', color: 'text.secondary', letterSpacing: '0.01em', mb: 0.25 }}
+      >
         {[contact.phone, contact.email, contact.linkedin, contact.github]
           .filter(Boolean)
           .join(' · ')}
       </Typography>
-      <Box sx={{ borderTop: '1px solid #1e3a5f', mt: 1.75 }} />
+      <Box sx={{ borderTop: '1px solid', borderColor: 'primary.dark', mt: 1.75 }} />
     </>
   )
 }
@@ -492,8 +496,9 @@ function ResumeSection({ title, sectionScope, children }: ResumeSectionProps): J
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: '#1e3a5f',
-            bgcolor: '#e8edf5',
+            color: 'primary.contrastText',
+            bgcolor: 'primary.main',
+            opacity: 0.85,
             px: 0.75,
             py: 0.375
           }}
@@ -532,15 +537,15 @@ function SectionReviseChip({
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
         aria-label={`Revise ${sectionScope} section with AI`}
         sx={{
-          bgcolor: '#1e293b',
-          color: '#e2e8f0',
+          bgcolor: 'grey.900',
+          color: 'grey.300',
           fontSize: 11,
           px: 1,
           py: 0.25,
           borderRadius: 1,
           textTransform: 'none',
           boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-          '&:hover': { bgcolor: '#0f172a', color: '#fff' }
+          '&:hover': { bgcolor: '#000', color: '#fff' }
         }}
       >
         Revise section with AI

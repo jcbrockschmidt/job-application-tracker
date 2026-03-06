@@ -73,8 +73,9 @@ export default function WritingProfilePage(): JSX.Element {
       {/* Page header */}
       <Box
         sx={{
-          bgcolor: 'white',
-          borderBottom: '1px solid #e0e0e0',
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           px: 3,
           display: 'flex',
           alignItems: 'center',
@@ -168,8 +169,9 @@ function AiUsageBar({
   return (
     <Box
       sx={{
-        bgcolor: '#f9fafb',
-        borderBottom: '1px solid #e8ecf0',
+        bgcolor: 'background.default',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
         px: 3,
         py: 0.75,
         display: 'flex',
@@ -210,22 +212,24 @@ function UnincorporatedCoverLettersBanner(): JSX.Element {
   return (
     <Box
       sx={{
-        bgcolor: '#fffbeb',
-        border: '1px solid #fcd34d',
+        bgcolor: 'warning.light',
+        border: '1px solid',
+        borderColor: 'warning.main',
         borderRadius: 2,
         px: 2.5,
         py: 2,
         display: 'flex',
         alignItems: 'flex-start',
         gap: 2,
-        flexShrink: 0
+        flexShrink: 0,
+        opacity: 0.9
       }}
     >
       <Box sx={{ flex: 1 }}>
-        <Typography fontWeight={600} sx={{ fontSize: 13, color: '#92400e', mb: 0.75 }}>
+        <Typography fontWeight={600} sx={{ fontSize: 13, color: 'warning.dark', mb: 0.75 }}>
           Unincorporated cover letters
         </Typography>
-        <Typography sx={{ fontSize: 12, color: '#78350f', mb: 1.25 }}>
+        <Typography sx={{ fontSize: 12, color: 'warning.dark', mb: 1.25 }}>
           The following cover letters have not yet been reflected in the writing profile:
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
@@ -273,8 +277,9 @@ function ProfileCard(_props: { profile?: WritingProfile | null }): JSX.Element {
   return (
     <Box
       sx={{
-        bgcolor: 'white',
-        border: '1px solid #e5e7eb',
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 2,
         overflow: 'hidden'
       }}
@@ -286,17 +291,18 @@ function ProfileCard(_props: { profile?: WritingProfile | null }): JSX.Element {
           py: 1.5,
           display: 'flex',
           alignItems: 'center',
-          borderBottom: '1px solid #f3f4f6'
+          borderBottom: '1px solid',
+          borderColor: 'divider'
         }}
       >
-        <Typography fontWeight={700} sx={{ fontSize: 13.5, color: '#111827', flex: 1 }}>
+        <Typography fontWeight={700} sx={{ fontSize: 13.5, color: 'text.primary', flex: 1 }}>
           Your writing profile
         </Typography>
         {/* TODO: onClick={() => setIsEditing(true)}, hidden when isEditing === true */}
         <Button
           size="small"
           startIcon={<EditIcon sx={{ fontSize: 13 }} />}
-          sx={{ fontSize: 12, color: '#6b7280' }}
+          sx={{ fontSize: 12, color: 'text.secondary' }}
         >
           Edit
         </Button>
@@ -312,7 +318,7 @@ function ProfileCard(_props: { profile?: WritingProfile | null }): JSX.Element {
             lineHeight: 1.75,
             whiteSpace: 'pre-wrap',
             fontStyle: 'italic',
-            color: '#9ca3af'
+            color: 'text.secondary'
           }}
         >
           {/* Placeholder shown during development; remove once writingProfile:get is wired */}
@@ -337,7 +343,7 @@ function ProfileCard(_props: { profile?: WritingProfile | null }): JSX.Element {
       {/* Metadata row */}
       <Box sx={{ px: 2.5, py: 1.25 }}>
         {/* TODO: show profile.lastUpdatedAt and profile.derivedFromCount when profile is set */}
-        <Typography sx={{ fontSize: 11.5, color: '#9ca3af' }}>
+        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
           {/* e.g. "Last updated Feb 27, 2026 · Derived from 4 letters" */}
           No profile generated yet
         </Typography>

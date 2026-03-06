@@ -41,7 +41,7 @@ export default function CoverLetterPaper({
   return (
     <Box
       sx={{
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         width: 720,
         minWidth: 720,
         px: 8,
@@ -55,12 +55,12 @@ export default function CoverLetterPaper({
       <CoverLetterHeader contact={contact} />
 
       {/* Date */}
-      <Typography sx={{ fontSize: '9.5pt', color: '#374151', mt: 2.5, mb: 2 }}>
+      <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', mt: 2.5, mb: 2 }}>
         {coverLetter.date}
       </Typography>
 
       {/* Salutation */}
-      <Typography sx={{ fontSize: '9.5pt', color: '#374151', mb: 1.75 }}>
+      <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', mb: 1.75 }}>
         {coverLetter.salutation}
       </Typography>
 
@@ -71,12 +71,12 @@ export default function CoverLetterPaper({
       ))}
 
       {/* Sign-off */}
-      <Typography sx={{ fontSize: '9.5pt', color: '#374151', mt: 2, mb: 3 }}>
+      <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', mt: 2, mb: 3 }}>
         {coverLetter.signoff}
       </Typography>
 
       {/* Signature name */}
-      <Typography sx={{ fontSize: '9.5pt', fontWeight: 600, color: '#111827' }}>
+      <Typography sx={{ fontSize: '9.5pt', fontWeight: 600, color: 'text.primary' }}>
         {contact.fullName || 'Your Name'}
       </Typography>
     </Box>
@@ -120,11 +120,11 @@ function ParagraphItem({ paragraph, index }: { paragraph: string; index: number 
       <Typography
         sx={{
           fontSize: '9.5pt',
-          color: '#374151',
+          color: 'text.primary',
           lineHeight: 1.65,
           whiteSpace: 'pre-wrap',
           borderRadius: '3px',
-          bgcolor: hovered ? '#f5f7fa' : 'transparent',
+          bgcolor: hovered ? 'action.hover' : 'transparent',
           transition: 'background-color 0.1s'
         }}
       >
@@ -166,7 +166,7 @@ function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
         display: 'flex',
         alignItems: 'center',
         gap: 0.25,
-        bgcolor: '#1e293b',
+        bgcolor: 'grey.900',
         borderRadius: 1,
         px: 0.5,
         py: 0.375,
@@ -182,7 +182,7 @@ function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
       <IconButton
         size="small"
         aria-label="Edit paragraph"
-        sx={{ color: '#e2e8f0', p: 0.375, '&:hover': { color: '#fff' } }}
+        sx={{ color: 'grey.300', p: 0.375, '&:hover': { color: '#fff' } }}
       >
         <EditIcon sx={{ fontSize: 13 }} />
       </IconButton>
@@ -191,7 +191,7 @@ function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
         size="small"
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
         sx={{
-          color: '#e2e8f0',
+          color: 'grey.300',
           fontSize: 11,
           px: 0.75,
           py: 0.25,
@@ -211,15 +211,17 @@ function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
 function CoverLetterHeader({ contact }: { contact: ContactInfo }): JSX.Element {
   return (
     <>
-      <Typography sx={{ fontSize: '22pt', fontWeight: 600, color: '#111827', mb: 0.625 }}>
+      <Typography sx={{ fontSize: '22pt', fontWeight: 600, color: 'text.primary', mb: 0.625 }}>
         {contact.fullName || 'Your Name'}
       </Typography>
-      <Typography sx={{ fontSize: '9.5pt', color: '#374151', letterSpacing: '0.01em', mb: 0.25 }}>
+      <Typography
+        sx={{ fontSize: '9.5pt', color: 'text.secondary', letterSpacing: '0.01em', mb: 0.25 }}
+      >
         {[contact.phone, contact.email, contact.linkedin, contact.github]
           .filter(Boolean)
           .join(' · ')}
       </Typography>
-      <Box sx={{ borderTop: '1px solid #1e3a5f', mt: 1.75 }} />
+      <Box sx={{ borderTop: '1px solid', borderColor: 'primary.dark', mt: 1.75 }} />
     </>
   )
 }
