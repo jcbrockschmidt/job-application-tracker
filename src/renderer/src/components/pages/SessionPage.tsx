@@ -81,7 +81,7 @@ export default function SessionPage(): JSX.Element {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-      <SessionHeader session={session} />
+      <SessionHeader session={session} activeTab={activeTab} />
       <SessionTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}

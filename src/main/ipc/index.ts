@@ -9,7 +9,7 @@
 //   Phase 5 (STUB): writingProfile:*
 //   Phase 6 (STUB): export:docx, backup:*
 
-import { ipcMain, app } from 'electron'
+import { ipcMain, app, dialog } from 'electron'
 import { join, extname, basename } from 'path'
 import { readFileSync, existsSync, copyFileSync, mkdirSync, rmSync } from 'fs'
 import keytar from 'keytar'
@@ -40,6 +40,7 @@ import { extractText } from '../ingestion'
 import { extractCompanyRolePrompt, extractResumePrompt, tailorResumePrompt } from '../ai/prompts'
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
+import { exportResumePdf, exportCoverLetterPdf } from '../export'
 import type {
   Settings,
   SourceDocType,
@@ -830,12 +831,69 @@ export function registerIpcHandlers(): void {
   })
 
   // ─── Export ──────────────────────────────────────────────────────────────────
-  // STUB: Phase 1 (pdf) / Phase 6 (docx)
+  // Implementation status: Phase 1.7 (pdf), Phase 6.1 (docx)
 
-  ipcMain.handle('export:pdf', async (_event, _sessionId: string, _type: DocumentType) => {
-    // TODO: Render document to PDF via Electron's webContents.printToPDF.
-    throw new Error('Not implemented')
-  })
+  ipcMain.handle(
+    'export:pdf',
+    async (_event, sessionId: string, type: DocumentType): Promise<string> => {
+      const db = getDb()
+      const settings = readSettings()
+
+      // 1. Load the session and application from the DB.
+      const rows = db
+        .select()
+        .from(sessionsTable)
+        .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+        .where(eq(sessionsTable.id, sessionId))
+        .all()
+
+      if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
+      const { sessions, applications } = rows[0]
+
+      const { resume, coverLetter } = readSessionDocs(applications.directoryPath)
+      const contact = settings.contactInfo
+
+      // 2. Determine default filename.
+      const docLabel = type === 'resume' ? 'Resume' : 'Cover Letter'
+      const defaultFilename = `${contact.fullName || 'User'} - ${
+        applications.companyName
+      } - ${docLabel}.pdf`
+
+      // 3. Show save dialog.
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: `Export ${docLabel} as PDF`,
+        defaultPath: defaultFilename,
+        filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+      })
+
+      if (canceled || !filePath) return ''
+
+      // 4. Perform export.
+      try {
+        if (type === 'resume') {
+          if (!resume) throw new Error('No resume found to export')
+          await exportResumePdf(resume, contact, filePath)
+        } else {
+          if (!coverLetter) throw new Error('No cover letter found to export')
+          await exportCoverLetterPdf(coverLetter, contact, filePath)
+        }
+        return filePath
+      } catch (err: any) {
+        // Handle specific error types as requested in Phase 1.7.
+        let message = 'Export failed'
+        if (err.code === 'ENOSPC') {
+          message = 'Export failed — not enough disk space.'
+        } else if (err.code === 'EACCES' || err.code === 'EPERM') {
+          message = `Export failed — the app doesn't have permission to write to ${filePath}.`
+        } else if (err.code === 'ENOENT') {
+          message = 'Export failed — the destination folder no longer exists.'
+        } else {
+          message = `Export failed: ${err.message}`
+        }
+        throw new Error(message)
+      }
+    }
+  )
 
   ipcMain.handle('export:docx', async (_event, _sessionId: string, _type: DocumentType) => {
     // STUB: Phase 6

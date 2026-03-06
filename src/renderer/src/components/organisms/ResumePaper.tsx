@@ -493,12 +493,11 @@ function ResumeSection({ title, sectionScope, children }: ResumeSectionProps): J
           sx={{
             flex: 1,
             fontSize: '10.5pt',
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: 'primary.contrastText',
-            bgcolor: 'primary.main',
-            opacity: 0.85,
+            color: '#1e3a5f',
+            bgcolor: '#e8edf5',
             px: 0.75,
             py: 0.375
           }}
