@@ -56,7 +56,7 @@ export default function ExportDialog({
         // Canceled
         setPdfState('idle')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setPdfError(parseExportError(err))
       setPdfState('error')
     }
@@ -72,7 +72,7 @@ export default function ExportDialog({
       } else {
         setDocxState('idle')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setDocxError(parseExportError(err))
       setDocxState('error')
     }
@@ -254,8 +254,9 @@ function exportErrorMessage(error: ExportError): string {
   }
 }
 
-function parseExportError(err: any): ExportError {
-  const message = err.message || ''
+function parseExportError(err: unknown): ExportError {
+  const error = err as { message?: string }
+  const message = error.message || ''
   if (message.includes('disk space')) return { kind: 'disk-full' }
   if (message.includes('permission')) return { kind: 'permissions', message }
   if (message.includes('no longer exists')) return { kind: 'path-not-found' }

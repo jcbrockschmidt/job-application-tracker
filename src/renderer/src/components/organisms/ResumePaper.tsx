@@ -197,7 +197,6 @@ function ExperienceEntry({
               label="Title"
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
-              autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleHeaderSave()
                 if (e.key === 'Escape') handleHeaderCancel()
@@ -319,7 +318,6 @@ function BulletItem({
             size="small"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave()
               if (e.key === 'Escape') handleCancel()

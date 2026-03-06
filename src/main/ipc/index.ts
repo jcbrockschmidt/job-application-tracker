@@ -679,8 +679,7 @@ export function registerIpcHandlers(): void {
       .all()
 
     if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
-    const { sessions, applications } = rows[0]
-
+    const { sessions: _sessions, applications } = rows[0]
     if (!applications.directoryPath) throw new Error(`Session ${sessionId} has no directory path`)
 
     let apiKey: string | null = null
@@ -848,7 +847,7 @@ export function registerIpcHandlers(): void {
         .all()
 
       if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
-      const { sessions, applications } = rows[0]
+      const { sessions: _sessions, applications } = rows[0]
 
       const { resume, coverLetter } = readSessionDocs(applications.directoryPath)
       const contact = settings.contactInfo
@@ -878,17 +877,18 @@ export function registerIpcHandlers(): void {
           await exportCoverLetterPdf(coverLetter, contact, filePath)
         }
         return filePath
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Handle specific error types as requested in Phase 1.7.
         let message = 'Export failed'
-        if (err.code === 'ENOSPC') {
+        const error = err as { code?: string; message?: string }
+        if (error.code === 'ENOSPC') {
           message = 'Export failed — not enough disk space.'
-        } else if (err.code === 'EACCES' || err.code === 'EPERM') {
+        } else if (error.code === 'EACCES' || error.code === 'EPERM') {
           message = `Export failed — the app doesn't have permission to write to ${filePath}.`
-        } else if (err.code === 'ENOENT') {
+        } else if (error.code === 'ENOENT') {
           message = 'Export failed — the destination folder no longer exists.'
         } else {
-          message = `Export failed: ${err.message}`
+          message = `Export failed: ${error.message}`
         }
         throw new Error(message)
       }

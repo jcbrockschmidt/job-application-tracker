@@ -256,7 +256,6 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
             onChange={(e) => setDraft(e.target.value)}
             variant="outlined"
             size="small"
-            autoFocus
             slotProps={{ input: { sx: { fontSize: '10pt', lineHeight: 1.6 } } }}
           />
           <Typography sx={{ fontSize: 11, color: 'text.secondary', fontStyle: 'italic' }}>

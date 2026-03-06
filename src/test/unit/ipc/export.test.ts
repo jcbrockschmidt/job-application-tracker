@@ -1,7 +1,7 @@
 // Unit tests for export:pdf IPC handler.
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import type { ResumeJson } from '@shared/types'
@@ -176,7 +176,7 @@ describe('export:pdf IPC', () => {
     })
 
     const error = new Error('No space left')
-    ;(error as any).code = 'ENOSPC'
+    ;(error as { code?: string }).code = 'ENOSPC'
     vi.mocked(exportResumePdf).mockRejectedValue(error)
 
     await expect(callHandler('export:pdf', 'sess-id-1', 'resume')).rejects.toThrow(

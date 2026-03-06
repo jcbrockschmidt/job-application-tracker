@@ -88,7 +88,6 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
               onChange={(e) => setJdDraft(e.target.value)}
               variant="outlined"
               size="small"
-              autoFocus
               slotProps={{ input: { sx: { fontSize: 12, lineHeight: 1.5 } } }}
             />
             <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
