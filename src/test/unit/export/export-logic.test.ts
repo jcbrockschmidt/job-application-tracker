@@ -55,14 +55,12 @@ describe('HTML Generation', () => {
   describe('generateCoverLetterHtml', () => {
     it('includes cover letter content', () => {
       const coverLetter: CoverLetterJson = {
-        date: 'March 5, 2026',
         salutation: 'Dear Hiring Manager,',
         paragraphs: ['I am interested in the role.', 'I have great skills.'],
         signoff: 'Sincerely,'
       }
       const html = generateCoverLetterHtml(coverLetter, contact)
 
-      expect(html).toContain('March 5, 2026')
       expect(html).toContain('Dear Hiring Manager,')
       expect(html).toContain('I am interested in the role.')
       expect(html).toContain('I have great skills.')

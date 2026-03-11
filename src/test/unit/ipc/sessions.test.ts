@@ -10,7 +10,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import type { Session, ResumeJson } from '@shared/types'
+import type { Session, ResumeJson, CoverLetterJson } from '@shared/types'
 
 let tempDir = ''
 
@@ -195,6 +195,21 @@ const RESUME_AI_RESPONSE = {
   usage: { input_tokens: 1500, output_tokens: 600 }
 }
 
+// A minimal valid AI response for cover letter generation.
+const COVER_LETTER_AI_RESPONSE = {
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify({
+        salutation: 'Dear Hiring Manager,',
+        paragraphs: ['Paragraph 1', 'Paragraph 2', 'Paragraph 3'],
+        signoff: 'Sincerely,'
+      })
+    }
+  ],
+  usage: { input_tokens: 1000, output_tokens: 400 }
+}
+
 // The extraction response (company/role from JD).
 const EXTRACTION_AI_RESPONSE = {
   content: [
@@ -336,6 +351,7 @@ describe('sessions:create', () => {
     expect(session.companyName).toBe('Acme Corp')
     expect(session.roleTitle).toBe('Senior Engineer')
     expect(session.jobDescription).toBe(JD)
+    expect(session.dateGenerated).toBeTruthy()
     expect(session.coverLetter).toBeNull()
     expect(session.matchReport).toBeNull()
     expect(typeof session.lastSaved).toBe('string')
@@ -682,5 +698,97 @@ describe('generate:resume', () => {
     await expect(callHandler('generate:resume', 'sess-id-1')).rejects.toThrow(
       'API key not configured'
     )
+  })
+})
+
+// ── generate:coverLetter ──────────────────────────────────────────────────────
+
+describe('generate:coverLetter', () => {
+  it('calls Claude and returns a CoverLetterJson', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'cl_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+    mockMessagesCreate.mockResolvedValue(COVER_LETTER_AI_RESPONSE)
+
+    const cl = await callHandler<CoverLetterJson>('generate:coverLetter', 'sess-id-1')
+
+    expect(cl.salutation).toBe('Dear Hiring Manager,')
+    expect(cl.paragraphs).toHaveLength(3)
+    expect(mockMessagesCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('writes cover-letter.json to the session directory', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'cl_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+    mockMessagesCreate.mockResolvedValue(COVER_LETTER_AI_RESPONSE)
+
+    await callHandler<CoverLetterJson>('generate:coverLetter', 'sess-id-1')
+
+    const clPath = join(sessionDir, 'cover-letter.json')
+    expect(existsSync(clPath)).toBe(true)
+    const cl = JSON.parse(readFileSync(clPath, 'utf-8')) as CoverLetterJson
+    expect(cl.paragraphs[0]).toBe('Paragraph 1')
+  })
+
+  it('updates the application row to coverLetterStatus = draft', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'cl_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+    mockMessagesCreate.mockResolvedValue(COVER_LETTER_AI_RESPONSE)
+
+    await callHandler<CoverLetterJson>('generate:coverLetter', 'sess-id-1')
+
+    expect(mockUpdate).toHaveBeenCalled()
+    const setCall = mockSet.mock.calls.find(
+      (c: unknown[]) => (c[0] as { coverLetterStatus?: string }).coverLetterStatus === 'draft'
+    )
+    expect(setCall).toBeDefined()
+  })
+})
+
+// ── sessions:update ────────────────────────────────────────────────────────────
+
+describe('sessions:update', () => {
+  it('updates the sessions row in the DB', async () => {
+    mockAll.mockReturnValue([makeMockDbRow({})])
+
+    await callHandler('sessions:update', 'sess-id-1', { jobDescription: 'New JD' })
+
+    expect(mockUpdate).toHaveBeenCalled()
+    const setCall = mockSet.mock.calls.find(
+      (c: unknown[]) => (c[0] as { jobDescription?: string }).jobDescription === 'New JD'
+    )
+    expect(setCall).toBeDefined()
+  })
+
+  it('writes resume.json when resume is included in updates', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'update_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+
+    const newResume: ResumeJson = { experience: [], education: [], skills: [] }
+    await callHandler('sessions:update', 'sess-id-1', { resume: newResume })
+
+    const resumePath = join(sessionDir, 'resume.json')
+    expect(existsSync(resumePath)).toBe(true)
+    expect(JSON.parse(readFileSync(resumePath, 'utf-8'))).toEqual(newResume)
+  })
+
+  it('writes cover-letter.json when coverLetter is included in updates', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'update_cl_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+
+    const newCL: CoverLetterJson = {
+      salutation: 'Hi',
+      paragraphs: ['P1'],
+      signoff: 'Bye'
+    }
+    await callHandler('sessions:update', 'sess-id-1', { coverLetter: newCL })
+
+    const clPath = join(sessionDir, 'cover-letter.json')
+    expect(existsSync(clPath)).toBe(true)
+    expect(JSON.parse(readFileSync(clPath, 'utf-8'))).toEqual(newCL)
   })
 })

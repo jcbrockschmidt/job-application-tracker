@@ -1,43 +1,49 @@
 // Renders a CoverLetterJson as the fixed cover letter template.
 // Same header / hairline rule as ResumePaper, then date, salutation,
 // body paragraphs, and sign-off.
-//
-// STUB: Phase 2 — layout complete; interactive features not yet implemented.
-// STUB: Phase 4 — ParagraphItem hover toolbar shape rendered; InlineRevisionPanel
-// expansion and inline editing not yet wired.
-// STUB: Phase 7 — accessibility hooks identified below; not yet implemented.
-// TODO (Phase 2):
-//   - Inline paragraph editing: clicking Edit in ParagraphHoverToolbar turns the
-//     paragraph into an auto-growing TextField (MUI multiline); Save / Cancel.
-//     Save dispatches updateSession with the edited coverLetter.
-// TODO (Phase 4):
-//   - Pass sessionId as a prop so ParagraphHoverToolbar can open InlineRevisionPanel.
-//   - "Revise with AI" button: expand InlineRevisionPanel beneath the paragraph
-//     (scope = `paragraph:${i}`). Gate through SpendingLimitDialog when over limit.
-//   - Push old paragraph text onto the undo stack before applying accepted revisions.
-// TODO (Phase 7 — keyboard navigation):
-//   - ParagraphItem: show ParagraphHoverToolbar on keyboard focus (onFocus), not only
-//     on mouse hover. Hide on blur unless focus has moved into the toolbar itself.
-// TODO (Phase 7 — color contrast):
-//   - Verify '#374151' body text on white background meets WCAG AA (4.5:1 normal text).
-//   - Apply the same contrast audit as ResumePaper for shared colors '#1e3a5f' and '#6b7280'.
 
 import { useState } from 'react'
-import { Box, Button, IconButton, Typography } from '@mui/material'
+import { Box, Button, IconButton, Typography, TextField } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
+import CheckIcon from '@mui/icons-material/Check'
+import CloseIcon from '@mui/icons-material/Close'
 import type { CoverLetterJson, ContactInfo } from '@shared/types'
 
 interface CoverLetterPaperProps {
   coverLetter: CoverLetterJson
   contact: ContactInfo
-  // TODO (Phase 4): add sessionId: string so ParagraphHoverToolbar can call generate:revise
+  sessionId: string
+  dateGenerated?: string
+  onUpdateCoverLetter?: (updates: Partial<CoverLetterJson>) => void
 }
 
 export default function CoverLetterPaper({
   coverLetter,
-  contact
+  contact,
+  sessionId,
+  dateGenerated,
+  onUpdateCoverLetter
 }: CoverLetterPaperProps): JSX.Element {
+  const handleParagraphSave = (index: number, newText: string): void => {
+    if (!onUpdateCoverLetter) return
+    const newParagraphs = [...coverLetter.paragraphs]
+    newParagraphs[index] = newText
+    onUpdateCoverLetter({ paragraphs: newParagraphs })
+  }
+
+  const displayDate = dateGenerated
+    ? new Date(dateGenerated).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    : new Date().toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+
   return (
     <Box
       sx={{
@@ -56,7 +62,7 @@ export default function CoverLetterPaper({
 
       {/* Date */}
       <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', mt: 2.5, mb: 2 }}>
-        {coverLetter.date}
+        {displayDate}
       </Typography>
 
       {/* Salutation */}
@@ -65,9 +71,14 @@ export default function CoverLetterPaper({
       </Typography>
 
       {/* Body paragraphs */}
-      {/* STUB: Phase 4 — each paragraph wrapped in ParagraphItem with hover toolbar */}
       {coverLetter.paragraphs.map((paragraph, i) => (
-        <ParagraphItem key={i} paragraph={paragraph} index={i} />
+        <ParagraphItem
+          key={i}
+          paragraph={paragraph}
+          index={i}
+          sessionId={sessionId}
+          onSave={(text) => handleParagraphSave(i, text)}
+        />
       ))}
 
       {/* Sign-off */}
@@ -83,80 +94,118 @@ export default function CoverLetterPaper({
   )
 }
 
-// ─── Phase 4 stub: Paragraph Item ────────────────────────────────────────────
+// ─── Paragraph Item ──────────────────────────────────────────────────────────
 
-// Renders a single cover letter paragraph with a dark popup hover toolbar.
-//
-// STUB: Phase 4 — hover state wired; toolbar buttons are not yet connected to
-// InlineRevisionPanel or the inline edit TextField.
-// STUB: Phase 7 — keyboard focus stub added; toolbar must show on focus too.
-// TODO (Phase 2):
-//   - Edit button: replace the paragraph Typography with a multiline TextField
-//     (auto-growing); Save commits via sessions:update; Escape cancels.
-// TODO (Phase 4):
-//   - "Revise with AI" button: expand InlineRevisionPanel beneath the paragraph
-//     (scope = `paragraph:${index}`). Needs sessionId from CoverLetterPaperProps.
-//   - InlineRevisionPanel onAccept: push old text to undo stack, call onParagraphSave.
-// TODO (Phase 7):
-//   - Add onFocus / onBlur handlers so the toolbar is keyboard-accessible.
-//     On blur, only hide if relatedTarget is outside both the paragraph and the toolbar.
-
-function ParagraphItem({ paragraph, index }: { paragraph: string; index: number }): JSX.Element {
+function ParagraphItem({
+  paragraph,
+  index,
+  sessionId: _sessionId,
+  onSave
+}: {
+  paragraph: string
+  index: number
+  sessionId: string
+  onSave: (text: string) => void
+}): JSX.Element {
   const [hovered, setHovered] = useState(false)
-  // TODO (Phase 7): const [focused, setFocused] = useState(false)
-  // TODO: const [isEditing, setIsEditing] = useState(false)
-  // TODO: const [draft, setDraft] = useState(paragraph)
-  // TODO: const [reviseOpen, setReviseOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState(paragraph)
+
+  const handleEdit = (): void => {
+    setDraft(paragraph)
+    setIsEditing(true)
+    setHovered(false)
+  }
+
+  const handleSave = (): void => {
+    onSave(draft)
+    setIsEditing(false)
+  }
+
+  const handleCancel = (): void => {
+    setDraft(paragraph)
+    setIsEditing(false)
+  }
 
   return (
     <Box
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => !isEditing && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      // TODO (Phase 7): onFocus={() => setFocused(true)}
-      // TODO (Phase 7): onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false) }}
       sx={{ position: 'relative', mb: 1.5 }}
     >
-      {/* TODO (Phase 2): when isEditing, render TextField multiline instead */}
-      <Typography
-        sx={{
-          fontSize: '9.5pt',
-          color: 'text.primary',
-          lineHeight: 1.65,
-          whiteSpace: 'pre-wrap',
-          borderRadius: '3px',
-          bgcolor: hovered ? 'action.hover' : 'transparent',
-          transition: 'background-color 0.1s'
-        }}
-      >
-        {paragraph}
-      </Typography>
+      {isEditing ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 0.5, mb: 2 }}>
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            variant="outlined"
+            size="small"
+            slotProps={{ input: { sx: { fontSize: '9.5pt', lineHeight: 1.65 } } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') handleCancel()
+              // Ctrl+Enter to save
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSave()
+            }}
+          />
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <IconButton size="small" onClick={handleCancel}>
+              <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton size="small" onClick={handleSave} sx={{ color: 'success.main' }}>
+              <CheckIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      ) : (
+        <Typography
+          onClick={handleEdit}
+          sx={{
+            fontSize: '9.5pt',
+            color: 'text.primary',
+            lineHeight: 1.65,
+            whiteSpace: 'pre-wrap',
+            borderRadius: '3px',
+            bgcolor: hovered ? 'action.hover' : 'transparent',
+            transition: 'background-color 0.1s',
+            cursor: 'pointer',
+            '&:hover': { bgcolor: 'action.selected' }
+          }}
+        >
+          {paragraph}
+        </Typography>
+      )}
 
-      {/* Dark popup hover toolbar — STUB: Phase 4 */}
-      {/* TODO (Phase 7): visible={hovered || focused} */}
-      <ParagraphHoverToolbar visible={hovered} />
+      {!isEditing && (
+        <ParagraphHoverToolbar
+          visible={hovered}
+          onEdit={handleEdit}
+          onRevise={() => {
+            /* STUB: Phase 4 */
+          }}
+        />
+      )}
 
       {/* InlineRevisionPanel — STUB: Phase 4 */}
       {/* TODO: render when reviseOpen === true */}
-      {/* <InlineRevisionPanel
-            scope={`paragraph:${index}`}
-            currentText={paragraph}
-            onAccept={(newText) => { onParagraphSave(index, newText); setReviseOpen(false) }}
-            onClose={() => setReviseOpen(false)}
-          /> */}
       {void index /* suppress unused-var until wired */}
     </Box>
   )
 }
 
-// Dark popup toolbar shown below a cover letter paragraph on hover (or keyboard focus — Phase 7).
-// Contains an Edit icon button and a "Revise with AI" button.
-//
-// STUB: Phase 4 — rendered; buttons have no onClick handlers yet.
-// STUB: Phase 7 — aria-label added to Edit button; toolbar visibility must also
-//   respond to keyboard focus (see ParagraphItem TODO above).
-// TODO: accept onEdit and onRevise callbacks from ParagraphItem and wire them.
+interface ParagraphHoverToolbarProps {
+  visible: boolean
+  onEdit: () => void
+  onRevise: () => void
+}
 
-function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
+function ParagraphHoverToolbar({
+  visible,
+  onEdit,
+  onRevise
+}: ParagraphHoverToolbarProps): JSX.Element {
   return (
     <Box
       sx={{
@@ -177,19 +226,18 @@ function ParagraphHoverToolbar({ visible }: { visible: boolean }): JSX.Element {
         transition: 'opacity 0.12s'
       }}
     >
-      {/* TODO: onClick={() => onEdit()} */}
-      {/* STUB: Phase 7 — aria-label added; icon-only buttons must always have an accessible name */}
       <IconButton
         size="small"
         aria-label="Edit paragraph"
+        onClick={onEdit}
         sx={{ color: 'grey.300', p: 0.375, '&:hover': { color: '#fff' } }}
       >
         <EditIcon sx={{ fontSize: 13 }} />
       </IconButton>
-      {/* TODO: onClick={() => onRevise()} */}
       <Button
         size="small"
         startIcon={<AutoFixHighIcon sx={{ fontSize: 12 }} />}
+        onClick={onRevise}
         sx={{
           color: 'grey.300',
           fontSize: 11,

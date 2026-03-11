@@ -148,3 +148,40 @@ export function tailorResumePrompt(masterCV: MasterCV, jobDescription: string): 
     ]
   }
 }
+
+// Generate a tailored cover letter from the Master CV, job description, and optional writing profile.
+// Returns tool input matching the CoverLetterJson schema (date, salutation, paragraphs, signoff).
+export function tailorCoverLetterPrompt(
+  masterCV: MasterCV,
+  jobDescription: string,
+  writingProfile?: string
+): PromptBody {
+  let content =
+    `Master CV:\n${JSON.stringify(masterCV)}\n\n` + `Job Description:\n${jobDescription}`
+  if (writingProfile) {
+    content += `\n\nWriting Profile (use this style/voice):\n${writingProfile}`
+  }
+
+  return {
+    system:
+      "You are a professional cover letter writer. Produce a compelling, tailored cover letter grounded exclusively in the user's Master CV. Match the provided writing profile style if available.",
+    max_tokens: 4096,
+    tools: [
+      {
+        name: 'generate_cover_letter',
+        description: 'Generate a tailored cover letter.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            salutation: { type: 'string' },
+            paragraphs: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 3 },
+            signoff: { type: 'string' }
+          },
+          required: ['salutation', 'paragraphs', 'signoff']
+        }
+      }
+    ],
+    tool_choice: { type: 'tool', name: 'generate_cover_letter' },
+    messages: [{ role: 'user', content }]
+  }
+}

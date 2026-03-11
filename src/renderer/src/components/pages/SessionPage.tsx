@@ -11,7 +11,7 @@ import SpendingWarningBanner from '../molecules/SpendingWarningBanner'
 import { useAppSelector, useAppDispatch } from '../../hooks'
 import { updateSession } from '../../store/slices/sessionsSlice'
 import { setSaveState } from '../../store/slices/uiSlice'
-import type { Session, ContactInfo, ResumeJson, SpendTotal } from '@shared/types'
+import type { Session, ContactInfo, ResumeJson, CoverLetterJson, SpendTotal } from '@shared/types'
 
 export default function SessionPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<SessionTab>('resume')
@@ -44,6 +44,44 @@ export default function SessionPage(): JSX.Element {
     }
   }
 
+  const handleUpdateCoverLetter = async (updates: Partial<CoverLetterJson>): Promise<void> => {
+    if (!session || !session.coverLetter) return
+    const newCoverLetter = { ...session.coverLetter, ...updates }
+    try {
+      dispatch(setSaveState('saving'))
+      const lastSaved = new Date().toISOString()
+      await window.api.sessions.update(session.id, { coverLetter: newCoverLetter, lastSaved })
+      dispatch(
+        updateSession({ id: session.id, updates: { coverLetter: newCoverLetter, lastSaved } })
+      )
+      dispatch(setSaveState('saved'))
+    } catch (err) {
+      console.error('Failed to save cover letter:', err)
+      dispatch(setSaveState('error'))
+    }
+  }
+
+  const handleGenerateCoverLetter = async (): Promise<void> => {
+    if (!session) return
+    try {
+      dispatch(updateSession({ id: session.id, updates: { isGenerating: true } }))
+      const coverLetter = await window.api.generate.coverLetter(session.id)
+      dispatch(updateSession({ id: session.id, updates: { coverLetter, isGenerating: false } }))
+      // Refresh spend total
+      const total = await window.api.spendLog.getTotal()
+      setSpendTotal(total)
+    } catch (err: unknown) {
+      console.error('Failed to generate cover letter:', err)
+      const error = err as { message?: string }
+      dispatch(
+        updateSession({
+          id: session.id,
+          updates: { isGenerating: false, generationError: error.message || 'Unknown error' }
+        })
+      )
+    }
+  }
+
   if (!session) {
     return (
       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -52,7 +90,7 @@ export default function SessionPage(): JSX.Element {
     )
   }
 
-  if (session.isGenerating) {
+  if (session.isGenerating && activeTab === 'resume' && !session.resume) {
     return (
       <Box
         sx={{
@@ -131,7 +169,15 @@ export default function SessionPage(): JSX.Element {
             </>
           )}
 
-          {activeTab === 'coverLetter' && <CoverLetterTab session={session} contact={contact} />}
+          {activeTab === 'coverLetter' && (
+            <CoverLetterTab
+              session={session}
+              contact={contact}
+              dateGenerated={session.dateGenerated}
+              onGenerate={handleGenerateCoverLetter}
+              onUpdate={handleUpdateCoverLetter}
+            />
+          )}
 
           {activeTab === 'matchReport' && <MatchReportTab session={session} />}
 
@@ -149,11 +195,36 @@ export default function SessionPage(): JSX.Element {
 
 function CoverLetterTab({
   session,
-  contact
+  contact,
+  dateGenerated,
+  onGenerate,
+  onUpdate
 }: {
   session: Session
   contact: ContactInfo
+  dateGenerated?: string
+  onGenerate: () => Promise<void>
+  onUpdate: (updates: Partial<CoverLetterJson>) => Promise<void>
 }): JSX.Element {
+  if (session.isGenerating && !session.coverLetter) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2.5,
+          mt: 10
+        }}
+      >
+        <CircularProgress size={36} />
+        <Typography fontWeight={600}>Generating cover letter…</Typography>
+      </Box>
+    )
+  }
+
   if (session.coverLetter) {
     return (
       <>
@@ -164,7 +235,13 @@ function CoverLetterTab({
             // STUB: Phase 4
           }}
         />
-        <CoverLetterPaper coverLetter={session.coverLetter} contact={contact} />
+        <CoverLetterPaper
+          coverLetter={session.coverLetter}
+          contact={contact}
+          sessionId={session.id}
+          dateGenerated={dateGenerated}
+          onUpdateCoverLetter={onUpdate}
+        />
       </>
     )
   }
@@ -173,7 +250,7 @@ function CoverLetterTab({
     <TabEmptyState
       message="No cover letter yet."
       action={
-        <Button variant="contained" disableElevation size="small">
+        <Button variant="contained" disableElevation size="small" onClick={onGenerate}>
           Generate Cover Letter
         </Button>
       }

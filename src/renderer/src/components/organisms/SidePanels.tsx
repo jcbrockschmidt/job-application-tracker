@@ -129,7 +129,10 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
 
-const RATING_COLORS: Record<MatchRating, { bg: string; text: string; darkBg: string; darkText: string }> = {
+const RATING_COLORS: Record<
+  MatchRating,
+  { bg: string; text: string; darkBg: string; darkText: string }
+> = {
   Strong: { bg: '#dcfce7', text: '#15803d', darkBg: '#064e3b', darkText: '#4ade80' },
   Good: { bg: '#dbeafe', text: '#1d4ed8', darkBg: '#1e3a8a', darkText: '#60a5fa' },
   Fair: { bg: '#fef9c3', text: '#a16207', darkBg: '#713f12', darkText: '#facc15' },
@@ -146,8 +149,7 @@ function MatchRatingCard({ report }: { report: MatchReport }): JSX.Element {
         label={report.rating}
         size="small"
         sx={{
-          bgcolor: (theme) =>
-            theme.palette.mode === 'dark' ? ratingColor.darkBg : ratingColor.bg,
+          bgcolor: (theme) => (theme.palette.mode === 'dark' ? ratingColor.darkBg : ratingColor.bg),
           color: (theme) =>
             theme.palette.mode === 'dark' ? ratingColor.darkText : ratingColor.text,
           fontWeight: 700,

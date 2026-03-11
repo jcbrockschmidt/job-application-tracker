@@ -24,7 +24,6 @@ const CONTACT_MINIMAL: ContactInfo = {
 }
 
 const COVER_LETTER_STANDARD: CoverLetterJson = {
-  date: 'March 1, 2026',
   salutation: 'Dear Hiring Manager,',
   paragraphs: [
     'I am writing to express my strong interest in the Senior Software Engineer role at Acme Corp. With five years of experience building high-throughput APIs and leading cross-functional engineering teams, I am confident I can contribute meaningfully from day one.',
@@ -35,7 +34,6 @@ const COVER_LETTER_STANDARD: CoverLetterJson = {
 }
 
 const COVER_LETTER_SHORT: CoverLetterJson = {
-  date: 'March 1, 2026',
   salutation: 'Dear Hiring Manager,',
   paragraphs: [
     'Opening paragraph with a compelling hook.',

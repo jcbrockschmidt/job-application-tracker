@@ -124,6 +124,12 @@ export function generateCoverLetterHtml(
 
   const paragraphsHtml = coverLetter.paragraphs.map((p) => `<p>${p}</p>`).join('')
 
+  const date = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -159,7 +165,7 @@ export function generateCoverLetterHtml(
         ${github ? `<span class="sep">·</span> ${github}` : ''}
       </div>
     </div>
-    <div class="date">${coverLetter.date}</div>
+    <div class="date">${date}</div>
     <div class="salutation">${coverLetter.salutation}</div>
     <div class="content">${paragraphsHtml}</div>
     <div class="signoff">${coverLetter.signoff}</div>

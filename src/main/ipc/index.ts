@@ -37,7 +37,12 @@ import {
   spendLog
 } from '../db/schema'
 import { extractText } from '../ingestion'
-import { extractCompanyRolePrompt, extractResumePrompt, tailorResumePrompt } from '../ai/prompts'
+import {
+  extractCompanyRolePrompt,
+  extractResumePrompt,
+  tailorResumePrompt,
+  tailorCoverLetterPrompt
+} from '../ai/prompts'
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
 import { exportResumePdf, exportCoverLetterPdf } from '../export'
@@ -451,6 +456,7 @@ export function registerIpcHandlers(): void {
       companyName,
       roleTitle,
       jobDescription,
+      dateGenerated: now.toISOString(),
       resume,
       coverLetter: null,
       matchReport: null,
@@ -480,6 +486,7 @@ export function registerIpcHandlers(): void {
       companyName: applications.companyName,
       roleTitle: applications.roleTitle,
       jobDescription: sessions.jobDescription,
+      dateGenerated: applications.dateGenerated,
       resume,
       coverLetter,
       matchReport: sessions.matchReport
@@ -526,6 +533,7 @@ export function registerIpcHandlers(): void {
         companyName: applications.companyName,
         roleTitle: applications.roleTitle,
         jobDescription: sessions.jobDescription,
+        dateGenerated: applications.dateGenerated,
         resume,
         coverLetter,
         matchReport: sessions.matchReport
@@ -540,14 +548,53 @@ export function registerIpcHandlers(): void {
     return result
   })
 
-  ipcMain.handle('sessions:update', async (_event, _id: string, _updates: unknown) => {
-    // STUB: Phase 2
-    // TODO: Accept a partial Session. If resume changed, write resume.json to disk.
-    // If coverLetter changed, write cover-letter.json. If matchReport changed,
-    // serialize it to JSON and update the sessions row. Update sessions.lastSaved
-    // and applications.updatedAt to now.
-    throw new Error('Not implemented')
-  })
+  ipcMain.handle(
+    'sessions:update',
+    async (_event, id: string, updates: Partial<Session>): Promise<void> => {
+      const db = getDb()
+
+      // 1. Load the session and application.
+      const rows = db
+        .select()
+        .from(sessionsTable)
+        .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+        .where(eq(sessionsTable.id, id))
+        .all()
+
+      if (rows.length === 0) throw new Error(`Session not found: ${id}`)
+      const { applications } = rows[0]
+
+      if (!applications.directoryPath) throw new Error(`Session ${id} has no directory path`)
+
+      const now = new Date()
+
+      // 2. Update files on disk if resume or coverLetter changed.
+      if (updates.resume) {
+        atomicWriteJson(join(applications.directoryPath, 'resume.json'), updates.resume)
+      }
+      if (updates.coverLetter) {
+        atomicWriteJson(join(applications.directoryPath, 'cover-letter.json'), updates.coverLetter)
+      }
+
+      // 3. Update the sessions table.
+      const sessionUpdates: Record<string, unknown> = {}
+      if (updates.jobDescription !== undefined)
+        sessionUpdates.jobDescription = updates.jobDescription
+      if (updates.matchReport !== undefined)
+        sessionUpdates.matchReport = JSON.stringify(updates.matchReport)
+      if (updates.lastSaved !== undefined) sessionUpdates.lastSaved = updates.lastSaved
+
+      if (Object.keys(sessionUpdates).length > 0) {
+        db.update(sessionsTable).set(sessionUpdates).where(eq(sessionsTable.id, id)).run()
+      }
+
+      // 4. Update the applications table.
+      db.update(applicationsTable)
+        .set({ updatedAt: now })
+        .where(eq(applicationsTable.id, applications.id))
+        .run()
+    }
+  )
 
   ipcMain.handle('sessions:close', async (_event, _id: string) => {
     // STUB: Phase 2
@@ -679,7 +726,7 @@ export function registerIpcHandlers(): void {
       .all()
 
     if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
-    const { sessions: _sessions, applications } = rows[0]
+    const { sessions, applications } = rows[0]
     if (!applications.directoryPath) throw new Error(`Session ${sessionId} has no directory path`)
 
     let apiKey: string | null = null
@@ -709,19 +756,108 @@ export function registerIpcHandlers(): void {
     return resume
   })
 
-  ipcMain.handle('generate:coverLetter', async (_event, _sessionId: string) => {
-    // STUB: Phase 2
-    // TODO:
-    // 1. Load the session's JD, master-cv.json, and writing-profile.json (if present).
-    // 2. Call Claude instructing it to write a cover letter grounded in Master CV content,
-    //    tailored to the JD, and matching the writing profile voice if available.
-    // 3. Populate the date field with today's date.
-    // 4. Write cover-letter.json to the session directory.
-    // 5. Update sessions and applications rows (coverLetterStatus = 'draft').
-    // 6. Log the AI operation to spendLog.
-    // 7. Return the CoverLetterJson.
-    throw new Error('Not implemented')
-  })
+  ipcMain.handle(
+    'generate:coverLetter',
+    async (_event, sessionId: string): Promise<CoverLetterJson> => {
+      const db = getDb()
+
+      // 1. Load the session and application.
+      const rows = db
+        .select()
+        .from(sessionsTable)
+        .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+        .where(eq(sessionsTable.id, sessionId))
+        .all()
+
+      if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
+      const { sessions, applications } = rows[0]
+
+      if (!applications.directoryPath) throw new Error(`Session ${sessionId} has no directory path`)
+
+      let apiKey: string | null = null
+      if (!isPlaceholderMode()) {
+        apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+        if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+      }
+
+      const settings = readSettings()
+      const model = settings.model
+
+      // 2. Load writing-profile.json if it exists.
+      let writingProfile: WritingProfile | null = null
+      const wpPath = join(app.getPath('userData'), 'writing-profile.json')
+      if (existsSync(wpPath)) {
+        try {
+          writingProfile = JSON.parse(readFileSync(wpPath, 'utf-8')) as WritingProfile
+        } catch {
+          // Best effort
+        }
+      }
+
+      if (isPlaceholderMode()) {
+        const coverLetter: CoverLetterJson = {
+          salutation: 'Dear Hiring Manager,',
+          paragraphs: [
+            'Opening paragraph generated in placeholder mode.',
+            'Body paragraph generated in placeholder mode.',
+            'Closing paragraph generated in placeholder mode.'
+          ],
+          signoff: 'Sincerely,'
+        }
+        atomicWriteJson(join(applications.directoryPath, 'cover-letter.json'), coverLetter)
+        return coverLetter
+      }
+
+      const masterCV = readMasterCV()
+      const client = getAnthropicClient(apiKey!)
+
+      const response = await client.messages.create({
+        model,
+        ...tailorCoverLetterPrompt(masterCV, sessions.jobDescription, writingProfile?.text)
+      })
+
+      const toolBlock = response.content.find((b) => b.type === 'tool_use')
+      let coverLetter: CoverLetterJson
+      if (toolBlock && toolBlock.type === 'tool_use') {
+        coverLetter = toolBlock.input as CoverLetterJson
+      } else {
+        const textBlock = response.content.find((b) => b.type === 'text')
+        if (!textBlock || textBlock.type !== 'text')
+          throw new Error('Cover letter generation returned no structured output')
+        const raw = textBlock.text
+          .replace(/^```(?:json)?\n?/, '')
+          .replace(/\n?```$/, '')
+          .trim()
+        coverLetter = JSON.parse(raw) as CoverLetterJson
+      }
+
+      // Write cover-letter.json to session directory.
+      atomicWriteJson(join(applications.directoryPath, 'cover-letter.json'), coverLetter)
+
+      // Log spend.
+      const now = new Date()
+      const inputTokens = response.usage.input_tokens
+      const outputTokens = response.usage.output_tokens
+      db.insert(spendLog)
+        .values({
+          id: nanoid(),
+          timestamp: now,
+          model,
+          inputTokens,
+          outputTokens,
+          estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
+        })
+        .run()
+
+      // Update session status.
+      db.update(applicationsTable)
+        .set({ coverLetterStatus: 'draft', updatedAt: now })
+        .where(eq(applicationsTable.id, applications.id))
+        .run()
+
+      return coverLetter
+    }
+  )
 
   ipcMain.handle('generate:matchReport', async (_event, _sessionId: string) => {
     // STUB: Phase 2

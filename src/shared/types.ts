@@ -107,7 +107,6 @@ export interface ResumeJson {
 }
 
 export interface CoverLetterJson {
-  date: string
   salutation: string
   paragraphs: string[]
   signoff: string
@@ -244,6 +243,7 @@ export interface Session {
   companyName: string
   roleTitle: string
   jobDescription: string
+  dateGenerated: string
   resume: ResumeJson | null
   coverLetter: CoverLetterJson | null
   // Null until the user explicitly generates a match report.
