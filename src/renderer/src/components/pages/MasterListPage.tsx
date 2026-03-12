@@ -340,10 +340,11 @@ function ApplicationRow({
       <Box component="td" sx={{ px: 2, py: 1.5 }}>
         {app.roleTitle}
       </Box>
-      <Box component="td" sx={{ px: 2, py: 1.5, color: 'text.secondary', width: 250, maxWidth: 250 }}>
-        <Typography variant="inherit">
-          {app.briefSummary ?? '—'}
-        </Typography>
+      <Box
+        component="td"
+        sx={{ px: 2, py: 1.5, color: 'text.secondary', width: 250, maxWidth: 250 }}
+      >
+        <Typography variant="inherit">{app.briefSummary ?? '—'}</Typography>
       </Box>
       <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
         {new Date(app.createdAt).toLocaleDateString()}
