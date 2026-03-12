@@ -14,7 +14,7 @@ import { join, extname, basename } from 'path'
 import { readFileSync, existsSync, copyFileSync, mkdirSync, rmSync } from 'fs'
 import keytar from 'keytar'
 import { nanoid } from 'nanoid'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, gte } from 'drizzle-orm'
 import { atomicWriteJson, getDataPaths, getSessionDir, readMasterCV, writeMasterCV } from '../fs'
 import {
   validateApiKey,
@@ -58,7 +58,8 @@ import type {
   SourceDoc,
   Session,
   ResumeJson,
-  CoverLetterJson
+  CoverLetterJson,
+  SpendTotal
 } from '../../shared/types'
 
 const KEYCHAIN_SERVICE = 'job-application-kit'
@@ -942,12 +943,19 @@ export function registerIpcHandlers(): void {
   })
 
   // ─── Spend Log ───────────────────────────────────────────────────────────────
-  // STUB: Phase 3
-  ipcMain.handle('spendLog:getTotal', async () => {
-    // STUB: Phase 3
-    // TODO: Query the spend_log table for rows where timestamp >= (now - 24 hours).
-    // Sum estimatedCostUsd. Return a SpendTotal object with totalUsd and periodHours: 24.
-    throw new Error('Not implemented')
+  // Implementation status: Phase 3
+
+  ipcMain.handle('spendLog:getTotal', async (): Promise<SpendTotal> => {
+    const db = getDb()
+    const now = new Date()
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+
+    // Query entries from the last 24 hours.
+    const entries = db.select().from(spendLog).where(gte(spendLog.timestamp, cutoff)).all()
+
+    const totalUsd = entries.reduce((sum, entry) => sum + entry.estimatedCostUsd, 0)
+
+    return { totalUsd, periodHours: 24 }
   })
 
   ipcMain.handle('spendLog:getLastOp', async () => {
