@@ -209,6 +209,7 @@ interface SessionItemProps {
 }
 
 function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps): JSX.Element {
+  const isLoading = session.isGenerating
   return (
     <Box
       sx={{
@@ -216,12 +217,16 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
         borderRadius: 2,
         mb: 0.25,
         bgcolor: isActive ? 'rgba(255,255,255,0.13)' : 'transparent',
-        '&:hover': { bgcolor: isActive ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)' },
-        '&:hover .close-btn': { opacity: 1 }
+        '&:hover': {
+          bgcolor:
+            isLoading || isActive ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)'
+        },
+        '&:hover .close-btn': { opacity: isLoading ? 0 : 1 }
       }}
     >
       <ButtonBase
-        onClick={onSelect}
+        onClick={isLoading ? undefined : onSelect}
+        disabled={isLoading}
         sx={{
           width: '100%',
           px: 1.5,
@@ -230,7 +235,8 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
           flexDirection: 'column',
           alignItems: 'flex-start',
           borderRadius: 2,
-          pr: 4
+          pr: 4,
+          cursor: isLoading ? 'default' : 'pointer'
         }}
       >
         <Typography
@@ -272,7 +278,7 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
         </Box>
       </ButtonBase>
 
-      {/* Close button — visible on row hover */}
+      {/* Close button — visible on row hover; hidden while session is generating */}
       {/* TODO: onClick={onClose} */}
       {/* STUB: Phase 7 — aria-label added; also add '&:focus-visible': { opacity: 1 } to
           sx so keyboard users see the button when they tab to it. */}

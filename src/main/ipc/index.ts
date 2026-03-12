@@ -447,10 +447,7 @@ export function registerIpcHandlers(): void {
       })
       .run()
 
-    // 5. Generate the resume.
-    const resume = await generateResumeFromCV(jobDescription, sessionDir, model, apiKey)
-
-    // 6. Return the assembled Session.
+    // 5. Return immediately — resume generation happens in the background via generate:resume.
     return {
       id: sessionId,
       applicationId,
@@ -458,11 +455,11 @@ export function registerIpcHandlers(): void {
       roleTitle,
       jobDescription,
       dateGenerated: now.toISOString(),
-      resume,
+      resume: null,
       coverLetter: null,
       matchReport: null,
       lastSaved,
-      isGenerating: false,
+      isGenerating: true,
       generationError: null
     }
   })

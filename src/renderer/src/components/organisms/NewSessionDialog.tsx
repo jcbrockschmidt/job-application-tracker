@@ -25,7 +25,7 @@ import {
 } from '@mui/material'
 import { useAppDispatch } from '../../hooks'
 import { addSession, updateSession, removeSession } from '../../store/slices/sessionsSlice'
-import { setActivePage, setLastAiOp } from '../../store/slices/uiSlice'
+import { setLastAiOp } from '../../store/slices/uiSlice'
 
 interface NewSessionDialogProps {
   open: boolean
@@ -45,10 +45,10 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
 
     try {
       // Phase 1: extract job details + insert DB rows. Returns quickly with isGenerating: true.
+      // The session is added to the sidebar in loading state; the user is not navigated away.
       const session = await window.api.sessions.create(jobDescription)
       sessionId = session.id
       dispatch(addSession(session))
-      dispatch(setActivePage('session'))
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Session creation failed. Please try again.')
@@ -58,7 +58,7 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
     setIsCreating(false)
 
     // Phase 2: generate the resume in the background (dialog is already closed).
-    // On success, update the session in Redux. On failure, remove it and navigate away.
+    // On success, update the session in Redux. On failure, remove it from the store.
     // TODO (Phase 6): surface a proper error notification on generation failure.
     try {
       const resume = await window.api.generate.resume(sessionId)
@@ -67,8 +67,8 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
       dispatch(setLastAiOp(lastOp))
     } catch {
       // Remove the session from the store — it will be cleaned from the DB on next restart.
+      // No navigation needed: the user was never moved away from their current page.
       dispatch(removeSession(sessionId))
-      dispatch(setActivePage('masterList'))
     }
   }
 
