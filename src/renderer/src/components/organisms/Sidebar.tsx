@@ -73,7 +73,7 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
     window.api.sessions.getAll().then((allSessions) => {
       dispatch(hydrateSessions({ sessions: allSessions, activeSessionId }))
     })
-  }, [applicationsLastChanged, activeSessionId, dispatch])
+  }, [applicationsLastChanged, dispatch])
 
   const handleCloseSession = async (id: string): Promise<void> => {
     try {

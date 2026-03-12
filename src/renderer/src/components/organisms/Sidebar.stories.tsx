@@ -45,6 +45,7 @@ const SESSION_DRAFT: Session = {
   coverLetterStatus: 'none',
   matchReport: null,
   lastSaved: '2026-03-01T09:00:00Z',
+  isOpen: true,
   isGenerating: false,
   generationError: null
 }
@@ -62,6 +63,7 @@ const SESSION_FINAL: Session = {
   coverLetterStatus: 'none',
   matchReport: null,
   lastSaved: '2026-02-28T15:30:00Z',
+  isOpen: true,
   isGenerating: false,
   generationError: null
 }
@@ -79,6 +81,7 @@ const SESSION_GENERATING: Session = {
   coverLetterStatus: 'none',
   matchReport: null,
   lastSaved: '2026-03-03T10:00:00Z',
+  isOpen: true,
   isGenerating: true,
   generationError: null
 }

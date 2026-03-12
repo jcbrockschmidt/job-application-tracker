@@ -25,6 +25,8 @@ const api: WindowAPI = {
     create: (jobDescription) => ipcRenderer.invoke('sessions:create', jobDescription),
     get: (id) => ipcRenderer.invoke('sessions:get', id),
     getAll: () => ipcRenderer.invoke('sessions:getAll'),
+    getForApplication: (applicationId) =>
+      ipcRenderer.invoke('sessions:getForApplication', applicationId),
     update: (id, updates) => ipcRenderer.invoke('sessions:update', id, updates),
     close: (id) => ipcRenderer.invoke('sessions:close', id)
   },

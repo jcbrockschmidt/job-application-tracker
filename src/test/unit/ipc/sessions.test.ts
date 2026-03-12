@@ -57,8 +57,8 @@ const {
   // DB query builder chain mocks — assembled bottom-up so each level can reference
   // the level below.
   const mockAll = vi.fn().mockReturnValue([])
-  const mockWhere = vi.fn().mockReturnValue({ all: mockAll })
-  const mockOrderBy = vi.fn().mockReturnValue({ all: mockAll, where: mockWhere })
+  const mockOrderBy = vi.fn().mockReturnValue({ all: mockAll })
+  const mockWhere = vi.fn().mockReturnValue({ all: mockAll, orderBy: mockOrderBy })
   const mockInnerJoin = vi.fn().mockReturnValue({
     where: mockWhere,
     orderBy: mockOrderBy,
@@ -140,8 +140,8 @@ beforeAll(() => {
 
 function rebuildDbChain(): void {
   mockAll.mockReturnValue([])
-  mockWhere.mockReturnValue({ all: mockAll })
-  mockOrderBy.mockReturnValue({ all: mockAll, where: mockWhere })
+  mockOrderBy.mockReturnValue({ all: mockAll })
+  mockWhere.mockReturnValue({ all: mockAll, orderBy: mockOrderBy })
   mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, all: mockAll })
   mockFrom.mockReturnValue({ innerJoin: mockInnerJoin })
   mockSelect.mockReturnValue({ from: mockFrom })
@@ -267,6 +267,7 @@ function makeMockDbRow(overrides: {
   jobDescription?: string
   directoryPath?: string | null
   matchReport?: string | null
+  isOpen?: boolean
   createdAt?: Date
 }) {
   const {
@@ -283,6 +284,7 @@ function makeMockDbRow(overrides: {
       'senior-engineer_2026-03_sess-id-1'
     ),
     matchReport = null,
+    isOpen = true,
     createdAt = new Date()
   } = overrides
   return {
@@ -292,6 +294,7 @@ function makeMockDbRow(overrides: {
       jobDescription,
       matchReport,
       lastSaved: new Date().toISOString(),
+      isOpen,
       createdAt
     },
     applications: {
@@ -379,6 +382,7 @@ describe('sessions:create', () => {
     expect(session.coverLetter).toBeNull()
     expect(session.matchReport).toBeNull()
     expect(typeof session.lastSaved).toBe('string')
+    expect(session.isOpen).toBe(true)
   })
 
   it('returns a Session with resume: null and isGenerating: true', async () => {
@@ -459,6 +463,7 @@ describe('sessions:get', () => {
     expect(session.companyName).toBe('Acme Corp')
     expect(session.roleTitle).toBe('Senior Engineer')
     expect(session.jobDescription).toBe('We need a senior engineer.')
+    expect(session.isOpen).toBe(true)
   })
 
   it('reads resume.json from the session directory when it exists', async () => {
@@ -528,6 +533,27 @@ describe('sessions:get', () => {
   })
 })
 
+// ── sessions:getForApplication ──────────────────────────────────────────────────
+
+describe('sessions:getForApplication', () => {
+  it('returns the session assembled from DB rows for an application ID', async () => {
+    mockAll.mockReturnValue([makeMockDbRow({ applicationId: 'app-id-123' })])
+
+    const session = await callHandler<Session>('sessions:getForApplication', 'app-id-123')
+
+    expect(session?.applicationId).toBe('app-id-123')
+    expect(mockWhere).toHaveBeenCalled()
+  })
+
+  it('returns null when no session is found for the application ID', async () => {
+    mockAll.mockReturnValue([])
+
+    const session = await callHandler<Session | null>('sessions:getForApplication', 'other-id')
+
+    expect(session).toBeNull()
+  })
+})
+
 // ── sessions:getAll ────────────────────────────────────────────────────────────
 
 describe('sessions:getAll', () => {
@@ -570,6 +596,7 @@ describe('sessions:getAll', () => {
     expect(sessions[0].companyName).toBe('Beta Inc')
     expect(sessions[1].companyName).toBe('Alpha Corp')
     expect(mockOrderBy).toHaveBeenCalled()
+    expect(mockWhere).toHaveBeenCalled()
   })
 
   it('reads resume.json from the session directory for each session', async () => {
@@ -896,7 +923,11 @@ describe('sessions:close', () => {
     await callHandler('sessions:close', 'sess-id-1')
 
     expect(mockUpdate).toHaveBeenCalled()
-    expect(mockUpdate).toHaveBeenCalledWith(expect.anything()) // applications table
-    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ updatedAt: expect.any(Date) }))
+    // One update for sessionsTable (isOpen), one for applicationsTable (updatedAt)
+    expect(mockUpdate).toHaveBeenCalledTimes(2)
+
+    const setCalls = mockSet.mock.calls.map((c) => c[0])
+    expect(setCalls).toContainEqual(expect.objectContaining({ isOpen: false }))
+    expect(setCalls).toContainEqual(expect.objectContaining({ updatedAt: expect.any(Date) }))
   })
 })

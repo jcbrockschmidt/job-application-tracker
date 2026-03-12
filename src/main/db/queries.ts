@@ -112,6 +112,7 @@ export function getAllSessions(db: BetterSQLite3Database<typeof schema>): Sessio
     coverLetterStatus: applications.coverLetterStatus,
     matchReport: sessions.matchReport ? JSON.parse(sessions.matchReport) : null,
     lastSaved: sessions.lastSaved,
+    isOpen: sessions.isOpen,
     isGenerating: false,
     generationError: null
   }))

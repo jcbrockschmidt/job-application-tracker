@@ -8,7 +8,9 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Menu,
+  MenuItem
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
@@ -28,7 +30,8 @@ const STATUS_FILTERS: Array<{ label: string; value: ApplicationStatus | 'all' }>
 ]
 
 // Column definitions for the sortable table header
-const COLUMNS: Array<{ key: keyof Application | '_open'; label: string }> = [
+const COLUMNS: Array<{ key: keyof Application | '_open' | '_delete'; label: string }> = [
+  { key: '_open', label: '' },
   { key: 'companyName', label: 'Company' },
   { key: 'roleTitle', label: 'Role' },
   { key: 'briefSummary', label: 'Summary' },
@@ -38,7 +41,7 @@ const COLUMNS: Array<{ key: keyof Application | '_open'; label: string }> = [
   { key: 'coverLetterStatus', label: 'Cover Letter' },
   { key: 'applicationStatus', label: 'Status' },
   { key: 'notes', label: 'Notes' },
-  { key: '_open', label: '' }
+  { key: '_delete', label: '' }
 ]
 
 export default function MasterListPage(): JSX.Element {
@@ -113,13 +116,19 @@ export default function MasterListPage(): JSX.Element {
 
   const handleOpenSession = async (applicationId: string) => {
     // 1. Check if session already exists in Redux
-    let session = sessions.find((s) => s.applicationId === applicationId)
+    let session: Session | null | undefined = sessions.find(
+      (s) => s.applicationId === applicationId
+    )
 
     if (!session) {
-      // 2. If not in Redux, try to fetch it via API (this might happen if Redux state was lost)
-      const allSessions = await window.api.sessions.getAll()
-      session = allSessions.find((s) => s.applicationId === applicationId)
+      // 2. If not in Redux, try to fetch it via API (it might be closed in the DB)
+      session = await window.api.sessions.getForApplication(applicationId)
       if (session) {
+        // Mark it as open in the DB if it was closed
+        if (!session.isOpen) {
+          await window.api.sessions.update(session.id, { isOpen: true })
+          session.isOpen = true
+        }
         dispatch(addSession(session))
       }
     }
@@ -296,6 +305,8 @@ function ApplicationRow({
   const notesRef = useRef<HTMLInputElement>(null)
 
   const [isEditingSubmitted, setIsEditingSubmitted] = useState(false)
+  const submittedRef = useRef<HTMLInputElement>(null)
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
   const isGenerating = session?.isGenerating ?? false
 
@@ -303,21 +314,23 @@ function ApplicationRow({
     if (isEditingNotes && notesRef.current) {
       notesRef.current.focus()
     }
-  }, [isEditingNotes])
+    if (isEditingSubmitted && submittedRef.current) {
+      submittedRef.current.focus()
+    }
+  }, [isEditingNotes, isEditingSubmitted])
 
-  const handleStatusCycle = () => {
+  const handleStatusOpen = (event: React.MouseEvent<HTMLElement>) => {
     if (isGenerating) return
-    const statuses: ApplicationStatus[] = [
-      'not_applied',
-      'submitted',
-      'interviewing',
-      'offer_received',
-      'rejected',
-      'withdrawn'
-    ]
-    const currentIndex = statuses.indexOf(app.applicationStatus)
-    const nextStatus = statuses[(currentIndex + 1) % statuses.length]
-    onUpdate(app.id, { applicationStatus: nextStatus })
+    setAnchorEl(event.currentTarget)
+  }
+
+  const handleStatusClose = () => {
+    setAnchorEl(null)
+  }
+
+  const handleStatusSelect = (status: ApplicationStatus) => {
+    onUpdate(app.id, { applicationStatus: status })
+    handleStatusClose()
   }
 
   const handleNotesBlur = () => {
@@ -336,6 +349,24 @@ function ApplicationRow({
         '&:hover': { bgcolor: 'action.hover' }
       }}
     >
+      <Box
+        component="td"
+        onClick={() => onOpen(app.id)}
+        sx={{
+          px: 1,
+          py: 1.5,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+          '&:hover': { bgcolor: 'action.selected' },
+          textAlign: 'center'
+        }}
+      >
+        <Tooltip title="Open Session">
+          <IconButton size="small" color="primary">
+            <LaunchIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
       <Box component="td" sx={{ px: 2, py: 1.5, fontWeight: 500 }}>
         {app.companyName}
       </Box>
@@ -354,7 +385,7 @@ function ApplicationRow({
       <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
         {isEditingSubmitted ? (
           <TextField
-            autoFocus
+            inputRef={submittedRef}
             type="date"
             size="small"
             variant="standard"
@@ -412,11 +443,38 @@ function ApplicationRow({
         <Chip
           label={app.applicationStatus.replace('_', ' ')}
           size="small"
-          onClick={handleStatusCycle}
+          onClick={handleStatusOpen}
           color={app.applicationStatus === 'offer_received' ? 'success' : 'default'}
           disabled={isGenerating}
           sx={{ textTransform: 'capitalize', cursor: isGenerating ? 'default' : 'pointer' }}
         />
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleStatusClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        >
+          {(
+            [
+              'not_applied',
+              'submitted',
+              'interviewing',
+              'offer_received',
+              'rejected',
+              'withdrawn'
+            ] as ApplicationStatus[]
+          ).map((status) => (
+            <MenuItem
+              key={status}
+              onClick={() => handleStatusSelect(status)}
+              selected={app.applicationStatus === status}
+              sx={{ fontSize: 13, textTransform: 'capitalize' }}
+            >
+              {status.replace('_', ' ')}
+            </MenuItem>
+          ))}
+        </Menu>
       </Box>
       <Box component="td" sx={{ px: 2, py: 1.5, width: 300, maxWidth: 300 }}>
         {isEditingNotes ? (
@@ -465,18 +523,18 @@ function ApplicationRow({
         )}
       </Box>
       <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Open Session">
-            <IconButton size="small" onClick={() => onOpen(app.id)} color="primary">
-              <LaunchIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete Application">
-            <IconButton size="small" onClick={() => onDelete(app.id)} color="error">
-              <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <Tooltip title="Delete Application">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(app.id)
+            }}
+            color="error"
+          >
+            <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
     </Box>
   )

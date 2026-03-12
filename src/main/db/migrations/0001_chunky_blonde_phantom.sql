@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `is_open` integer DEFAULT true NOT NULL;

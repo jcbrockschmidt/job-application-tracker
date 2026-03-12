@@ -251,6 +251,7 @@ export interface Session {
   // Null until the user explicitly generates a match report.
   matchReport: MatchReport | null
   lastSaved: string
+  isOpen: boolean
   // Transient renderer-only fields — always false/null when loaded from disk.
   // Set by the renderer during the first-generation flow; never persisted to DB or disk.
   isGenerating: boolean
@@ -277,6 +278,7 @@ export interface WindowAPI {
     create: (jobDescription: string) => Promise<Session>
     get: (id: string) => Promise<Session>
     getAll: () => Promise<Session[]>
+    getForApplication: (applicationId: string) => Promise<Session | null>
     update: (id: string, updates: Partial<Session>) => Promise<void>
     close: (id: string) => Promise<void>
   }

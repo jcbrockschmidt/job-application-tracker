@@ -536,6 +536,7 @@ export function registerIpcHandlers(): void {
       coverLetterStatus: 'none',
       matchReport: null,
       lastSaved,
+      isOpen: true,
       isGenerating: true,
       generationError: null
     }
@@ -570,6 +571,7 @@ export function registerIpcHandlers(): void {
         ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
         : null,
       lastSaved: sessions.lastSaved,
+      isOpen: sessions.isOpen,
       isGenerating: false,
       generationError: null
     }
@@ -581,6 +583,7 @@ export function registerIpcHandlers(): void {
       .select()
       .from(sessionsTable)
       .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+      .where(eq(sessionsTable.isOpen, true))
       .orderBy(desc(applicationsTable.updatedAt))
       .all()
 
@@ -626,6 +629,7 @@ export function registerIpcHandlers(): void {
           coverLetterStatus: applications.coverLetterStatus,
           matchReport: null,
           lastSaved: sessions.lastSaved,
+          isOpen: true,
           isGenerating: true,
           generationError: null
         })
@@ -647,6 +651,7 @@ export function registerIpcHandlers(): void {
           ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
           : null,
         lastSaved: sessions.lastSaved,
+        isOpen: sessions.isOpen,
         isGenerating: false,
         generationError: null
       })
@@ -654,6 +659,43 @@ export function registerIpcHandlers(): void {
 
     return result
   })
+  ipcMain.handle(
+    'sessions:getForApplication',
+    async (_event, applicationId: string): Promise<Session | null> => {
+      const db = getDb()
+      const rows = db
+        .select()
+        .from(sessionsTable)
+        .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+        .where(eq(sessionsTable.applicationId, applicationId))
+        .all()
+
+      if (rows.length === 0) return null
+
+      const { sessions, applications } = rows[0]
+      const { resume, coverLetter } = readSessionDocs(applications.directoryPath)
+
+      return {
+        id: sessions.id,
+        applicationId: sessions.applicationId,
+        companyName: applications.companyName,
+        roleTitle: applications.roleTitle,
+        jobDescription: sessions.jobDescription,
+        dateGenerated: applications.dateGenerated,
+        resume,
+        resumeStatus: applications.resumeStatus,
+        coverLetter,
+        coverLetterStatus: applications.coverLetterStatus,
+        matchReport: sessions.matchReport
+          ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
+          : null,
+        lastSaved: sessions.lastSaved,
+        isOpen: sessions.isOpen,
+        isGenerating: false,
+        generationError: null
+      }
+    }
+  )
 
   ipcMain.handle(
     'sessions:update',
@@ -690,6 +732,7 @@ export function registerIpcHandlers(): void {
       if (updates.matchReport !== undefined)
         sessionUpdates.matchReport = JSON.stringify(updates.matchReport)
       if (updates.lastSaved !== undefined) sessionUpdates.lastSaved = updates.lastSaved
+      if (updates.isOpen !== undefined) sessionUpdates.isOpen = updates.isOpen
 
       if (Object.keys(sessionUpdates).length > 0) {
         db.update(sessionsTable).set(sessionUpdates).where(eq(sessionsTable.id, id)).run()
@@ -704,13 +747,13 @@ export function registerIpcHandlers(): void {
   )
 
   ipcMain.handle('sessions:close', async (_event, id: string) => {
-    // Session persistence is handled via auto-save in the renderer.
-    // sessions:close simply ensures the session is persisted to the DB and
-    // potentially performs cleanup. In this architecture, sessions stay in
-    // the DB but are removed from the "open" list in the renderer.
     const db = getDb()
     const now = new Date()
 
+    // Mark the session as closed.
+    db.update(sessionsTable).set({ isOpen: false }).where(eq(sessionsTable.id, id)).run()
+
+    // Update the application's updatedAt.
     db.update(applicationsTable)
       .set({ updatedAt: now })
       .where(

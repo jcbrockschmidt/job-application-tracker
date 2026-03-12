@@ -65,6 +65,7 @@ export const sessions = sqliteTable('sessions', {
   // Stored as a serialized JSON string (MatchReport shape); null until generated.
   matchReport: text('match_report'),
   lastSaved: text('last_saved').notNull(),
+  isOpen: integer('is_open', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
 })
 
