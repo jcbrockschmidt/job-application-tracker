@@ -3,7 +3,15 @@
 // body paragraphs, and sign-off.
 
 import { useState } from 'react'
-import { Box, Button, IconButton, Typography, TextField } from '@mui/material'
+import {
+  Box,
+  Button,
+  IconButton,
+  Typography,
+  TextField,
+  type SxProps,
+  type Theme
+} from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import CheckIcon from '@mui/icons-material/Check'
@@ -66,9 +74,11 @@ export default function CoverLetterPaper({
       </Typography>
 
       {/* Salutation */}
-      <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', mb: 1.75 }}>
-        {coverLetter.salutation}
-      </Typography>
+      <EditableField
+        value={coverLetter.salutation}
+        onSave={(text) => onUpdateCoverLetter?.({ salutation: text })}
+        sx={{ mb: 1.75 }}
+      />
 
       {/* Body paragraphs */}
       {coverLetter.paragraphs.map((paragraph, i) => (
@@ -82,14 +92,85 @@ export default function CoverLetterPaper({
       ))}
 
       {/* Sign-off */}
-      <Typography sx={{ fontSize: '9.5pt', color: 'text.primary', mt: 2, mb: 3 }}>
-        {coverLetter.signoff}
-      </Typography>
+      <EditableField
+        value={coverLetter.signoff}
+        onSave={(text) => onUpdateCoverLetter?.({ signoff: text })}
+        sx={{ mt: 2, mb: 3 }}
+      />
 
       {/* Signature name */}
       <Typography sx={{ fontSize: '9.5pt', fontWeight: 600, color: 'text.primary' }}>
         {contact.fullName || 'Your Name'}
       </Typography>
+    </Box>
+  )
+}
+
+// ─── Editable Field (Salutation / Sign-off) ──────────────────────────────────
+
+function EditableField({
+  value,
+  onSave,
+  sx
+}: {
+  value: string
+  onSave: (text: string) => void
+  sx?: SxProps<Theme>
+}): JSX.Element {
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+
+  const handleEdit = (): void => {
+    setDraft(value)
+    setIsEditing(true)
+  }
+
+  const handleSave = (): void => {
+    onSave(draft)
+    setIsEditing(false)
+  }
+
+  const handleCancel = (): void => {
+    setDraft(value)
+    setIsEditing(false)
+  }
+
+  return (
+    <Box sx={{ ...sx, position: 'relative' }}>
+      {isEditing ? (
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <TextField
+            fullWidth
+            size="small"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave()
+              if (e.key === 'Escape') handleCancel()
+            }}
+            slotProps={{ input: { sx: { fontSize: '9.5pt' } } }}
+          />
+          <IconButton size="small" onClick={handleSave} sx={{ color: 'success.main' }}>
+            <CheckIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+          <IconButton size="small" onClick={handleCancel}>
+            <CloseIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Box>
+      ) : (
+        <Typography
+          onClick={handleEdit}
+          sx={{
+            fontSize: '9.5pt',
+            color: 'text.primary',
+            cursor: 'pointer',
+            borderRadius: '2px',
+            '&:hover': { bgcolor: 'action.selected' }
+          }}
+        >
+          {value}
+        </Typography>
+      )}
     </Box>
   )
 }

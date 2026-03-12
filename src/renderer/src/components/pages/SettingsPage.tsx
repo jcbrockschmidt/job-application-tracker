@@ -181,8 +181,10 @@ export default function SettingsPage(): JSX.Element {
 
       <SettingsSection title="Claude Model">
         <FormControl size="small" sx={{ minWidth: 300 }}>
-          <InputLabel>Model</InputLabel>
+          <InputLabel id="model-select-label">Model</InputLabel>
           <Select
+            labelId="model-select-label"
+            id="model-select"
             label="Model"
             value={settings.model}
             onChange={(e) => handleModelChange(e.target.value)}
@@ -256,8 +258,10 @@ export default function SettingsPage(): JSX.Element {
 
       <SettingsSection title="Theme">
         <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Theme</InputLabel>
+          <InputLabel id="theme-select-label">Theme</InputLabel>
           <Select
+            labelId="theme-select-label"
+            id="theme-select"
             label="Theme"
             value={settings.theme}
             onChange={(e) => handleThemeChange(e.target.value as Theme)}

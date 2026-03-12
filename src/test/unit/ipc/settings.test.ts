@@ -168,18 +168,26 @@ describe('settings:save', () => {
     await settingsSave({
       contactInfo: { fullName: 'Alice', phone: '555', email: 'alice@test.com' }
     })
-    // Second save adds only linkedin — fullName/phone/email must survive.
-    await settingsSave({ contactInfo: { linkedin: 'alice-li' } })
+    // Second save adds only linkedin and github — fullName/phone/email must survive.
+    await settingsSave({ contactInfo: { linkedin: 'alice-li', github: 'alice-gh' } })
     const result = await settingsGet()
     expect(result.contactInfo.fullName).toBe('Alice')
     expect(result.contactInfo.phone).toBe('555')
     expect(result.contactInfo.email).toBe('alice@test.com')
     expect(result.contactInfo.linkedin).toBe('alice-li')
+    expect(result.contactInfo.github).toBe('alice-gh')
   })
 
   it('can set onboardingComplete to true and retrieve it', async () => {
     await settingsSave({ onboardingComplete: true })
     expect((await settingsGet()).onboardingComplete).toBe(true)
+  })
+
+  it('can update the theme', async () => {
+    await settingsSave({ theme: 'dark' })
+    expect((await settingsGet()).theme).toBe('dark')
+    await settingsSave({ theme: 'light' })
+    expect((await settingsGet()).theme).toBe('light')
   })
 
   it('can update the spending limit', async () => {

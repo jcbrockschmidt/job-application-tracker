@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, act, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, fireEvent } from '@testing-library/react'
 import ResumePaper from '../../../renderer/src/components/organisms/ResumePaper'
 import React from 'react'
 import type { ResumeJson, ContactInfo } from '@shared/types'
@@ -33,7 +33,7 @@ describe('ResumePaper', () => {
 
   it('calls onUpdateResume when a bullet is edited and saved', async () => {
     const onUpdateResume = vi.fn()
-    const { getByText, getByRole, container } = render(
+    const { getByText, container } = render(
       React.createElement(ResumePaper, {
         resume: mockResume,
         contact: mockContact,

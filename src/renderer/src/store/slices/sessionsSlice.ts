@@ -35,13 +35,16 @@ const sessionsSlice = createSlice({
         Object.assign(session, updates)
       }
     },
+    setSessions(state, action: PayloadAction<Session[]>) {
+      state.sessions = action.payload
+    },
     hydrate(_state, action: PayloadAction<SessionsState>) {
       return action.payload
     }
   }
 })
 
-export const { addSession, removeSession, setActiveSession, updateSession, hydrate } =
+export const { addSession, removeSession, setActiveSession, updateSession, setSessions, hydrate } =
   sessionsSlice.actions
 
 export default sessionsSlice.reducer

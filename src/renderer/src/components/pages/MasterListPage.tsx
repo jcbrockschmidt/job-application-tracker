@@ -305,6 +305,9 @@ function ApplicationRow({
   const notesRef = useRef<HTMLInputElement>(null)
 
   const [isEditingSubmitted, setIsEditingSubmitted] = useState(false)
+  const [submittedDraft, setSubmittedDraft] = useState(
+    app.submittedDate ? app.submittedDate.split('T')[0] : ''
+  )
   const submittedRef = useRef<HTMLInputElement>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
@@ -337,6 +340,14 @@ function ApplicationRow({
     setIsEditingNotes(false)
     if (notesDraft !== (app.notes ?? '')) {
       onUpdate(app.id, { notes: notesDraft })
+    }
+  }
+
+  const handleSubmittedBlur = () => {
+    setIsEditingSubmitted(false)
+    const original = app.submittedDate ? app.submittedDate.split('T')[0] : ''
+    if (submittedDraft !== original) {
+      onUpdate(app.id, { submittedDate: submittedDraft || null })
     }
   }
 
@@ -389,15 +400,27 @@ function ApplicationRow({
             type="date"
             size="small"
             variant="standard"
-            value={app.submittedDate ? app.submittedDate.split('T')[0] : ''}
-            onChange={(e) => onUpdate(app.id, { submittedDate: e.target.value })}
-            onBlur={() => setIsEditingSubmitted(false)}
+            value={submittedDraft}
+            onChange={(e) => setSubmittedDraft(e.target.value)}
+            onBlur={handleSubmittedBlur}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSubmittedBlur()
+              if (e.key === 'Escape') {
+                setSubmittedDraft(app.submittedDate ? app.submittedDate.split('T')[0] : '')
+                setIsEditingSubmitted(false)
+              }
+            }}
             InputProps={{ disableUnderline: true, sx: { fontSize: 13 } }}
             disabled={isGenerating}
           />
         ) : (
           <Typography
-            onClick={() => !isGenerating && setIsEditingSubmitted(true)}
+            onClick={() => {
+              if (!isGenerating) {
+                setSubmittedDraft(app.submittedDate ? app.submittedDate.split('T')[0] : '')
+                setIsEditingSubmitted(true)
+              }
+            }}
             sx={{
               fontSize: 13,
               cursor: isGenerating ? 'default' : 'pointer',
@@ -490,6 +513,10 @@ function ApplicationRow({
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
                 handleNotesBlur()
+              }
+              if (e.key === 'Escape') {
+                setNotesDraft(app.notes ?? '')
+                setIsEditingNotes(false)
               }
             }}
             sx={{

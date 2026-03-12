@@ -44,11 +44,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../hooks'
 import { setActivePage } from '../../store/slices/uiSlice'
-import {
-  setActiveSession,
-  removeSession,
-  hydrate as hydrateSessions
-} from '../../store/slices/sessionsSlice'
+import { setActiveSession, removeSession, setSessions } from '../../store/slices/sessionsSlice'
 import type { Session } from '@shared/types'
 
 const SIDEBAR_BG = '#1a2332'
@@ -71,7 +67,7 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
 
   useEffect(() => {
     window.api.sessions.getAll().then((allSessions) => {
-      dispatch(hydrateSessions({ sessions: allSessions, activeSessionId }))
+      dispatch(setSessions(allSessions))
     })
   }, [applicationsLastChanged, dispatch])
 
