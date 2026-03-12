@@ -295,6 +295,8 @@ function ApplicationRow({
   const [notesDraft, setNotesDraft] = useState(app.notes ?? '')
   const notesRef = useRef<HTMLInputElement>(null)
 
+  const [isEditingSubmitted, setIsEditingSubmitted] = useState(false)
+
   const isGenerating = session?.isGenerating ?? false
 
   useEffect(() => {
@@ -349,16 +351,33 @@ function ApplicationRow({
       <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
         {new Date(app.createdAt).toLocaleDateString()}
       </Box>
-      <Box component="td" sx={{ px: 2, py: 1.5 }}>
-        <TextField
-          type="date"
-          size="small"
-          variant="standard"
-          value={app.submittedDate ? app.submittedDate.split('T')[0] : ''}
-          onChange={(e) => onUpdate(app.id, { submittedDate: e.target.value })}
-          InputProps={{ disableUnderline: true, sx: { fontSize: 13 } }}
-          disabled={isGenerating}
-        />
+      <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
+        {isEditingSubmitted ? (
+          <TextField
+            autoFocus
+            type="date"
+            size="small"
+            variant="standard"
+            value={app.submittedDate ? app.submittedDate.split('T')[0] : ''}
+            onChange={(e) => onUpdate(app.id, { submittedDate: e.target.value })}
+            onBlur={() => setIsEditingSubmitted(false)}
+            InputProps={{ disableUnderline: true, sx: { fontSize: 13 } }}
+            disabled={isGenerating}
+          />
+        ) : (
+          <Typography
+            onClick={() => !isGenerating && setIsEditingSubmitted(true)}
+            sx={{
+              fontSize: 13,
+              cursor: isGenerating ? 'default' : 'pointer',
+              color: app.submittedDate ? 'text.primary' : 'text.disabled'
+            }}
+          >
+            {app.submittedDate
+              ? new Date(app.submittedDate.split('T')[0] + 'T00:00:00').toLocaleDateString()
+              : '—'}
+          </Typography>
+        )}
       </Box>
       <Box component="td" sx={{ px: 2, py: 1.5 }}>
         {isGenerating ? (
