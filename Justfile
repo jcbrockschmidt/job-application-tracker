@@ -30,6 +30,7 @@ test-watch:
     npx vitest --watch
 
 # Type-check all TypeScript project references
+alias tc := typecheck
 typecheck:
     npx tsc --build --noEmit
 
