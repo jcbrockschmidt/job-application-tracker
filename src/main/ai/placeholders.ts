@@ -6,7 +6,8 @@ import type { ResumeJson, MatchReport } from '@shared/types'
 
 export const PLACEHOLDER_COMPANY_ROLE = {
   company: 'Acme Corp',
-  role: 'Senior Software Engineer'
+  role: 'Senior Software Engineer',
+  briefSummary: 'Distributed systems, React focus'
 }
 
 // Matches the RawExtractedCV shape consumed by rawToMasterCV() in ipc/index.ts.

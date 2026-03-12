@@ -11,7 +11,7 @@
 
 import { ipcMain, app, dialog } from 'electron'
 import { join, extname, basename } from 'path'
-import { readFileSync, existsSync, copyFileSync, mkdirSync, rmSync } from 'fs'
+import { readFileSync, existsSync, copyFileSync, mkdirSync, rmSync, renameSync } from 'fs'
 import keytar from 'keytar'
 import { nanoid } from 'nanoid'
 import { eq, desc, gte } from 'drizzle-orm'
@@ -49,8 +49,15 @@ import {
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
 import { exportResumePdf, exportCoverLetterPdf } from '../export'
+import {
+  getAllApplications,
+  updateApplication,
+  deleteApplication,
+  getApplicationById
+} from '../db/queries'
 import type {
   Settings,
+  Application,
   SourceDocType,
   DocumentType,
   MasterCV,
@@ -145,13 +152,26 @@ function toSlug(text: string): string {
   )
 }
 
-// Regex fallback for extracting company name and role title when Claude parsing fails.
-function extractCompanyRoleRegex(jd: string): { company: string; role: string } {
+// Regex fallback for extracting company name, role title, and a brief summary
+// when Claude parsing fails.
+function extractCompanyRoleMetadata(jd: string): {
+  company: string
+  role: string
+  briefSummary: string
+} {
   const roleMatch = jd.match(/(?:job title|position|role)[:\s]+([^\n,]{3,60})/i)
   const companyMatch = jd.match(/(?:company|employer|organization|about us)[:\s]+([^\n,]{2,60})/i)
+
+  // Try to find a "looking for" sentence for the summary
+  const summaryMatch = jd.match(/(?:looking for|seeking|hiring)[:\s]+([^.]{10,80})/i)
+  const briefSummary = summaryMatch
+    ? summaryMatch[1].trim().split(' ').slice(0, 8).join(' ')
+    : jd.split('\n')[0].trim().split(' ').slice(0, 8).join(' ')
+
   return {
     company: companyMatch?.[1]?.trim() ?? 'Unknown Company',
-    role: roleMatch?.[1]?.trim() ?? 'Unknown Role'
+    role: roleMatch?.[1]?.trim() ?? 'Unknown Role',
+    briefSummary: briefSummary || 'No summary extracted'
   }
 }
 
@@ -325,26 +345,68 @@ export function registerIpcHandlers(): void {
   })
 
   // ─── Applications ────────────────────────────────────────────────────────────
-  // STUB: Phase 2
 
   ipcMain.handle('applications:getAll', async () => {
-    // TODO: Query the applications table via Drizzle (getDb()). Return all rows
-    // sorted by createdAt descending. Map DB row timestamps to ISO strings.
-    throw new Error('Not implemented')
+    const db = getDb()
+    return getAllApplications(db)
   })
 
-  ipcMain.handle('applications:update', async (_event, _id: string, _updates: unknown) => {
-    // TODO: Update the matching row in the applications table. Set updatedAt to now.
-    // Special case: if companyName or roleTitle changed, rename the session directory
-    // on disk (directoryPath) to match the new values so the filesystem stays in sync.
-    throw new Error('Not implemented')
-  })
+  ipcMain.handle(
+    'applications:update',
+    async (_event, id: string, updates: Partial<Application>) => {
+      const db = getDb()
+      const existing = getApplicationById(db, id)
+      if (!existing) throw new Error(`Application not found: ${id}`)
 
-  ipcMain.handle('applications:delete', async (_event, _id: string) => {
-    // TODO: Delete the application row, its associated sessions rows, and the
-    // entire directory tree at directoryPath. Remove any source doc references
-    // that are scoped to this application. Confirm the directory exists before deleting.
-    throw new Error('Not implemented')
+      // Special case: if companyName or roleTitle changed, rename the session directory
+      // on disk (directoryPath) to match the new values so the filesystem stays in sync.
+      if (
+        (updates.companyName && updates.companyName !== existing.companyName) ||
+        (updates.roleTitle && updates.roleTitle !== existing.roleTitle)
+      ) {
+        const newCompany = updates.companyName || existing.companyName
+        const newRole = updates.roleTitle || existing.roleTitle
+
+        // Extract sessionId from sessions table to preserve the folder naming convention
+        const session = db
+          .select()
+          .from(sessionsTable)
+          .where(eq(sessionsTable.applicationId, id))
+          .limit(1)
+          .get()
+        const sessionId = session?.id || nanoid()
+        const newDir = getSessionDir(toSlug(newCompany), toSlug(newRole), sessionId)
+
+        if (
+          existing.directoryPath &&
+          existsSync(existing.directoryPath) &&
+          existing.directoryPath !== newDir
+        ) {
+          mkdirSync(join(newDir, '..'), { recursive: true })
+          renameSync(existing.directoryPath, newDir)
+        }
+        updates.directoryPath = newDir
+      }
+
+      updateApplication(db, id, updates)
+    }
+  )
+
+  ipcMain.handle('applications:delete', async (_event, id: string) => {
+    const db = getDb()
+    const existing = getApplicationById(db, id)
+
+    // Delete the entire directory tree at directoryPath.
+    if (existing && existing.directoryPath && existsSync(existing.directoryPath)) {
+      try {
+        rmSync(existing.directoryPath, { recursive: true, force: true })
+      } catch (err) {
+        console.error(`Failed to delete directory: ${existing.directoryPath}`, err)
+      }
+    }
+
+    // Delete the application row and its associated sessions.
+    deleteApplication(db, id)
   })
 
   // ─── Sessions ────────────────────────────────────────────────────────────────
@@ -358,11 +420,13 @@ export function registerIpcHandlers(): void {
     // 1. Extract company name and role title from the JD via Claude, with regex fallback.
     let companyName = 'Unknown Company'
     let roleTitle = 'Unknown Role'
+    let briefSummary = 'No summary extracted'
     let apiKey: string | null = null
     if (isPlaceholderMode()) {
       await placeholderDelay()
       companyName = PLACEHOLDER_COMPANY_ROLE.company
       roleTitle = PLACEHOLDER_COMPANY_ROLE.role
+      briefSummary = PLACEHOLDER_COMPANY_ROLE.briefSummary
     } else {
       apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
       if (!apiKey) throw new Error('API key not configured — validate it in Settings')
@@ -373,9 +437,9 @@ export function registerIpcHandlers(): void {
           ...extractCompanyRolePrompt(jobDescription)
         })
         const toolBlock = extractResponse.content.find((b) => b.type === 'tool_use')
-        let extracted: { company?: string; role?: string }
+        let extracted: { company?: string; role?: string; briefSummary?: string }
         if (toolBlock && toolBlock.type === 'tool_use') {
-          extracted = toolBlock.input as { company?: string; role?: string }
+          extracted = toolBlock.input as { company?: string; role?: string; briefSummary?: string }
         } else {
           const textBlock = extractResponse.content.find((b) => b.type === 'text')
           if (!textBlock || textBlock.type !== 'text')
@@ -384,10 +448,11 @@ export function registerIpcHandlers(): void {
             .replace(/^```(?:json)?\n?/, '')
             .replace(/\n?```$/, '')
             .trim()
-          extracted = JSON.parse(raw) as { company?: string; role?: string }
+          extracted = JSON.parse(raw) as { company?: string; role?: string; briefSummary?: string }
         }
         companyName = extracted.company?.trim() || companyName
         roleTitle = extracted.role?.trim() || roleTitle
+        briefSummary = extracted.briefSummary?.trim() || briefSummary
 
         // Log the extraction spend.
         db.insert(spendLog)
@@ -406,9 +471,10 @@ export function registerIpcHandlers(): void {
           .run()
       } catch {
         // Regex fallback: try to extract from common patterns.
-        const fallback = extractCompanyRoleRegex(jobDescription)
+        const fallback = extractCompanyRoleMetadata(jobDescription)
         companyName = fallback.company
         roleTitle = fallback.role
+        briefSummary = fallback.briefSummary
       }
     }
 
@@ -426,7 +492,7 @@ export function registerIpcHandlers(): void {
         id: applicationId,
         companyName,
         roleTitle,
-        briefSummary: null,
+        briefSummary,
         dateGenerated: now.toISOString(),
         resumeStatus: 'draft',
         coverLetterStatus: 'none',
@@ -525,16 +591,44 @@ export function registerIpcHandlers(): void {
 
       // Sessions with no resume.json were abandoned mid-first-generation (e.g. app was
       // closed before generation completed). Clean them up from the DB and filesystem.
+      // But only if they are not "new" (more than 5 minutes old) to avoid race conditions
+      // during the first generation.
       if (!resume) {
-        db.delete(sessionsTable).where(eq(sessionsTable.id, sessions.id)).run()
-        db.delete(applicationsTable).where(eq(applicationsTable.id, applications.id)).run()
-        if (applications.directoryPath) {
-          try {
-            rmSync(applications.directoryPath, { recursive: true, force: true })
-          } catch {
-            // Best-effort cleanup — ignore filesystem errors
+        const now = new Date()
+        const createdAt = new Date(applications.createdAt)
+        const ageMs = now.getTime() - createdAt.getTime()
+        const FIVE_MINUTES = 5 * 60 * 1000
+
+        if (ageMs > FIVE_MINUTES) {
+          db.delete(sessionsTable).where(eq(sessionsTable.id, sessions.id)).run()
+          db.delete(applicationsTable).where(eq(applicationsTable.id, applications.id)).run()
+          if (applications.directoryPath) {
+            try {
+              rmSync(applications.directoryPath, { recursive: true, force: true })
+            } catch {
+              // Best-effort cleanup — ignore filesystem errors
+            }
           }
+          continue
         }
+
+        // If it's a new session, return it with isGenerating: true so the UI can show it
+        result.push({
+          id: sessions.id,
+          applicationId: sessions.applicationId,
+          companyName: applications.companyName,
+          roleTitle: applications.roleTitle,
+          jobDescription: sessions.jobDescription,
+          dateGenerated: applications.dateGenerated,
+          resume: null,
+          resumeStatus: applications.resumeStatus,
+          coverLetter: null,
+          coverLetterStatus: applications.coverLetterStatus,
+          matchReport: null,
+          lastSaved: sessions.lastSaved,
+          isGenerating: true,
+          generationError: null
+        })
         continue
       }
 
@@ -727,18 +821,23 @@ export function registerIpcHandlers(): void {
   )
 
   ipcMain.handle('docs:getAll', async () => {
-    // STUB: Phase 2
-    // TODO: Query the source_docs table via Drizzle. Return all rows sorted by
-    // uploadedAt descending.
-    throw new Error('Not implemented')
+    const db = getDb()
+    return db.select().from(sourceDocs).orderBy(desc(sourceDocs.uploadedAt)).all()
   })
 
-  ipcMain.handle('docs:delete', async (_event, _id: string) => {
-    // STUB: Phase 2
-    // TODO: Delete the source_docs row and the file at its stored path.
-    // Note: deleting a source doc does not modify the Master CV — ingested
-    // content is already merged and is the user's to manage.
-    throw new Error('Not implemented')
+  ipcMain.handle('docs:delete', async (_event, id: string) => {
+    const db = getDb()
+    const doc = db.select().from(sourceDocs).where(eq(sourceDocs.id, id)).get()
+    if (doc) {
+      if (existsSync(doc.path)) {
+        try {
+          rmSync(doc.path)
+        } catch (err) {
+          console.error(`Failed to delete source doc file: ${doc.path}`, err)
+        }
+      }
+      db.delete(sourceDocs).where(eq(sourceDocs.id, id)).run()
+    }
   })
 
   // ─── Generation ──────────────────────────────────────────────────────────────

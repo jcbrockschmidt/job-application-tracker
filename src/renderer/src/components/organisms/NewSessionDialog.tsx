@@ -25,7 +25,7 @@ import {
 } from '@mui/material'
 import { useAppDispatch } from '../../hooks'
 import { addSession, updateSession, removeSession } from '../../store/slices/sessionsSlice'
-import { setLastAiOp } from '../../store/slices/uiSlice'
+import { setLastAiOp, notifyApplicationsChanged } from '../../store/slices/uiSlice'
 
 interface NewSessionDialogProps {
   open: boolean
@@ -49,6 +49,7 @@ export default function NewSessionDialog({ open, onClose }: NewSessionDialogProp
       const session = await window.api.sessions.create(jobDescription)
       sessionId = session.id
       dispatch(addSession(session))
+      dispatch(notifyApplicationsChanged())
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Session creation failed. Please try again.')

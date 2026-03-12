@@ -41,9 +41,14 @@ import ArticleIcon from '@mui/icons-material/Article'
 import EditNoteIcon from '@mui/icons-material/EditNote'
 import SettingsIcon from '@mui/icons-material/Settings'
 import CloseIcon from '@mui/icons-material/Close'
+import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../hooks'
 import { setActivePage } from '../../store/slices/uiSlice'
-import { setActiveSession, removeSession } from '../../store/slices/sessionsSlice'
+import {
+  setActiveSession,
+  removeSession,
+  hydrate as hydrateSessions
+} from '../../store/slices/sessionsSlice'
 import type { Session } from '@shared/types'
 
 const SIDEBAR_BG = '#1a2332'
@@ -56,12 +61,19 @@ interface SidebarProps {
 export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
   const sessions = useAppSelector((state) => state.sessions.sessions)
   const activeSessionId = useAppSelector((state) => state.sessions.activeSessionId)
+  const applicationsLastChanged = useAppSelector((state) => state.ui.applicationsLastChanged)
   // STUB: Phase 5
   const activePage = useAppSelector((state) => state.ui.activePage)
   const dispatch = useAppDispatch()
   // STUB: Phase 5 — unincorporated cover letter count for the Writing Profile badge.
   // TODO: derive from WritingProfilePage load or a dedicated Redux slice; 0 for now.
   const writingProfileUnincorporatedCount = 0
+
+  useEffect(() => {
+    window.api.sessions.getAll().then((allSessions) => {
+      dispatch(hydrateSessions({ sessions: allSessions, activeSessionId }))
+    })
+  }, [applicationsLastChanged, activeSessionId, dispatch])
 
   const handleCloseSession = async (id: string): Promise<void> => {
     try {

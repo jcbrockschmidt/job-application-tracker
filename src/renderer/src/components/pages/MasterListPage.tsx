@@ -1,23 +1,22 @@
-// Application Master List: sortable, filterable table of all job applications.
-// Columns: Company, Role, Summary, Started, Submitted, Resume Status,
-//          Cover Letter Status, Application Status, Notes, Open.
-//
-// STUB: Phase 2 — header, filter chips, search bar, and table columns rendered;
-//   data loading, sorting, inline editing, and row actions not yet wired.
-// TODO:
-//   - Load applications on mount: window.api.applications.getAll().then(setApplications)
-//   - Column sorting: track sortKey + sortDir; sort rows client-side on header click
-//   - Quick-filter chips: filter rows by applicationStatus
-//   - Search bar: filter rows where Company, Role, Notes, or Summary contains the query
-//   - Application Status chip: click-to-cycle; call window.api.applications.update(id, updates)
-//   - Notes cell: click to show TextField; saves on blur/Enter via applications:update
-//   - Submitted cell: date picker or text input; saves via applications:update
-//   - Open button: dispatch to Redux + navigate to session view (create session if none exists)
-//   - Delete: confirm dialog + window.api.applications.delete(id) + remove from local state
-
-import { Box, Chip, InputAdornment, TableSortLabel, TextField, Typography } from '@mui/material'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import {
+  Box,
+  Chip,
+  InputAdornment,
+  TableSortLabel,
+  TextField,
+  Typography,
+  IconButton,
+  Tooltip,
+  CircularProgress
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import type { ApplicationStatus } from '@shared/types'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import LaunchIcon from '@mui/icons-material/Launch'
+import type { Application, ApplicationStatus, Session } from '@shared/types'
+import { useAppDispatch, useAppSelector } from '../../hooks'
+import { setActivePage, notifyApplicationsChanged } from '../../store/slices/uiSlice'
+import { setActiveSession, addSession } from '../../store/slices/sessionsSlice'
 
 // Filter options shown as quick-filter chips above the table
 const STATUS_FILTERS: Array<{ label: string; value: ApplicationStatus | 'all' }> = [
@@ -29,7 +28,7 @@ const STATUS_FILTERS: Array<{ label: string; value: ApplicationStatus | 'all' }>
 ]
 
 // Column definitions for the sortable table header
-const COLUMNS: Array<{ key: string; label: string }> = [
+const COLUMNS: Array<{ key: keyof Application | '_open'; label: string }> = [
   { key: 'companyName', label: 'Company' },
   { key: 'roleTitle', label: 'Role' },
   { key: 'briefSummary', label: 'Summary' },
@@ -43,26 +42,96 @@ const COLUMNS: Array<{ key: string; label: string }> = [
 ]
 
 export default function MasterListPage(): JSX.Element {
-  // TODO: const [applications, setApplications] = useState<Application[]>([])
-  // TODO: const [isLoading, setIsLoading] = useState(true)
-  // TODO: useEffect(() => {
-  //   window.api.applications.getAll()
-  //     .then(setApplications)
-  //     .finally(() => setIsLoading(false))
-  // }, [])
+  const [applications, setApplications] = useState<Application[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState<ApplicationStatus | 'all'>('all')
+  const [sortKey, setSortKey] = useState<keyof Application>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
-  // TODO: const [searchQuery, setSearchQuery] = useState('')
-  // TODO: const [activeFilter, setActiveFilter] = useState<ApplicationStatus | 'all'>('all')
-  // TODO: const [sortKey, setSortKey] = useState('createdAt')
-  // TODO: const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const sessions = useAppSelector((state) => state.sessions.sessions)
+  const applicationsLastChanged = useAppSelector((state) => state.ui.applicationsLastChanged)
+  const dispatch = useAppDispatch()
 
-  // TODO: const filtered = applications
-  //   .filter(app =>
-  //     (activeFilter === 'all' || app.applicationStatus === activeFilter) &&
-  //     (!searchQuery || [app.companyName, app.roleTitle, app.notes ?? '', app.briefSummary ?? '']
-  //       .some(s => s.toLowerCase().includes(searchQuery.toLowerCase())))
-  //   )
-  //   .sort((a, b) => { /* sort by sortKey / sortDir */ })
+  const fetchApplications = () => {
+    setIsLoading(true)
+    window.api.applications
+      .getAll()
+      .then(setApplications)
+      .finally(() => setIsLoading(false))
+  }
+
+  useEffect(() => {
+    fetchApplications()
+  }, [applicationsLastChanged])
+
+  const handleSort = (key: keyof Application) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  const filteredAndSorted = useMemo(() => {
+    const result = applications.filter(
+      (app) =>
+        (activeFilter === 'all' || app.applicationStatus === activeFilter) &&
+        (!searchQuery ||
+          [app.companyName, app.roleTitle, app.notes ?? '', app.briefSummary ?? ''].some((s) =>
+            s.toLowerCase().includes(searchQuery.toLowerCase())
+          ))
+    )
+
+    result.sort((a, b) => {
+      const valA = a[sortKey] ?? ''
+      const valB = b[sortKey] ?? ''
+      if (valA < valB) return sortDir === 'asc' ? -1 : 1
+      if (valA > valB) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return result
+  }, [applications, activeFilter, searchQuery, sortKey, sortDir])
+
+  const handleUpdate = async (id: string, updates: Partial<Application>) => {
+    await window.api.applications.update(id, updates)
+    setApplications((prev) => prev.map((app) => (app.id === id ? { ...app, ...updates } : app)))
+    if (updates.companyName || updates.roleTitle) {
+      dispatch(notifyApplicationsChanged())
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this application and all its documents?')) {
+      await window.api.applications.delete(id)
+      setApplications((prev) => prev.filter((app) => app.id !== id))
+      dispatch(notifyApplicationsChanged())
+    }
+  }
+
+  const handleOpenSession = async (applicationId: string) => {
+    // 1. Check if session already exists in Redux
+    let session = sessions.find((s) => s.applicationId === applicationId)
+
+    if (!session) {
+      // 2. If not in Redux, try to fetch it via API (this might happen if Redux state was lost)
+      const allSessions = await window.api.sessions.getAll()
+      session = allSessions.find((s) => s.applicationId === applicationId)
+      if (session) {
+        dispatch(addSession(session))
+      }
+    }
+
+    if (session) {
+      dispatch(setActiveSession(session.id))
+      dispatch(setActivePage('session'))
+    } else {
+      // This shouldn't happen based on current logic where sessions:create creates an application.
+      console.error('No session found for application', applicationId)
+    }
+  }
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -84,12 +153,12 @@ export default function MasterListPage(): JSX.Element {
           Applications
         </Typography>
 
-        {/* Search bar — STUB: not yet connected to state */}
-        {/* TODO: value={searchQuery} onChange={e => setSearchQuery(e.target.value)} */}
         <TextField
           size="small"
           placeholder="Search company, role, notes…"
           variant="outlined"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           sx={{ width: 260, ml: 1, '& .MuiInputBase-root': { fontSize: 13, height: 34 } }}
           InputProps={{
             startAdornment: (
@@ -101,8 +170,7 @@ export default function MasterListPage(): JSX.Element {
         />
       </Box>
 
-      {/* Quick-filter chips — STUB: not yet connected to state */}
-      {/* TODO: activeFilter state drives selected chip and filtered rows */}
+      {/* Quick-filter chips */}
       <Box
         sx={{
           bgcolor: 'background.paper',
@@ -116,18 +184,19 @@ export default function MasterListPage(): JSX.Element {
         }}
       >
         {STATUS_FILTERS.map(({ label, value }) => (
-          // TODO: onClick={() => setActiveFilter(value)}, selected variant when active
           <Chip
             key={value}
             label={label}
             size="small"
-            variant="outlined"
+            variant={activeFilter === value ? 'filled' : 'outlined'}
+            color={activeFilter === value ? 'primary' : 'default'}
+            onClick={() => setActiveFilter(value)}
             sx={{ fontSize: 12, cursor: 'pointer' }}
           />
         ))}
       </Box>
 
-      {/* Table — STUB: column headers rendered; rows not yet populated */}
+      {/* Table */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Box
           component="table"
@@ -155,28 +224,53 @@ export default function MasterListPage(): JSX.Element {
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  {label && (
-                    // TODO: onClick sort handler; direction={sortKey === key ? sortDir : undefined}
-                    <TableSortLabel>{label}</TableSortLabel>
-                  )}
+                  {label ? (
+                    <TableSortLabel
+                      active={sortKey === key}
+                      direction={sortKey === key ? sortDir : 'asc'}
+                      onClick={() => handleSort(key as keyof Application)}
+                    >
+                      {label}
+                    </TableSortLabel>
+                  ) : null}
                 </Box>
               ))}
             </Box>
           </Box>
 
-          {/* Table body — STUB: no data yet */}
-          {/* TODO: filtered.map(app => <ApplicationRow key={app.id} app={app} />) */}
           <Box component="tbody">
-            <Box component="tr">
-              <Box
-                component="td"
-                colSpan={COLUMNS.length}
-                sx={{ px: 3, py: 6, textAlign: 'center', color: 'text.secondary', fontSize: 13 }}
-              >
-                {/* TODO: replace with real rows once data loads */}
-                No applications yet.
+            {isLoading ? (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={COLUMNS.length}
+                  sx={{ px: 3, py: 6, textAlign: 'center' }}
+                >
+                  <CircularProgress size={24} />
+                </Box>
               </Box>
-            </Box>
+            ) : filteredAndSorted.length > 0 ? (
+              filteredAndSorted.map((app) => (
+                <ApplicationRow
+                  key={app.id}
+                  app={app}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  onOpen={handleOpenSession}
+                  session={sessions.find((s) => s.applicationId === app.id)}
+                />
+              ))
+            ) : (
+              <Box component="tr">
+                <Box
+                  component="td"
+                  colSpan={COLUMNS.length}
+                  sx={{ px: 3, py: 6, textAlign: 'center', color: 'text.secondary', fontSize: 13 }}
+                >
+                  No applications found.
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
       </Box>
@@ -184,29 +278,186 @@ export default function MasterListPage(): JSX.Element {
   )
 }
 
-// ─── ApplicationRow stub (Phase 2) ───────────────────────────────────────────
+function ApplicationRow({
+  app,
+  onUpdate,
+  onDelete,
+  onOpen,
+  session
+}: {
+  app: Application
+  onUpdate: (id: string, updates: Partial<Application>) => void
+  onDelete: (id: string) => void
+  onOpen: (id: string) => void
+  session?: Session
+}): JSX.Element {
+  const [isEditingNotes, setIsEditingNotes] = useState(false)
+  const [notesDraft, setNotesDraft] = useState(app.notes ?? '')
+  const notesRef = useRef<HTMLInputElement>(null)
 
-// STUB: Phase 2 — renders all columns; all interactive cells not yet implemented.
-// TODO:
-//   - applicationStatus: Chip click-to-cycle; call applications:update
-//   - notes: click to show TextField in place; blur/Enter saves
-//   - submittedDate: click for date input; saves via applications:update
-//   - Open button: navigate to session (creates session row if none exists)
-//   - Add delete row action (trash icon, confirm dialog)
-//
-// function ApplicationRow({ app }: { app: Application }): JSX.Element {
-//   return (
-//     <Box component="tr" sx={{ borderBottom: '1px solid #f3f4f6', '&:hover': { bgcolor: '#fafafa' } }}>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.companyName}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.roleTitle}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5, color: 'text.secondary' }}>{app.briefSummary ?? '—'}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{new Date(app.createdAt).toLocaleDateString()}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.submittedDate ?? '—'}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.resumeStatus}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.coverLetterStatus}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.applicationStatus}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}>{app.notes ?? '—'}</Box>
-//       <Box component="td" sx={{ px: 2, py: 1.5 }}><Button size="small">Open</Button></Box>
-//     </Box>
-//   )
-// }
+  const isGenerating = session?.isGenerating ?? false
+
+  useEffect(() => {
+    if (isEditingNotes && notesRef.current) {
+      notesRef.current.focus()
+    }
+  }, [isEditingNotes])
+
+  const handleStatusCycle = () => {
+    if (isGenerating) return
+    const statuses: ApplicationStatus[] = [
+      'not_applied',
+      'submitted',
+      'interviewing',
+      'offer_received',
+      'rejected',
+      'withdrawn'
+    ]
+    const currentIndex = statuses.indexOf(app.applicationStatus)
+    const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+    onUpdate(app.id, { applicationStatus: nextStatus })
+  }
+
+  const handleNotesBlur = () => {
+    setIsEditingNotes(false)
+    if (notesDraft !== (app.notes ?? '')) {
+      onUpdate(app.id, { notes: notesDraft })
+    }
+  }
+
+  return (
+    <Box
+      component="tr"
+      sx={{
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        '&:hover': { bgcolor: 'action.hover' }
+      }}
+    >
+      <Box component="td" sx={{ px: 2, py: 1.5, fontWeight: 500 }}>
+        {app.companyName}
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5 }}>
+        {app.roleTitle}
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5, color: 'text.secondary', width: 250, maxWidth: 250 }}>
+        <Typography variant="inherit">
+          {app.briefSummary ?? '—'}
+        </Typography>
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
+        {new Date(app.createdAt).toLocaleDateString()}
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5 }}>
+        <TextField
+          type="date"
+          size="small"
+          variant="standard"
+          value={app.submittedDate ? app.submittedDate.split('T')[0] : ''}
+          onChange={(e) => onUpdate(app.id, { submittedDate: e.target.value })}
+          InputProps={{ disableUnderline: true, sx: { fontSize: 13 } }}
+          disabled={isGenerating}
+        />
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5 }}>
+        {isGenerating ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
+            <CircularProgress size={14} thickness={5} />
+            <Typography variant="inherit" fontWeight={600}>
+              Generating…
+            </Typography>
+          </Box>
+        ) : (
+          <Chip
+            label={app.resumeStatus === 'finalized' ? 'Final' : 'Draft'}
+            size="small"
+            color={app.resumeStatus === 'finalized' ? 'success' : 'default'}
+            variant="outlined"
+            sx={{ height: 20, fontSize: 11 }}
+          />
+        )}
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5 }}>
+        {app.coverLetterStatus !== 'none' && (
+          <Chip
+            label={app.coverLetterStatus === 'finalized' ? 'Final' : 'Draft'}
+            size="small"
+            color={app.coverLetterStatus === 'finalized' ? 'success' : 'default'}
+            variant="outlined"
+            sx={{ height: 20, fontSize: 11 }}
+          />
+        )}
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5 }}>
+        <Chip
+          label={app.applicationStatus.replace('_', ' ')}
+          size="small"
+          onClick={handleStatusCycle}
+          color={app.applicationStatus === 'offer_received' ? 'success' : 'default'}
+          disabled={isGenerating}
+          sx={{ textTransform: 'capitalize', cursor: isGenerating ? 'default' : 'pointer' }}
+        />
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5, width: 300, maxWidth: 300 }}>
+        {isEditingNotes ? (
+          <TextField
+            inputRef={notesRef}
+            fullWidth
+            size="small"
+            multiline
+            value={notesDraft}
+            onChange={(e) => setNotesDraft(e.target.value)}
+            onBlur={handleNotesBlur}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleNotesBlur()
+              }
+            }}
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: 13,
+                p: 0.5,
+                lineHeight: 1.5
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.light'
+              }
+            }}
+          />
+        ) : (
+          <Typography
+            onClick={() => !isGenerating && setIsEditingNotes(true)}
+            sx={{
+              fontSize: 13,
+              cursor: isGenerating ? 'default' : 'pointer',
+              color: app.notes ? 'text.primary' : 'text.disabled',
+              fontStyle: app.notes ? 'normal' : 'italic',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              lineHeight: 1.5,
+              minHeight: '1.5em',
+              display: 'block'
+            }}
+          >
+            {app.notes || 'Add notes…'}
+          </Typography>
+        )}
+      </Box>
+      <Box component="td" sx={{ px: 2, py: 1.5, whiteSpace: 'nowrap' }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Tooltip title="Open Session">
+            <IconButton size="small" onClick={() => onOpen(app.id)} color="primary">
+              <LaunchIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete Application">
+            <IconButton size="small" onClick={() => onDelete(app.id)} color="error">
+              <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+    </Box>
+  )
+}

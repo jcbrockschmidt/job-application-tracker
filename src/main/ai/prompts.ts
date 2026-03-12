@@ -94,9 +94,14 @@ export function extractCompanyRolePrompt(jobDescription: string): PromptBody {
           type: 'object',
           properties: {
             company: { type: 'string', description: 'Company name' },
-            role: { type: 'string', description: 'Job title' }
+            role: { type: 'string', description: 'Job title' },
+            briefSummary: {
+              type: 'string',
+              description:
+                'A 5-10 word summary of the role focus (e.g. "Distributed systems, Go focus")'
+            }
           },
-          required: ['company', 'role']
+          required: ['company', 'role', 'briefSummary']
         }
       }
     ],

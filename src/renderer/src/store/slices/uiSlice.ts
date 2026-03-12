@@ -18,13 +18,17 @@ export interface UIState {
   // STUB: Phase 3 — null until the first AI call completes in the current session.
   lastAiOp: LastAiOp | null
   saveState: SaveState
+  // Timestamp (ms) of the last change to the applications list.
+  // Used to trigger re-fetches in MasterListPage.
+  applicationsLastChanged: number
 }
 
 const initialState: UIState = {
   activePage: 'masterList',
   isSidebarOpen: true,
   lastAiOp: null,
-  saveState: 'saved'
+  saveState: 'saved',
+  applicationsLastChanged: 0
 }
 
 const uiSlice = createSlice({
@@ -43,10 +47,19 @@ const uiSlice = createSlice({
     },
     setSaveState(state, action: PayloadAction<SaveState>) {
       state.saveState = action.payload
+    },
+    notifyApplicationsChanged(state) {
+      state.applicationsLastChanged = Date.now()
     }
   }
 })
 
-export const { setActivePage, setSidebarOpen, setLastAiOp, setSaveState } = uiSlice.actions
+export const {
+  setActivePage,
+  setSidebarOpen,
+  setLastAiOp,
+  setSaveState,
+  notifyApplicationsChanged
+} = uiSlice.actions
 
 export default uiSlice.reducer

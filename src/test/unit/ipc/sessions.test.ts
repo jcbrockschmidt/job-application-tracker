@@ -230,7 +230,11 @@ const EXTRACTION_AI_RESPONSE = {
   content: [
     {
       type: 'text',
-      text: JSON.stringify({ company: 'Acme Corp', role: 'Senior Engineer' })
+      text: JSON.stringify({
+        company: 'Acme Corp',
+        role: 'Senior Engineer',
+        briefSummary: 'Distributed systems focus'
+      })
     }
   ],
   usage: { input_tokens: 200, output_tokens: 50 }
@@ -263,6 +267,7 @@ function makeMockDbRow(overrides: {
   jobDescription?: string
   directoryPath?: string | null
   matchReport?: string | null
+  createdAt?: Date
 }) {
   const {
     sessionId = 'sess-id-1',
@@ -277,7 +282,8 @@ function makeMockDbRow(overrides: {
       'acme-corp',
       'senior-engineer_2026-03_sess-id-1'
     ),
-    matchReport = null
+    matchReport = null,
+    createdAt = new Date()
   } = overrides
   return {
     sessions: {
@@ -286,7 +292,7 @@ function makeMockDbRow(overrides: {
       jobDescription,
       matchReport,
       lastSaved: new Date().toISOString(),
-      createdAt: new Date()
+      createdAt
     },
     applications: {
       id: applicationId,
@@ -305,8 +311,8 @@ function makeMockDbRow(overrides: {
       coverLetterLastFinalizedAt: null,
       coverLetterIncorporatedAt: null,
       coverLetterWritingProfileIncorporatedAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt,
+      updatedAt: createdAt
     }
   }
 }
@@ -365,6 +371,9 @@ describe('sessions:create', () => {
     expect(session.applicationId).toBe('app-id-1')
     expect(session.companyName).toBe('Acme Corp')
     expect(session.roleTitle).toBe('Senior Engineer')
+    // briefSummary is a DB-only field for Application, not in the Session interface
+    // (Session gets it from joined Application data on sessions:get/getAll).
+    // In sessions:create, the Session object returned has roleTitle/companyName.
     expect(session.jobDescription).toBe(JD)
     expect(session.dateGenerated).toBeTruthy()
     expect(session.coverLetter).toBeNull()
@@ -592,12 +601,30 @@ describe('sessions:getAll', () => {
   it('cleans up and excludes sessions whose directory has no resume.json', async () => {
     const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'eng_abandoned')
     mkdirSync(sessionDir, { recursive: true })
+    // Simulate a session created 10 minutes ago
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000)
     // No resume.json created — simulates abandoned mid-generation session.
-    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+    mockAll.mockReturnValue([
+      makeMockDbRow({ directoryPath: sessionDir, createdAt: tenMinutesAgo })
+    ])
 
     const sessions = await callHandler<Session[]>('sessions:getAll')
 
     expect(sessions).toHaveLength(0)
+  })
+
+  it('returns new sessions (without resume.json) as generating', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'eng_new')
+    mkdirSync(sessionDir, { recursive: true })
+    // Simulate a session created 1 minute ago
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000)
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir, createdAt: oneMinuteAgo })])
+
+    const sessions = await callHandler<Session[]>('sessions:getAll')
+
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].isGenerating).toBe(true)
+    expect(sessions[0].resume).toBeNull()
   })
 })
 
