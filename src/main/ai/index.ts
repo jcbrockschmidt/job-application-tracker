@@ -7,6 +7,16 @@ export function isPlaceholderMode(): boolean {
   return !app.isPackaged && process.env.AI_PLACEHOLDER === 'true'
 }
 
+/**
+ * Artificial delay for placeholder mode to simulate LLM latency.
+ * Most calls: 5s. Resume generation: 10s.
+ */
+export async function placeholderDelay(type: 'resume' | 'general' = 'general'): Promise<void> {
+  if (!isPlaceholderMode()) return
+  const ms = type === 'resume' ? 10000 : 5000
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 let client: Anthropic | null = null
 
 export function getAnthropicClient(apiKey: string): Anthropic {

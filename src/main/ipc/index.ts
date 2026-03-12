@@ -21,7 +21,8 @@ import {
   resetAnthropicClient,
   getAnthropicClient,
   listAvailableModels,
-  isPlaceholderMode
+  isPlaceholderMode,
+  placeholderDelay
 } from '../ai'
 import {
   PLACEHOLDER_COMPANY_ROLE,
@@ -220,6 +221,7 @@ async function generateResumeFromCV(
   mkdirSync(sessionDir, { recursive: true })
 
   if (isPlaceholderMode()) {
+    await placeholderDelay('resume')
     atomicWriteJson(join(sessionDir, 'resume.json'), PLACEHOLDER_RESUME)
     return PLACEHOLDER_RESUME
   }
@@ -292,6 +294,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('settings:validateApiKey', async (_event, apiKey: string): Promise<boolean> => {
     if (isPlaceholderMode()) {
+      await placeholderDelay()
       await keytar.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, apiKey)
       resetAnthropicClient()
       cachedModels = null
@@ -352,6 +355,7 @@ export function registerIpcHandlers(): void {
     let roleTitle = 'Unknown Role'
     let apiKey: string | null = null
     if (isPlaceholderMode()) {
+      await placeholderDelay()
       companyName = PLACEHOLDER_COMPANY_ROLE.company
       roleTitle = PLACEHOLDER_COMPANY_ROLE.role
     } else {
@@ -628,6 +632,7 @@ export function registerIpcHandlers(): void {
       if (type === 'resume') {
         const sourceLabel = `${originalFilename} uploaded ${formatUploadMonth(uploadedAt)}`
         if (isPlaceholderMode()) {
+          await placeholderDelay()
           writeMasterCV(
             mergeMasterCV(readMasterCV(), rawToMasterCV(PLACEHOLDER_RAW_CV, sourceLabel))
           )
@@ -793,6 +798,7 @@ export function registerIpcHandlers(): void {
       }
 
       if (isPlaceholderMode()) {
+        await placeholderDelay()
         const coverLetter: CoverLetterJson = {
           salutation: 'Dear Hiring Manager,',
           paragraphs: [
