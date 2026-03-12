@@ -28,19 +28,19 @@ export const applications = sqliteTable('applications', {
   // Set resumeLastFinalizedAt when the user clicks Finalize on the resume.
   // Set resumeIncorporatedAt when the user commits a Master CV regeneration run that
   // included this document.
-  resumeLastFinalizedAt: integer('resume_last_finalized_at', { mode: 'timestamp' }),
-  resumeIncorporatedAt: integer('resume_incorporated_at', { mode: 'timestamp' }),
-  coverLetterLastFinalizedAt: integer('cover_letter_last_finalized_at', { mode: 'timestamp' }),
-  coverLetterIncorporatedAt: integer('cover_letter_incorporated_at', { mode: 'timestamp' }),
+  resumeLastFinalizedAt: integer('resume_last_finalized_at', { mode: 'timestamp_ms' }),
+  resumeIncorporatedAt: integer('resume_incorporated_at', { mode: 'timestamp_ms' }),
+  coverLetterLastFinalizedAt: integer('cover_letter_last_finalized_at', { mode: 'timestamp_ms' }),
+  coverLetterIncorporatedAt: integer('cover_letter_incorporated_at', { mode: 'timestamp_ms' }),
   // STUB: Phase 5 — set when a session's finalized cover letter is incorporated into the
   // writing profile. A cover letter is unincorporated when coverLetterLastFinalizedAt is set
   // and (this is null OR coverLetterLastFinalizedAt > this).
   // TODO: run `just db-generate` and `just db-migrate` after adding this column.
   coverLetterWritingProfileIncorporatedAt: integer('cover_letter_writing_profile_incorporated_at', {
-    mode: 'timestamp'
+    mode: 'timestamp_ms'
   }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
 })
 
 export const sourceDocs = sqliteTable('source_docs', {
@@ -48,12 +48,12 @@ export const sourceDocs = sqliteTable('source_docs', {
   filename: text('filename').notNull(),
   type: text('type', { enum: ['resume', 'cover_letter'] }).notNull(),
   path: text('path').notNull(),
-  uploadedAt: integer('uploaded_at', { mode: 'timestamp' }).notNull(),
+  uploadedAt: integer('uploaded_at', { mode: 'timestamp_ms' }).notNull(),
   // STUB: Phase 5 — set when this cover letter source doc is incorporated into the writing
   // profile. Null until the first regeneration run that includes it.
   // Only meaningful when type = 'cover_letter'; always null for resume source docs.
   // TODO: run `just db-generate` and `just db-migrate` after adding this column.
-  writingProfileIncorporatedAt: integer('writing_profile_incorporated_at', { mode: 'timestamp' })
+  writingProfileIncorporatedAt: integer('writing_profile_incorporated_at', { mode: 'timestamp_ms' })
 })
 
 export const sessions = sqliteTable('sessions', {
@@ -65,7 +65,7 @@ export const sessions = sqliteTable('sessions', {
   // Stored as a serialized JSON string (MatchReport shape); null until generated.
   matchReport: text('match_report'),
   lastSaved: text('last_saved').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
 })
 
 // Records every AI operation for spend tracking.
@@ -73,7 +73,7 @@ export const sessions = sqliteTable('sessions', {
 // where timestamp >= (now - 24h). Entries are never deleted automatically.
 export const spendLog = sqliteTable('spend_log', {
   id: text('id').primaryKey(),
-  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
+  timestamp: integer('timestamp', { mode: 'timestamp_ms' }).notNull(),
   model: text('model').notNull(),
   inputTokens: integer('input_tokens').notNull(),
   outputTokens: integer('output_tokens').notNull(),

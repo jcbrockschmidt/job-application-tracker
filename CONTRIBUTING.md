@@ -7,7 +7,7 @@ npm install
 just dev        # start with hot reload
 ```
 
-Requires Node.js 20+ and an [Anthropic API key](https://console.anthropic.com/). Install [just](https://github.com/casey/just) for the convenience commands (optional but recommended).
+Requires Node.js 22+ and an [Anthropic API key](https://console.anthropic.com/). Install [just](https://github.com/casey/just) for the convenience commands (optional but recommended).
 
 ---
 

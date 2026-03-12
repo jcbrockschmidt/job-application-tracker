@@ -18,7 +18,7 @@ All data is stored locally. Nothing leaves your machine except what's sent to th
 ## Requirements
 
 - An [Anthropic API key](https://console.anthropic.com/)
-- Node.js 20+
+- Node.js 22+
 - [just](https://github.com/casey/just) (optional, for convenience commands)
 
 ## Getting started

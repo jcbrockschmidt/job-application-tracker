@@ -31,7 +31,12 @@ export default defineConfig({
     alias: {
       // Mirror the aliases defined in electron.vite.config.ts.
       '@shared': resolve(__dirname, 'src/shared'),
-      '@renderer': resolve(__dirname, 'src/renderer/src')
+      '@renderer': resolve(__dirname, 'src/renderer/src'),
+      // Use the Node.js-compiled copy of better-sqlite3 (in node_modules/better-sqlite3-vitest)
+      // so tests can run while the Electron app is open. electron-builder only rebuilds
+      // 'better-sqlite3' (for Electron ABI); 'better-sqlite3-vitest' is left as a plain
+      // Node.js binary and is never locked by the running Electron process.
+      'better-sqlite3': 'better-sqlite3-vitest'
     }
   }
 })
