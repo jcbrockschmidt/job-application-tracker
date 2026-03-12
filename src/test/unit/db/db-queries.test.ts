@@ -80,9 +80,18 @@ const MOCK_APP = {
 const MOCK_SESSION = {
   id: 'sess_test',
   applicationId: 'app_test',
+  companyName: 'Test Corp',
+  roleTitle: 'Engineer',
   jobDescription: 'Looking for a software engineer...',
+  dateGenerated: new Date().toISOString(),
+  resume: null,
+  resumeStatus: 'draft' as const,
+  coverLetter: null,
+  coverLetterStatus: 'none' as const,
   matchReport: null,
   lastSaved: new Date().toISOString(),
+  isGenerating: false,
+  generationError: null,
   createdAt: new Date()
 }
 

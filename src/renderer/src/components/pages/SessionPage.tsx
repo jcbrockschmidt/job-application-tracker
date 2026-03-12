@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Box, Button, CircularProgress, Typography, TextField } from '@mui/material'
 import SessionHeader from '../organisms/SessionHeader'
 import SessionTabs, { type SessionTab } from '../organisms/SessionTabs'
@@ -25,40 +25,62 @@ export default function SessionPage(): JSX.Element {
   const contact = useAppSelector((state) => state.settings.contactInfo)
   const settings = useAppSelector((state) => state.settings)
 
+  // Auto-save debounce timers
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const pendingUpdatesRef = useRef<Partial<Session>>({})
+
   useEffect(() => {
     window.api.spendLog.getTotal().then(setSpendTotal)
   }, [])
 
-  const handleUpdateResume = async (updates: Partial<ResumeJson>): Promise<void> => {
-    if (!session || !session.resume) return
-    const newResume = { ...session.resume, ...updates }
-    try {
-      dispatch(setSaveState('saving'))
-      const lastSaved = new Date().toISOString()
-      await window.api.sessions.update(session.id, { resume: newResume, lastSaved })
-      dispatch(updateSession({ id: session.id, updates: { resume: newResume, lastSaved } }))
-      dispatch(setSaveState('saved'))
-    } catch (err) {
-      console.error('Failed to save resume:', err)
-      dispatch(setSaveState('error'))
+  // Clear timeout on unmount or session change
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+        // Optionally: flush pending updates on unmount
+      }
     }
+  }, [activeSessionId])
+
+  const triggerAutoSave = (sessionId: string, updates: Partial<Session>): void => {
+    // Merge new updates into pending ones
+    pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates }
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+
+    dispatch(setSaveState('saving'))
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const lastSaved = new Date().toISOString()
+        const finalUpdates = { ...pendingUpdatesRef.current, lastSaved }
+        await window.api.sessions.update(sessionId, finalUpdates)
+        dispatch(updateSession({ id: sessionId, updates: finalUpdates }))
+        dispatch(setSaveState('saved'))
+        pendingUpdatesRef.current = {}
+        saveTimeoutRef.current = null
+      } catch (err) {
+        console.error('Auto-save failed:', err)
+        dispatch(setSaveState('error'))
+      }
+    }, 2000)
   }
 
-  const handleUpdateCoverLetter = async (updates: Partial<CoverLetterJson>): Promise<void> => {
+  const handleUpdateResume = (updates: Partial<ResumeJson>): void => {
+    if (!session || !session.resume) return
+    const newResume = { ...session.resume, ...updates }
+    // Update local Redux immediately for UI responsiveness
+    dispatch(updateSession({ id: session.id, updates: { resume: newResume } }))
+    triggerAutoSave(session.id, { resume: newResume })
+  }
+
+  const handleUpdateCoverLetter = (updates: Partial<CoverLetterJson>): void => {
     if (!session || !session.coverLetter) return
     const newCoverLetter = { ...session.coverLetter, ...updates }
-    try {
-      dispatch(setSaveState('saving'))
-      const lastSaved = new Date().toISOString()
-      await window.api.sessions.update(session.id, { coverLetter: newCoverLetter, lastSaved })
-      dispatch(
-        updateSession({ id: session.id, updates: { coverLetter: newCoverLetter, lastSaved } })
-      )
-      dispatch(setSaveState('saved'))
-    } catch (err) {
-      console.error('Failed to save cover letter:', err)
-      dispatch(setSaveState('error'))
-    }
+    // Update local Redux immediately
+    dispatch(updateSession({ id: session.id, updates: { coverLetter: newCoverLetter } }))
+    triggerAutoSave(session.id, { coverLetter: newCoverLetter })
   }
 
   const handleGenerateCoverLetter = async (): Promise<void> => {
@@ -204,7 +226,12 @@ export default function SessionPage(): JSX.Element {
             <MatchReportTab session={session} onGenerate={handleGenerateMatchReport} />
           )}
 
-          {activeTab === 'description' && <DescriptionTab session={session} />}
+          {activeTab === 'description' && (
+            <DescriptionTab
+              session={session}
+              onUpdate={(jd) => triggerAutoSave(session.id, { jobDescription: jd })}
+            />
+          )}
         </Box>
 
         {/* Side panels */}
@@ -227,7 +254,7 @@ function CoverLetterTab({
   contact: ContactInfo
   dateGenerated?: string
   onGenerate: () => Promise<void>
-  onUpdate: (updates: Partial<CoverLetterJson>) => Promise<void>
+  onUpdate: (updates: Partial<CoverLetterJson>) => void
 }): JSX.Element {
   if (session.isGenerating && !session.coverLetter) {
     return (
@@ -323,23 +350,21 @@ function MatchReportTab({
   )
 }
 
-function DescriptionTab({ session }: { session: Session }): JSX.Element {
+function DescriptionTab({
+  session,
+  onUpdate
+}: {
+  session: Session
+  onUpdate: (jd: string) => void
+}): JSX.Element {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(session.jobDescription)
   const dispatch = useAppDispatch()
 
-  const handleSave = async (): Promise<void> => {
-    try {
-      dispatch(setSaveState('saving'))
-      const lastSaved = new Date().toISOString()
-      await window.api.sessions.update(session.id, { jobDescription: draft, lastSaved })
-      dispatch(updateSession({ id: session.id, updates: { jobDescription: draft, lastSaved } }))
-      dispatch(setSaveState('saved'))
-      setIsEditing(false)
-    } catch (err) {
-      console.error('Failed to save JD:', err)
-      dispatch(setSaveState('error'))
-    }
+  const handleSave = (): void => {
+    dispatch(updateSession({ id: session.id, updates: { jobDescription: draft } }))
+    onUpdate(draft)
+    setIsEditing(false)
   }
 
   return (
@@ -411,6 +436,8 @@ function DescriptionTab({ session }: { session: Session }): JSX.Element {
     </Box>
   )
 }
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 

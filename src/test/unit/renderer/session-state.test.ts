@@ -43,9 +43,13 @@ const MOCK_SESSION = {
   roleTitle: 'Software Engineer',
   jobDescription: 'We are looking for a software engineer...',
   resume: null,
+  resumeStatus: 'draft',
   coverLetter: null,
+  coverLetterStatus: 'none',
   matchReport: null,
-  lastSaved: new Date().toISOString()
+  lastSaved: new Date().toISOString(),
+  isGenerating: false,
+  generationError: null
 }
 
 describe('session state management', () => {

@@ -43,7 +43,7 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAppDispatch, useAppSelector } from '../../hooks'
 import { setActivePage } from '../../store/slices/uiSlice'
-import { setActiveSession } from '../../store/slices/sessionsSlice'
+import { setActiveSession, removeSession } from '../../store/slices/sessionsSlice'
 import type { Session } from '@shared/types'
 
 const SIDEBAR_BG = '#1a2332'
@@ -62,6 +62,15 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
   // STUB: Phase 5 — unincorporated cover letter count for the Writing Profile badge.
   // TODO: derive from WritingProfilePage load or a dedicated Redux slice; 0 for now.
   const writingProfileUnincorporatedCount = 0
+
+  const handleCloseSession = async (id: string): Promise<void> => {
+    try {
+      await window.api.sessions.close(id)
+      dispatch(removeSession(id))
+    } catch (err) {
+      console.error('Failed to close session:', err)
+    }
+  }
 
   return (
     <Box
@@ -116,7 +125,6 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
           </Typography>
         ) : (
           sessions.map((session) => (
-            // STUB: Phase 2 — renders company/role; badge and close not yet wired
             <SessionItem
               key={session.id}
               session={session}
@@ -125,8 +133,7 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
                 dispatch(setActiveSession(session.id))
                 dispatch(setActivePage('session'))
               }}
-              // TODO: call window.api.sessions.close(session.id), dispatch removeSession(session.id)
-              onClose={() => {}}
+              onClose={() => handleCloseSession(session.id)}
             />
           ))
         )}
@@ -136,6 +143,7 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
       <Box sx={{ px: 1, pb: 0.5 }}>
         <ButtonBase
           onClick={onNewSession}
+          aria-label="New session"
           sx={{
             width: '100%',
             bgcolor: 'rgba(255,255,255,0.07)',
@@ -162,8 +170,6 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
       <Box sx={{ px: 1, py: 1.5, display: 'flex', gap: 0.5 }}>
         {/* STUB: Phase 5 — active state and onClick wired; badge count is a stub (always 0). */}
         {/* TODO: replace writingProfileUnincorporatedCount with a live value once data is loaded. */}
-        {/* TODO (Phase 7): pass aria-label="Writing Profile" to NavItem so the compact icon
-            has an accessible name for screen readers (label is hidden in compact mode). */}
         <NavItem
           icon={
             <Badge
@@ -178,15 +184,16 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
           compact
           active={activePage === 'writingProfile'}
           onClick={() => dispatch(setActivePage('writingProfile'))}
+          aria-label="Writing Profile"
         />
 
-        {/* TODO (Phase 7): pass aria-label="Settings" for compact icon-only accessibility */}
         <NavItem
           icon={<SettingsIcon sx={{ fontSize: 15 }} />}
           label="Settings"
           compact
           active={activePage === 'settings'}
           onClick={() => dispatch(setActivePage('settings'))}
+          aria-label="Settings"
         />
       </Box>
     </Box>
@@ -195,12 +202,6 @@ export default function Sidebar({ onNewSession }: SidebarProps): JSX.Element {
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
 
-// STUB: Phase 2 — renders company + role; close button visible on hover.
-// STUB: Phase 7 — close button aria-label and focus-visibility stubs added below.
-// TODO:
-//   - Draft/Final badge: source resumeStatus from the application row
-//   - Close button: calls window.api.sessions.close(session.id) then dispatches removeSession
-//   - Active state highlight styling
 interface SessionItemProps {
   session: Session
   isActive: boolean
@@ -220,7 +221,8 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
         '&:hover': {
           bgcolor: isLoading || isActive ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)'
         },
-        '&:hover .close-btn': { opacity: isLoading ? 0 : 1 }
+        '&:hover .close-btn': { opacity: isLoading ? 0 : 1 },
+        '& .close-btn:focus-visible': { opacity: 1, color: 'white' }
       }}
     >
       <ButtonBase
@@ -253,34 +255,33 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
           <Typography noWrap sx={{ fontSize: 11, color: SIDEBAR_TEXT, opacity: 0.7, flex: 1 }}>
             {session.isGenerating ? 'Generating…' : session.roleTitle || 'Unknown Role'}
           </Typography>
-          {session.isGenerating ? (
-            <CircularProgress
-              size={10}
-              thickness={5}
-              sx={{ color: SIDEBAR_TEXT, opacity: 0.7, flexShrink: 0 }}
-            />
-          ) : (
-            // TODO: show Draft/Final badge based on application.resumeStatus
+          {!session.isGenerating && (
             <Chip
-              label="Draft"
+              label={session.resumeStatus === 'finalized' ? 'Final' : 'Draft'}
               size="small"
               sx={{
                 height: 14,
                 fontSize: 9,
                 fontWeight: 700,
-                bgcolor: 'rgba(255,255,255,0.12)',
-                color: SIDEBAR_TEXT,
+                bgcolor:
+                  session.resumeStatus === 'finalized'
+                    ? 'rgba(76, 175, 80, 0.2)'
+                    : 'rgba(255,255,255,0.12)',
+                color: session.resumeStatus === 'finalized' ? '#81c784' : SIDEBAR_TEXT,
                 '& .MuiChip-label': { px: 0.75 }
               }}
+            />
+          )}
+          {session.isGenerating && (
+            <CircularProgress
+              size={10}
+              thickness={5}
+              sx={{ color: SIDEBAR_TEXT, opacity: 0.7, flexShrink: 0 }}
             />
           )}
         </Box>
       </ButtonBase>
 
-      {/* Close button — visible on row hover; hidden while session is generating */}
-      {/* TODO: onClick={onClose} */}
-      {/* STUB: Phase 7 — aria-label added; also add '&:focus-visible': { opacity: 1 } to
-          sx so keyboard users see the button when they tab to it. */}
       <IconButton
         className="close-btn"
         size="small"
@@ -299,7 +300,6 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
           color: SIDEBAR_TEXT,
           p: 0.25,
           '&:hover': { color: 'white' }
-          // TODO (Phase 7): '&:focus-visible': { opacity: 1, color: 'white' }
         }}
       >
         <CloseIcon sx={{ fontSize: 13 }} />
@@ -314,8 +314,6 @@ interface NavItemProps {
   active?: boolean
   compact?: boolean
   onClick?: () => void
-  // STUB: Phase 7 — aria-label for compact (icon-only) mode; callers must supply this
-  // when compact={true} so the ButtonBase has an accessible name for screen readers.
   'aria-label'?: string
 }
 
@@ -330,7 +328,6 @@ function NavItem({
   return (
     <ButtonBase
       onClick={onClick}
-      // STUB: Phase 7 — pass aria-label in compact mode; in full mode the visible label suffices
       aria-label={compact ? (ariaLabel ?? label) : undefined}
       sx={{
         mx: 1,

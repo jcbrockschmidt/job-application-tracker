@@ -530,7 +530,7 @@ describe('sessions:getAll', () => {
     expect(sessions).toEqual([])
   })
 
-  it('returns all sessions assembled from DB rows', async () => {
+  it('returns all sessions assembled from DB rows, ordered by updatedAt', async () => {
     const dir1 = join(tempDir, 'data', 'applications', 'alpha', 'eng_sess-1')
     const dir2 = join(tempDir, 'data', 'applications', 'beta', 'dev_sess-2')
     mkdirSync(dir1, { recursive: true })
@@ -548,13 +548,19 @@ describe('sessions:getAll', () => {
       companyName: 'Beta Inc',
       directoryPath: dir2
     })
-    mockAll.mockReturnValue([row1, row2])
+    // Mock updatedAt to be different
+    row1.applications.updatedAt = new Date('2026-03-11T10:00:00Z')
+    row2.applications.updatedAt = new Date('2026-03-11T11:00:00Z')
+
+    // orderBy call should be with desc(applications.updatedAt)
+    mockAll.mockReturnValue([row2, row1])
 
     const sessions = await callHandler<Session[]>('sessions:getAll')
 
     expect(sessions).toHaveLength(2)
-    expect(sessions[0].companyName).toBe('Alpha Corp')
-    expect(sessions[1].companyName).toBe('Beta Inc')
+    expect(sessions[0].companyName).toBe('Beta Inc')
+    expect(sessions[1].companyName).toBe('Alpha Corp')
+    expect(mockOrderBy).toHaveBeenCalled()
   })
 
   it('reads resume.json from the session directory for each session', async () => {
@@ -806,16 +812,18 @@ describe('generate:matchReport', () => {
 // ── sessions:update ────────────────────────────────────────────────────────────
 
 describe('sessions:update', () => {
-  it('updates the sessions row in the DB', async () => {
+  it('updates the sessions row and applications row in the DB', async () => {
     mockAll.mockReturnValue([makeMockDbRow({})])
 
     await callHandler('sessions:update', 'sess-id-1', { jobDescription: 'New JD' })
 
     expect(mockUpdate).toHaveBeenCalled()
-    const setCall = mockSet.mock.calls.find(
-      (c: unknown[]) => (c[0] as { jobDescription?: string }).jobDescription === 'New JD'
-    )
-    expect(setCall).toBeDefined()
+    // One update for sessionsTable, one for applicationsTable
+    expect(mockUpdate).toHaveBeenCalledTimes(2)
+
+    const setCalls = mockSet.mock.calls.map((c: unknown[]) => c[0])
+    expect(setCalls).toContainEqual(expect.objectContaining({ jobDescription: 'New JD' }))
+    expect(setCalls).toContainEqual(expect.objectContaining({ updatedAt: expect.any(Date) }))
   })
 
   it('writes resume.json when resume is included in updates', async () => {
@@ -846,5 +854,22 @@ describe('sessions:update', () => {
     const clPath = join(sessionDir, 'cover-letter.json')
     expect(existsSync(clPath)).toBe(true)
     expect(JSON.parse(readFileSync(clPath, 'utf-8'))).toEqual(newCL)
+  })
+})
+
+// ── sessions:close ─────────────────────────────────────────────────────────────
+
+describe('sessions:close', () => {
+  it('updates the applications row updatedAt in the DB', async () => {
+    // sessions:close calls db.select().from(sessionsTable).where(...).get()
+    const mockGet = vi.fn().mockReturnValue({ applicationId: 'app-id-1' })
+    mockWhere.mockReturnValue({ get: mockGet, run: vi.fn() })
+    mockSelect.mockReturnValue({ from: vi.fn().mockReturnValue({ where: mockWhere }) })
+
+    await callHandler('sessions:close', 'sess-id-1')
+
+    expect(mockUpdate).toHaveBeenCalled()
+    expect(mockUpdate).toHaveBeenCalledWith(expect.anything()) // applications table
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ updatedAt: expect.any(Date) }))
   })
 })

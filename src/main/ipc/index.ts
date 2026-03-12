@@ -465,7 +465,9 @@ export function registerIpcHandlers(): void {
       jobDescription,
       dateGenerated: now.toISOString(),
       resume: null,
+      resumeStatus: 'draft',
       coverLetter: null,
+      coverLetterStatus: 'none',
       matchReport: null,
       lastSaved,
       isGenerating: true,
@@ -495,7 +497,9 @@ export function registerIpcHandlers(): void {
       jobDescription: sessions.jobDescription,
       dateGenerated: applications.dateGenerated,
       resume,
+      resumeStatus: applications.resumeStatus,
       coverLetter,
+      coverLetterStatus: applications.coverLetterStatus,
       matchReport: sessions.matchReport
         ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
         : null,
@@ -511,7 +515,7 @@ export function registerIpcHandlers(): void {
       .select()
       .from(sessionsTable)
       .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
-      .orderBy(desc(sessionsTable.createdAt))
+      .orderBy(desc(applicationsTable.updatedAt))
       .all()
 
     const result: Session[] = []
@@ -542,7 +546,9 @@ export function registerIpcHandlers(): void {
         jobDescription: sessions.jobDescription,
         dateGenerated: applications.dateGenerated,
         resume,
+        resumeStatus: applications.resumeStatus,
         coverLetter,
+        coverLetterStatus: applications.coverLetterStatus,
         matchReport: sessions.matchReport
           ? (JSON.parse(sessions.matchReport) as Session['matchReport'])
           : null,
@@ -569,7 +575,7 @@ export function registerIpcHandlers(): void {
         .all()
 
       if (rows.length === 0) throw new Error(`Session not found: ${id}`)
-      const { applications } = rows[0]
+      const { sessions: _sessions, applications } = rows[0]
 
       if (!applications.directoryPath) throw new Error(`Session ${id} has no directory path`)
 
@@ -603,12 +609,27 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  ipcMain.handle('sessions:close', async (_event, _id: string) => {
-    // STUB: Phase 2
-    // TODO: Trigger a save of the session (same logic as sessions:update with current state),
-    // then update the session row to mark it as closed (e.g. set a closedAt timestamp,
-    // or simply ensure it is persisted — the session stays in the DB, just not "open").
-    throw new Error('Not implemented')
+  ipcMain.handle('sessions:close', async (_event, id: string) => {
+    // Session persistence is handled via auto-save in the renderer.
+    // sessions:close simply ensures the session is persisted to the DB and
+    // potentially performs cleanup. In this architecture, sessions stay in
+    // the DB but are removed from the "open" list in the renderer.
+    const db = getDb()
+    const now = new Date()
+
+    db.update(applicationsTable)
+      .set({ updatedAt: now })
+      .where(
+        eq(
+          applicationsTable.id,
+          db
+            .select({ applicationId: sessionsTable.applicationId })
+            .from(sessionsTable)
+            .where(eq(sessionsTable.id, id))
+            .get()?.applicationId || ''
+        )
+      )
+      .run()
   })
 
   // ─── Source Documents ────────────────────────────────────────────────────────

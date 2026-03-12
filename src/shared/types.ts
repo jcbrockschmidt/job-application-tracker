@@ -245,7 +245,9 @@ export interface Session {
   jobDescription: string
   dateGenerated: string
   resume: ResumeJson | null
+  resumeStatus: ResumeStatus
   coverLetter: CoverLetterJson | null
+  coverLetterStatus: CoverLetterStatus
   // Null until the user explicitly generates a match report.
   matchReport: MatchReport | null
   lastSaved: string
