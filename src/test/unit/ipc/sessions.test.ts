@@ -357,18 +357,17 @@ describe('sessions:create', () => {
     expect(typeof session.lastSaved).toBe('string')
   })
 
-  it('includes the generated resume in the returned Session', async () => {
+  it('returns a Session with resume: null and isGenerating: true', async () => {
     const session = await callHandler<Session>('sessions:create', JD)
 
-    expect(session.resume).not.toBeNull()
-    expect(session.resume?.experience[0].company).toBe('Acme Corp')
-    expect(session.resume?.education[0].degree).toBe('B.S. CS')
+    expect(session.resume).toBeNull()
+    expect(session.isGenerating).toBe(true)
   })
 
-  it('calls Claude twice — once for extraction, once for resume generation', async () => {
+  it('calls Claude once for company/role extraction', async () => {
     await callHandler<Session>('sessions:create', JD)
 
-    expect(mockMessagesCreate).toHaveBeenCalledTimes(2)
+    expect(mockMessagesCreate).toHaveBeenCalledTimes(1)
   })
 
   it('inserts an applications row and a sessions row into the DB', async () => {
@@ -381,26 +380,6 @@ describe('sessions:create', () => {
     const insertedIds = insertedRows.map((r) => r.id)
     expect(insertedIds).toContain('app-id-1')
     expect(insertedIds).toContain('sess-id-1')
-  })
-
-  it('writes resume.json to the session directory', async () => {
-    await callHandler<Session>('sessions:create', JD)
-
-    // Walk two levels under data/applications to find any resume.json.
-    const { readdirSync } = await import('fs')
-    const dataDir = join(tempDir, 'data', 'applications')
-    let found = false
-    for (const company of readdirSync(dataDir)) {
-      for (const sessionDir of readdirSync(join(dataDir, company))) {
-        const resumePath = join(dataDir, company, sessionDir, 'resume.json')
-        if (existsSync(resumePath)) {
-          found = true
-          const resume = JSON.parse(readFileSync(resumePath, 'utf-8')) as ResumeJson
-          expect(resume.experience[0].company).toBe('Acme Corp')
-        }
-      }
-    }
-    expect(found).toBe(true)
   })
 
   it('reads the API key from the OS keychain', async () => {
@@ -417,19 +396,20 @@ describe('sessions:create', () => {
 
   it('uses regex fallback for company/role when Claude extraction returns invalid JSON', async () => {
     mockMessagesCreate.mockReset()
-    // Extraction call returns non-JSON; resume call returns valid resume.
-    mockMessagesCreate
-      .mockResolvedValueOnce({
-        content: [{ type: 'text', text: 'not json at all' }],
-        usage: { input_tokens: 10, output_tokens: 5 }
-      })
-      .mockResolvedValueOnce(RESUME_AI_RESPONSE)
+    // Extraction call returns non-JSON.
+    mockMessagesCreate.mockResolvedValueOnce({
+      content: [{ type: 'text', text: 'not json at all' }],
+      usage: { input_tokens: 10, output_tokens: 5 }
+    })
 
-    const session = await callHandler<Session>('sessions:create', JD)
+    const fallbackJD = 'Company: Acme Corp\nRole: Senior Engineer'
+    const session = await callHandler<Session>('sessions:create', fallbackJD)
 
     // The session is created without throwing — regex fallback supplies defaults.
     expect(session.id).toBeTruthy()
-    expect(session.resume).not.toBeNull()
+    expect(session.companyName).toBe('Acme Corp')
+    expect(session.roleTitle).toBe('Senior Engineer')
+    expect(session.resume).toBeNull()
   })
 
   it('logs spend for the AI calls', async () => {

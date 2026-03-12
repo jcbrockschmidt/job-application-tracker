@@ -257,14 +257,16 @@ async function generateResumeFromCV(
   const inputTokens = response.usage.input_tokens
   const outputTokens = response.usage.output_tokens
   const db = getDb()
-  db.insert(spendLog).values({
-    id: nanoid(),
-    timestamp: now,
-    model,
-    inputTokens,
-    outputTokens,
-    estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
-  })
+  db.insert(spendLog)
+    .values({
+      id: nanoid(),
+      timestamp: now,
+      model,
+      inputTokens,
+      outputTokens,
+      estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
+    })
+    .run()
 
   return resume
 }
@@ -751,10 +753,11 @@ export function registerIpcHandlers(): void {
     // 3. Update sessions.lastSaved and applications.resumeStatus/updatedAt.
     const now = new Date()
     const lastSaved = now.toISOString()
-    db.update(sessionsTable).set({ lastSaved }).where(eq(sessionsTable.id, sessionId))
+    db.update(sessionsTable).set({ lastSaved }).where(eq(sessionsTable.id, sessionId)).run()
     db.update(applicationsTable)
       .set({ resumeStatus: 'draft', updatedAt: now })
       .where(eq(applicationsTable.id, applications.id))
+      .run()
 
     return resume
   })
