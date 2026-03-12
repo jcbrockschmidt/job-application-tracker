@@ -218,8 +218,7 @@ function SessionItem({ session, isActive, onSelect, onClose }: SessionItemProps)
         mb: 0.25,
         bgcolor: isActive ? 'rgba(255,255,255,0.13)' : 'transparent',
         '&:hover': {
-          bgcolor:
-            isLoading || isActive ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)'
+          bgcolor: isLoading || isActive ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)'
         },
         '&:hover .close-btn': { opacity: isLoading ? 0 : 1 }
       }}
