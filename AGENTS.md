@@ -71,6 +71,12 @@ These are non-negotiable. Do not violate them.
 
 ---
 
+## Git
+
+- **Never commit or stage files** — the user handles all git commits and staging.
+
+---
+
 ## Dev Tools
 
 Run these before considering any change done:
