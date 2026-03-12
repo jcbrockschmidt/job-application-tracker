@@ -2,7 +2,7 @@
 // AI_PLACEHOLDER=true is set (e.g. via `just dev-placeholder`).
 // Shapes must match what the real Claude responses produce for each prompt.
 
-import type { ResumeJson } from '@shared/types'
+import type { ResumeJson, MatchReport } from '@shared/types'
 
 export const PLACEHOLDER_COMPANY_ROLE = {
   company: 'Acme Corp',
@@ -91,3 +91,18 @@ export const PLACEHOLDER_MODELS = [
   'claude-sonnet-4-6',
   'claude-haiku-4-5-20251001'
 ]
+
+export const PLACEHOLDER_MATCH_REPORT: MatchReport = {
+  rating: 'Good',
+  strengths: [
+    'Strong experience with React and TypeScript aligns perfectly with the role.',
+    'Demonstrated track record of delivering features on schedule.',
+    'Solid background in performance optimization.'
+  ],
+  gaps: [
+    'Missing explicit experience with cloud infrastructure (AWS/Azure).',
+    'No mention of leadership or mentoring experience requested in the JD.',
+    'Could benefit from more specific metrics on impact in earlier roles.'
+  ],
+  generatedAt: new Date().toISOString()
+}

@@ -10,12 +10,14 @@ import { useAppDispatch } from '../../hooks'
 import { updateSession } from '../../store/slices/sessionsSlice'
 import { setSaveState } from '../../store/slices/uiSlice'
 import type { Session, MatchReport, MatchRating } from '@shared/types'
+import type { SessionTab } from '../organisms/SessionTabs'
 
 interface SidePanelsProps {
   session: Session
+  activeTab: SessionTab
 }
 
-export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
+export default function SidePanels({ session, activeTab }: SidePanelsProps): JSX.Element {
   const [isEditingJd, setIsEditingJd] = useState(false)
   const [jdDraft, setJdDraft] = useState(session.jobDescription)
   const dispatch = useAppDispatch()
@@ -55,74 +57,78 @@ export default function SidePanels({ session }: SidePanelsProps): JSX.Element {
         flexShrink: 0
       }}
     >
-      {/* Match Rating panel — condensed view always visible */}
-      <Panel title="Match Rating">
-        {session.matchReport == null ? (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            Generate a Match Report to see alignment.
-          </Typography>
-        ) : (
-          <MatchRatingCard report={session.matchReport} />
-        )}
-      </Panel>
-
-      {/* Job Description panel */}
-      <Panel
-        title="Job Description"
-        action={
-          !isEditingJd && (
-            <IconButton size="small" aria-label="Edit job description" onClick={handleEditClick}>
-              <EditIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          )
-        }
-      >
-        {isEditingJd ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <TextField
-              multiline
-              fullWidth
-              minRows={5}
-              maxRows={15}
-              value={jdDraft}
-              onChange={(e) => setJdDraft(e.target.value)}
-              variant="outlined"
-              size="small"
-              slotProps={{ input: { sx: { fontSize: 12, lineHeight: 1.5 } } }}
-            />
-            <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
-              Note: Editing the JD does not automatically regenerate documents.
+      {/* Match Rating panel — condensed view visible unless on Match Report tab */}
+      {activeTab !== 'matchReport' && (
+        <Panel title="Match Rating">
+          {session.matchReport == null ? (
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              Generate a Match Report to see alignment.
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-              <Button size="small" onClick={handleCancelJd} sx={{ fontSize: 11 }}>
-                Cancel
-              </Button>
-              <Button
+          ) : (
+            <MatchRatingCard report={session.matchReport} />
+          )}
+        </Panel>
+      )}
+
+      {/* Job Description panel — visible unless on Description tab */}
+      {activeTab !== 'description' && (
+        <Panel
+          title="Job Description"
+          action={
+            !isEditingJd && (
+              <IconButton size="small" aria-label="Edit job description" onClick={handleEditClick}>
+                <EditIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            )
+          }
+        >
+          {isEditingJd ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <TextField
+                multiline
+                fullWidth
+                minRows={5}
+                maxRows={15}
+                value={jdDraft}
+                onChange={(e) => setJdDraft(e.target.value)}
+                variant="outlined"
                 size="small"
-                variant="contained"
-                onClick={handleSaveJd}
-                disabled={jdDraft === session.jobDescription}
-                sx={{ fontSize: 11 }}
-              >
-                Save
-              </Button>
+                slotProps={{ input: { sx: { fontSize: 12, lineHeight: 1.5 } } }}
+              />
+              <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+                Note: Editing the JD does not automatically regenerate documents.
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                <Button size="small" onClick={handleCancelJd} sx={{ fontSize: 11 }}>
+                  Cancel
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleSaveJd}
+                  disabled={jdDraft === session.jobDescription}
+                  sx={{ fontSize: 11 }}
+                >
+                  Save
+                </Button>
+              </Box>
             </Box>
-          </Box>
-        ) : (
-          <Typography
-            sx={{
-              fontSize: 12,
-              color: 'text.secondary',
-              lineHeight: 1.65,
-              maxHeight: 300,
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap'
-            }}
-          >
-            {session.jobDescription || '—'}
-          </Typography>
-        )}
-      </Panel>
+          ) : (
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: 'text.secondary',
+                lineHeight: 1.65,
+                maxHeight: 300,
+                overflowY: 'auto',
+                whiteSpace: 'pre-wrap'
+              }}
+            >
+              {session.jobDescription || '—'}
+            </Typography>
+          )}
+        </Panel>
+      )}
     </Box>
   )
 }

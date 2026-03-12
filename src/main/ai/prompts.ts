@@ -185,3 +185,50 @@ export function tailorCoverLetterPrompt(
     messages: [{ role: 'user', content }]
   }
 }
+
+// Evaluate how well a resume aligns with a job description.
+// Returns tool input matching the MatchReport schema (rating, strengths, gaps).
+export function generateMatchReportPrompt(
+  resume: Record<string, unknown>,
+  jobDescription: string
+): PromptBody {
+  return {
+    system:
+      'You are a career coach and hiring expert. Evaluate how well a resume aligns with a job description. Provide a qualitative rating, a list of strengths, and a list of gaps.',
+    max_tokens: 4096,
+    tools: [
+      {
+        name: 'generate_match_report',
+        description: 'Generate a match report evaluating resume alignment with a job description.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            rating: {
+              type: 'string',
+              enum: ['Strong', 'Good', 'Fair', 'Weak'],
+              description: 'Qualitative alignment rating'
+            },
+            strengths: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of 3-5 key strengths'
+            },
+            gaps: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of 3-5 key gaps or areas for improvement'
+            }
+          },
+          required: ['rating', 'strengths', 'gaps']
+        }
+      }
+    ],
+    tool_choice: { type: 'tool', name: 'generate_match_report' },
+    messages: [
+      {
+        role: 'user',
+        content: `Resume:\n${JSON.stringify(resume)}\n\nJob Description:\n${jobDescription}`
+      }
+    ]
+  }
+}

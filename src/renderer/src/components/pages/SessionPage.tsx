@@ -82,6 +82,27 @@ export default function SessionPage(): JSX.Element {
     }
   }
 
+  const handleGenerateMatchReport = async (): Promise<void> => {
+    if (!session) return
+    try {
+      dispatch(updateSession({ id: session.id, updates: { isGenerating: true } }))
+      const matchReport = await window.api.generate.matchReport(session.id)
+      dispatch(updateSession({ id: session.id, updates: { matchReport, isGenerating: false } }))
+      // Refresh spend total
+      const total = await window.api.spendLog.getTotal()
+      setSpendTotal(total)
+    } catch (err: unknown) {
+      console.error('Failed to generate match report:', err)
+      const error = err as { message?: string }
+      dispatch(
+        updateSession({
+          id: session.id,
+          updates: { isGenerating: false, generationError: error.message || 'Unknown error' }
+        })
+      )
+    }
+  }
+
   if (!session) {
     return (
       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -179,13 +200,15 @@ export default function SessionPage(): JSX.Element {
             />
           )}
 
-          {activeTab === 'matchReport' && <MatchReportTab session={session} />}
+          {activeTab === 'matchReport' && (
+            <MatchReportTab session={session} onGenerate={handleGenerateMatchReport} />
+          )}
 
           {activeTab === 'description' && <DescriptionTab session={session} />}
         </Box>
 
         {/* Side panels */}
-        <SidePanels session={session} />
+        <SidePanels session={session} activeTab={activeTab} />
       </Box>
     </Box>
   )
@@ -258,7 +281,32 @@ function CoverLetterTab({
   )
 }
 
-function MatchReportTab({ session }: { session: Session }): JSX.Element {
+function MatchReportTab({
+  session,
+  onGenerate
+}: {
+  session: Session
+  onGenerate: () => Promise<void>
+}): JSX.Element {
+  if (session.isGenerating && !session.matchReport) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2.5,
+          mt: 10
+        }}
+      >
+        <CircularProgress size={36} />
+        <Typography fontWeight={600}>Evaluating alignment…</Typography>
+      </Box>
+    )
+  }
+
   if (session.matchReport) {
     return <MatchReportView report={session.matchReport} sessionId={session.id} />
   }
@@ -267,7 +315,7 @@ function MatchReportTab({ session }: { session: Session }): JSX.Element {
     <TabEmptyState
       message="No match report yet."
       action={
-        <Button variant="contained" disableElevation size="small">
+        <Button variant="contained" disableElevation size="small" onClick={onGenerate}>
           Generate Match Report
         </Button>
       }

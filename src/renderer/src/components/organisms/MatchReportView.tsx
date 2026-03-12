@@ -7,29 +7,36 @@
 //     dispatch updateSession({ matchReport }), show loading spinner on the button
 //   - Strengths/Gaps: already renders items; add icon-prefixed formatting if icons change
 
-import { Box, Chip, Button, Divider, Typography } from '@mui/material'
+import { useState } from 'react'
+import { Box, Chip, Button, Divider, Typography, CircularProgress } from '@mui/material'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import CachedIcon from '@mui/icons-material/Cached'
 import type { MatchReport, MatchRating } from '@shared/types'
+import { useAppDispatch } from '@renderer/hooks'
+import { updateSession } from '@renderer/store/slices/sessionsSlice'
 
 interface MatchReportViewProps {
   report: MatchReport
-  // TODO: used when Regenerate button is wired
   sessionId: string
 }
 
-export default function MatchReportView({ report }: MatchReportViewProps): JSX.Element {
-  // TODO: const [isRegenerating, setIsRegenerating] = useState(false)
-  // TODO: const dispatch = useAppDispatch()
-  // TODO: async function handleRegenerate() {
-  //   setIsRegenerating(true)
-  //   try {
-  //     const newReport = await window.api.generate.matchReport(sessionId)
-  //     dispatch(updateSession({ matchReport: newReport }))
-  //   } finally {
-  //     setIsRegenerating(false)
-  //   }
-  // }
+export default function MatchReportView({ report, sessionId }: MatchReportViewProps): JSX.Element {
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const dispatch = useAppDispatch()
+
+  async function handleRegenerate(): Promise<void> {
+    setIsRegenerating(true)
+    try {
+      const newReport = await window.api.generate.matchReport(sessionId)
+      dispatch(updateSession({ id: sessionId, updates: { matchReport: newReport } }))
+    } catch (err) {
+      console.error('Failed to regenerate match report:', err)
+      // TODO: show error toast if needed, but the IPC handler failure should be caught elsewhere
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
 
   return (
     <Box sx={{ width: 720, minWidth: 720, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -55,9 +62,16 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
             Generated {new Date(report.generatedAt).toLocaleString()}
           </Typography>
         </Box>
-        {/* TODO: onClick={handleRegenerate}, disabled={isRegenerating}, show spinner */}
-        <Button variant="outlined" size="small">
-          Regenerate
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          startIcon={
+            isRegenerating ? <CircularProgress size={14} color="inherit" /> : <CachedIcon />
+          }
+        >
+          {isRegenerating ? 'Regenerating...' : 'Regenerate'}
         </Button>
       </Box>
 
@@ -133,19 +147,28 @@ export default function MatchReportView({ report }: MatchReportViewProps): JSX.E
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
 
-const RATING_COLORS: Record<MatchRating, { bg: string; text: string }> = {
-  Strong: { bg: '#dcfce7', text: '#15803d' },
-  Good: { bg: '#dbeafe', text: '#1d4ed8' },
-  Fair: { bg: '#fef9c3', text: '#a16207' },
-  Weak: { bg: '#fee2e2', text: '#b91c1c' }
+const RATING_COLORS: Record<
+  MatchRating,
+  { bg: string; text: string; darkBg: string; darkText: string }
+> = {
+  Strong: { bg: '#dcfce7', text: '#15803d', darkBg: '#064e3b', darkText: '#4ade80' },
+  Good: { bg: '#dbeafe', text: '#1d4ed8', darkBg: '#1e3a8a', darkText: '#60a5fa' },
+  Fair: { bg: '#fef9c3', text: '#a16207', darkBg: '#713f12', darkText: '#facc15' },
+  Weak: { bg: '#fee2e2', text: '#b91c1c', darkBg: '#7f1d1d', darkText: '#f87171' }
 }
 
 function RatingBadge({ rating }: { rating: MatchRating }): JSX.Element {
-  const { bg, text } = RATING_COLORS[rating]
+  const { bg, text, darkBg, darkText } = RATING_COLORS[rating]
   return (
     <Chip
       label={rating}
-      sx={{ bgcolor: bg, color: text, fontWeight: 700, fontSize: 13, px: 0.5 }}
+      sx={{
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? darkBg : bg),
+        color: (theme) => (theme.palette.mode === 'dark' ? darkText : text),
+        fontWeight: 700,
+        fontSize: 13,
+        px: 0.5
+      }}
     />
   )
 }

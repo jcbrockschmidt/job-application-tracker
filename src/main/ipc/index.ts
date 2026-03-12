@@ -28,7 +28,8 @@ import {
   PLACEHOLDER_COMPANY_ROLE,
   PLACEHOLDER_MODELS,
   PLACEHOLDER_RAW_CV,
-  PLACEHOLDER_RESUME
+  PLACEHOLDER_RESUME,
+  PLACEHOLDER_MATCH_REPORT
 } from '../ai/placeholders'
 import { getDb } from '../db'
 import {
@@ -42,7 +43,8 @@ import {
   extractCompanyRolePrompt,
   extractResumePrompt,
   tailorResumePrompt,
-  tailorCoverLetterPrompt
+  tailorCoverLetterPrompt,
+  generateMatchReportPrompt
 } from '../ai/prompts'
 import { mergeMasterCV } from '../utils/masterCVMerge'
 import { estimateCostUsd } from '../utils/spendCalculation'
@@ -60,7 +62,8 @@ import type {
   Session,
   ResumeJson,
   CoverLetterJson,
-  SpendTotal
+  SpendTotal,
+  MatchReport
 } from '../../shared/types'
 
 const KEYCHAIN_SERVICE = 'job-application-kit'
@@ -866,18 +869,96 @@ export function registerIpcHandlers(): void {
     }
   )
 
-  ipcMain.handle('generate:matchReport', async (_event, _sessionId: string) => {
-    // STUB: Phase 2
-    // TODO:
-    // 1. Load the session's JD and its current resume.json.
-    // 2. Call Claude to evaluate alignment: identify keyword matches, strengths,
-    //    and gaps. Return a qualitative rating (Strong/Good/Fair/Weak) plus lists
-    //    of strengths and gaps as a MatchReport object.
-    // 3. Serialize the report to JSON and store it in sessions.matchReport.
-    // 4. Log the AI operation to spendLog.
-    // 5. Return the MatchReport.
-    throw new Error('Not implemented')
-  })
+  ipcMain.handle(
+    'generate:matchReport',
+    async (_event, sessionId: string): Promise<MatchReport> => {
+      const db = getDb()
+
+      // 1. Load the session and application.
+      const rows = db
+        .select()
+        .from(sessionsTable)
+        .innerJoin(applicationsTable, eq(sessionsTable.applicationId, applicationsTable.id))
+        .where(eq(sessionsTable.id, sessionId))
+        .all()
+
+      if (rows.length === 0) throw new Error(`Session not found: ${sessionId}`)
+      const { sessions, applications } = rows[0]
+
+      if (!applications.directoryPath) throw new Error(`Session ${sessionId} has no directory path`)
+
+      const { resume } = readSessionDocs(applications.directoryPath)
+      if (!resume) throw new Error('No resume found to evaluate alignment')
+
+      let matchReport: MatchReport
+
+      if (isPlaceholderMode()) {
+        await placeholderDelay()
+        matchReport = {
+          ...PLACEHOLDER_MATCH_REPORT,
+          generatedAt: new Date().toISOString()
+        }
+      } else {
+        const apiKey = await keytar.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+        if (!apiKey) throw new Error('API key not configured — validate it in Settings')
+
+        const settings = readSettings()
+        const model = settings.model
+        const client = getAnthropicClient(apiKey!)
+
+        const response = await client.messages.create({
+          model,
+          ...generateMatchReportPrompt(
+            resume as unknown as Record<string, unknown>,
+            sessions.jobDescription
+          )
+        })
+
+        const toolBlock = response.content.find((b) => b.type === 'tool_use')
+        if (toolBlock && toolBlock.type === 'tool_use') {
+          matchReport = {
+            ...(toolBlock.input as MatchReport),
+            generatedAt: new Date().toISOString()
+          }
+        } else {
+          const textBlock = response.content.find((b) => b.type === 'text')
+          if (!textBlock || textBlock.type !== 'text')
+            throw new Error('Match report generation returned no structured output')
+          const raw = textBlock.text
+            .replace(/^```(?:json)?\n?/, '')
+            .replace(/\n?```$/, '')
+            .trim()
+          matchReport = {
+            ...(JSON.parse(raw) as MatchReport),
+            generatedAt: new Date().toISOString()
+          }
+        }
+
+        // Log spend.
+        const now = new Date()
+        const inputTokens = response.usage.input_tokens
+        const outputTokens = response.usage.output_tokens
+        db.insert(spendLog)
+          .values({
+            id: nanoid(),
+            timestamp: now,
+            model,
+            inputTokens,
+            outputTokens,
+            estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens)
+          })
+          .run()
+      }
+
+      // 3. Serialize the report to JSON and store it in sessions.matchReport.
+      db.update(sessionsTable)
+        .set({ matchReport: JSON.stringify(matchReport) })
+        .where(eq(sessionsTable.id, sessionId))
+        .run()
+
+      return matchReport
+    }
+  )
 
   ipcMain.handle(
     'generate:feedback',

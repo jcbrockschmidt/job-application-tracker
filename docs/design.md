@@ -131,9 +131,9 @@ The writing profile is accessible as a top-level view from the sidebar. The view
   - **Session header bar** — displays the company name, job title, and an **Application Status chip** (e.g. "Not Applied"), with **Finalize** and **Export** action buttons on the right.
   - **Tab bar** — four tabs organize session content: **Resume**, **Cover Letter**, **Match Report**, and **Description**. AI usage is shown on the right side of the tab bar in the format `24h: $<AMOUNT> • Last: $<AMOUNT> • model`. The "24h" amount tracks the global rolling 24-hour estimated spend total; when this exceeds the configured limit, it turns orange. An amber warning bar is also shown below the tab bar across all tabs when over the limit. Detailed token counts for the last operation are available via tooltip.
   - **Document area** (left/center) — the active tab's document rendered as a paper card, scrollable.
-  - **Side panels** (right, ~272px) — two persistent panels shown alongside the document regardless of active tab:
-    - **Match Rating** — a condensed summary of the match report (rating badge + key points). Empty until a Match Report has been generated.
-    - **Job Description** — the full job description text, scrollable, with an inline Edit button. Editing here is equivalent to editing in the Description tab.
+  - **Side panels** (right, ~272px) — persistent panels shown alongside the document:
+    - **Match Rating** — a condensed summary of the match report (rating badge + key points). Empty until a Match Report has been generated. Hidden when the **Match Report** tab is active to avoid redundancy.
+    - **Job Description** — the full job description text, scrollable, with an inline Edit button. Editing here is equivalent to editing in the Description tab. Hidden when the **Description** tab is active.
 - The full job description for a session can be viewed and edited at any time from within the session — either in the Description tab or the Job Description side panel. Editing the job description does not automatically regenerate documents — the user can manually trigger regeneration after updating it.
 - Sessions can be closed at any time and reopened later without losing progress. Each session in the sidebar has a close button (×) that appears on hover.
 - The app auto-saves all open sessions when closed and restores them when reopened.

@@ -210,6 +210,21 @@ const COVER_LETTER_AI_RESPONSE = {
   usage: { input_tokens: 1000, output_tokens: 400 }
 }
 
+// A minimal valid AI response for match report generation.
+const MATCH_REPORT_AI_RESPONSE = {
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify({
+        rating: 'Strong',
+        strengths: ['Strength 1', 'Strength 2'],
+        gaps: ['Gap 1']
+      })
+    }
+  ],
+  usage: { input_tokens: 800, output_tokens: 300 }
+}
+
 // The extraction response (company/role from JD).
 const EXTRACTION_AI_RESPONSE = {
   content: [
@@ -724,6 +739,67 @@ describe('generate:coverLetter', () => {
       (c: unknown[]) => (c[0] as { coverLetterStatus?: string }).coverLetterStatus === 'draft'
     )
     expect(setCall).toBeDefined()
+  })
+})
+
+// ── generate:matchReport ──────────────────────────────────────────────────────
+
+describe('generate:matchReport', () => {
+  const setupSessionWithResume = () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'match_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    const resumeData: ResumeJson = { experience: [], education: [], skills: [] }
+    writeFileSync(join(sessionDir, 'resume.json'), JSON.stringify(resumeData))
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+    return sessionDir
+  }
+
+  it('calls Claude and returns a MatchReport', async () => {
+    setupSessionWithResume()
+    mockMessagesCreate.mockResolvedValue(MATCH_REPORT_AI_RESPONSE)
+
+    const report = await callHandler<{ rating: string }>('generate:matchReport', 'sess-id-1')
+
+    expect(report.rating).toBe('Strong')
+    expect(mockMessagesCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('serializes the report to the sessions row', async () => {
+    setupSessionWithResume()
+    mockMessagesCreate.mockResolvedValue(MATCH_REPORT_AI_RESPONSE)
+
+    await callHandler('generate:matchReport', 'sess-id-1')
+
+    expect(mockUpdate).toHaveBeenCalled()
+    const setCall = mockSet.mock.calls.find((c: unknown[]) => {
+      const data = c[0] as { matchReport?: string }
+      return data.matchReport && data.matchReport.includes('Strong')
+    })
+    expect(setCall).toBeDefined()
+  })
+
+  it('logs spend for the AI call', async () => {
+    setupSessionWithResume()
+    mockMessagesCreate.mockResolvedValue(MATCH_REPORT_AI_RESPONSE)
+
+    await callHandler('generate:matchReport', 'sess-id-1')
+
+    const spendRows = mockValues.mock.calls
+      .map((c: unknown[]) => c[0] as Record<string, unknown>)
+      .filter((row) => 'inputTokens' in row)
+    expect(spendRows.length).toBeGreaterThan(0)
+    expect(spendRows[0].inputTokens).toBe(800)
+  })
+
+  it('throws when no resume.json is found', async () => {
+    const sessionDir = join(tempDir, 'data', 'applications', 'acme', 'no_resume_sess')
+    mkdirSync(sessionDir, { recursive: true })
+    // No resume.json written.
+    mockAll.mockReturnValue([makeMockDbRow({ directoryPath: sessionDir })])
+
+    await expect(callHandler('generate:matchReport', 'sess-id-1')).rejects.toThrow(
+      'No resume found to evaluate alignment'
+    )
   })
 })
 
