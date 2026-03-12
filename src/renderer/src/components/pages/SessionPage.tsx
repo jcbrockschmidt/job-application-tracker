@@ -33,13 +33,23 @@ export default function SessionPage(): JSX.Element {
     window.api.spendLog.getTotal().then(setSpendTotal)
   }, [])
 
-  // Clear timeout on unmount or session change
+  // Flush pending updates on unmount or session change
   useEffect(() => {
+    const sessionId = activeSessionId
     return () => {
+      if (sessionId && Object.keys(pendingUpdatesRef.current).length > 0) {
+        const updates = { ...pendingUpdatesRef.current, lastSaved: new Date().toISOString() }
+        // Fire and forget the IPC call on unmount/change.
+        // We don't dispatch to Redux here as the component is unmounting or switching.
+        window.api.sessions.update(sessionId, updates).catch((err) => {
+          console.error('Flush on unmount failed:', err)
+        })
+      }
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
-        // Optionally: flush pending updates on unmount
+        saveTimeoutRef.current = null
       }
+      pendingUpdatesRef.current = {}
     }
   }, [activeSessionId])
 
@@ -53,13 +63,18 @@ export default function SessionPage(): JSX.Element {
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
+        if (!pendingUpdatesRef.current || Object.keys(pendingUpdatesRef.current).length === 0)
+          return
+
         const lastSaved = new Date().toISOString()
         const finalUpdates = { ...pendingUpdatesRef.current, lastSaved }
+        // Clear pending updates BEFORE the await to avoid race conditions with new edits
+        pendingUpdatesRef.current = {}
+        saveTimeoutRef.current = null
+
         await window.api.sessions.update(sessionId, finalUpdates)
         dispatch(updateSession({ id: sessionId, updates: finalUpdates }))
         dispatch(setSaveState('saved'))
-        pendingUpdatesRef.current = {}
-        saveTimeoutRef.current = null
       } catch (err) {
         console.error('Auto-save failed:', err)
         dispatch(setSaveState('error'))

@@ -36,7 +36,18 @@ export default function ResumePaper({
       newExperience[index] = entry
       onUpdateResume({ experience: newExperience })
     }
-    // ... skills editing stubbed
+    if (section === 'skills') {
+      const newSkills = [...resume.skills]
+      const parts = newText.split(':')
+      const category = parts[0]?.trim() || 'Skills'
+      const itemsString = parts[1] || parts[0] || ''
+      const items = itemsString
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+      newSkills[index] = { category, items }
+      onUpdateResume({ skills: newSkills })
+    }
   }
 
   const handleHeaderSave = (
@@ -124,9 +135,7 @@ export default function ResumePaper({
                 key={i}
                 noBullet
                 bullet={`${cat.category}: ${cat.items.join(', ')}`}
-                onSave={() => {
-                  /* TODO: Skills editing */
-                }}
+                onSave={(text) => handleBulletSave('skills', i, 0, text)}
               >
                 <Box
                   component="span"
